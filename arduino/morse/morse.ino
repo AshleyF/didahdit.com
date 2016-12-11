@@ -36,7 +36,7 @@ long last = -10000;
 int cur0 = 0;
 int cur1 = 0;
 
-char* morse = "  ETIANMSURWDKGOHVF?L?PJBXCYZQ";
+char* morse = "  ETIANMSURWDKGOHVF?L?PJBXCYZQ??54?3???2??+????16=/?????7???8?90";
 int p = 0;
 
 void update(long ms) {
@@ -63,7 +63,7 @@ void update(long ms) {
     lcd.print('.');
   }
   lcd.setCursor(cur0, 0);
-  if (p > 30) {
+  if (p >= 64) {
     lcd.print('?');
   } else {
     lcd.print(morse[p]);
