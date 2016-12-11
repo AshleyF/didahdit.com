@@ -4,7 +4,7 @@ This is a very simple Arduino build of a sounder and LCD screen to display decod
 
 Sorry, there is not a schematic. Perhaps you can follow the wiring in the photo:
 
-![Arduino Morse decoder](morse_decoder.png)
+![Arduino Morse decoder](morse_decoder.jpg)
 
 It's simply a button on pin 2, a piezo buzzer on pin 3 and an LCD screen wired [as described here](https://www.arduino.cc/en/Tutorial/LiquidCrystalDisplay) (but to pins 4-7).
 
