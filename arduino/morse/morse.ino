@@ -54,10 +54,10 @@ void update(long ms) {
     cur1 = 0;
     p = 1;
   }
-  if (len > 10000) {
+  if (len > 5000) {
     Serial.println("full reset");
     lcd.clear();
-    cur0 = -1;
+    cur0 = 0;
   }
   lcd.setCursor(cur1++, 1);
   p = p * 2;
