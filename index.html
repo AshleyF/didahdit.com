@@ -2,7 +2,7 @@
   <head>
     <title>Morse Code</title>
     <script>
-    var context = new AudioContext();
+    var context = new (window.AudioContext || window.webkitAudioContext)();
     var oscillator = context.createOscillator();
     oscillator.frequency.value = 750;
     var gain = context.createGain();
