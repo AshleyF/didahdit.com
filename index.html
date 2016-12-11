@@ -1,1 +1,132 @@
-<h1>Test</h1>
+<html>
+  <head>
+    <title>Morse Code</title>
+    <script>
+    var context = new AudioContext();
+    var oscillator = context.createOscillator();
+    oscillator.frequency.value = 750;
+    var gain = context.createGain();
+    gain.gain.value = 0;
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(0);
+
+    var rate = 20; // WPM
+    var ditlen = 1.2 / rate;
+    var delay = 0.03;
+    var ramp = 0.001;
+
+    function toneStart() {
+      gain.gain.setTargetAtTime(1, context.currentTime + delay, ramp);
+    }
+
+    function toneStop() {
+      gain.gain.setTargetAtTime(0, context.currentTime + delay, ramp);
+    }
+
+    function dit(t) {
+      gain.gain.setTargetAtTime(1, t, ramp);
+      gain.gain.setTargetAtTime(0, t + ditlen, ramp);
+      return t + 2 * ditlen;
+    }
+
+    function dah(t) {
+      gain.gain.setTargetAtTime(1, t, ramp);
+      gain.gain.setTargetAtTime(0, t + 3 * ditlen, ramp);
+      return t + 4 * ditlen;
+    }
+
+    function character(t) {
+      return t + 2 * ditlen;
+    }
+
+    function word(t) {
+      return t + 6 * ditlen;
+    }
+
+    function test() {
+      var t = context.currentTime;
+      t = word(t);
+      t = dit(t);
+      t = dah(t);
+      t = character(t);
+      t = dit(t);
+      t = dit(t);
+      t = dit(t);
+      t = character(t);
+      t = dit(t);
+      t = dit(t);
+      t = dit(t);
+      t = dit(t);
+      t = character(t);
+      t = dit(t);
+      t = dah(t);
+      t = dit(t);
+      t = dit(t);
+      t = character(t);
+      t = dit(t);
+      t = character(t);
+      t = dah(t);
+      t = dit(t);
+      t = dah(t);
+      t = dah(t);
+      t = word(t);
+
+      t = dit(t);
+      t = dah(t);
+      t = dit(t);
+      t = dit(t);
+      t = character(t);
+      t = dah(t);
+      t = dah(t);
+      t = dah(t);
+      t = character(t);
+      t = dit(t);
+      t = dit(t);
+      t = dit(t);
+      t = dah(t);
+      t = character(t);
+      t = dit(t);
+      t = character(t);
+      t = dit(t);
+      t = dit(t);
+      t = dit(t);
+      t = word(t);
+
+      t = dah(t);
+      t = character(t);
+      t = dit(t);
+      t = dah(t);
+      t = dit(t);
+      t = character(t);
+      t = dit(t);
+      t = dah(t);
+      t = character(t);
+      t = dah(t);
+      t = dit(t);
+      t = dah(t);
+      t = dit(t);
+      t = character(t);
+      t = dit(t);
+      t = character(t);
+      t = dah(t);
+      t = dit(t);
+      t = dah(t);
+      t = dah(t);
+      t = character(t);
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key == ' ') toneStart();
+    });
+
+    document.addEventListener('keyup', (event) => {
+      if (event.key == ' ') toneStop();
+    });
+    </script>
+  </head>
+  <body>
+    <button onclick="test()">Test</button>
+  </body>
+
+
