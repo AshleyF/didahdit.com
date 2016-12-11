@@ -9,7 +9,7 @@
     gain.gain.value = 0;
     oscillator.connect(gain);
     gain.connect(context.destination);
-    oscillator.start(0);
+    //oscillator.start(0);
 
     var rate = 20; // WPM
     var ditlen = 1.2 / rate;
@@ -123,9 +123,17 @@
     document.addEventListener('keyup', (event) => {
       if (event.key == ' ') toneStop();
     });
+
+    window.addEventListener('load', (event) => {
+      document.getElementById('ios').addEventListener('click', function() {
+        alert('Starting audio on iOS');
+        oscillator.start(0);
+      }, false);
+    });
     </script>
   </head>
   <body>
+    <button id="ios">iOS</button>
     <button onclick="test()">Test</button>
   </body>
 
