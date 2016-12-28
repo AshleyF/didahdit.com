@@ -48,9 +48,13 @@ void update(long ms) {
   if (len > 600) { // letter break
     lcd.setCursor(0, 1);
     lcd.print("                ");
-    if (!backspace) cur0++;
+    if (!backspace) cur0++;      
     cur1 = 0;
     p = 1;
+  }
+  if (len > 1500) { // new word (long, for beginners)
+    lcd.setCursor(++cur0, 0);
+    lcd.print(' ');
   }
   if (len > 5000) { // new message
     lcd.clear();
@@ -68,6 +72,10 @@ void update(long ms) {
   if (p >= 64) {
     backspace = (p == 256); // ........
     lcd.print(backspace ? ' ' : '?');
+    if (backspace && cur0 > 0) {
+      lcd.setCursor(--cur0, 0);
+      lcd.print(' ');
+    }
   } else {
     lcd.print(morse[p]);
   }
