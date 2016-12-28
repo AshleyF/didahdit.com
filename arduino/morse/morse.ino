@@ -20,12 +20,13 @@ long ms = 0;
 
 void loop() {
   int button = digitalRead(buttonPin);
+  long len = millis() - ms;
+  if (len < 10) return; // debounce
   if (button == LOW) {
     tone(buzzerPin, 600, 10);
     if (ms == 0) ms = millis(); // mark start
   } else {
     if (ms != 0) {
-      long len = millis() - ms;
       if (len > 0) update(len);
       ms = 0;
     }
@@ -38,6 +39,7 @@ int cur1 = 0;
 
 char* morse = "  ETIANMSURWDKGOHVF?L?PJBXCYZQ??54?3???2??+????16=/?????7???8?90";
 int p = 0;
+bool backspace = false;
 
 void update(long ms) {
   long m = millis();
@@ -46,7 +48,7 @@ void update(long ms) {
   if (len > 600) { // letter break
     lcd.setCursor(0, 1);
     lcd.print("                ");
-    cur0++;
+    if (!backspace) cur0++;
     cur1 = 0;
     p = 1;
   }
@@ -64,7 +66,8 @@ void update(long ms) {
   }
   lcd.setCursor(cur0, 0);
   if (p >= 64) {
-    lcd.print('?');
+    backspace = (p == 256); // ........
+    lcd.print(backspace ? ' ' : '?');
   } else {
     lcd.print(morse[p]);
   }
