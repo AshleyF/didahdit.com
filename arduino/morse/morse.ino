@@ -51,6 +51,7 @@ void update(long ms) {
     if (!backspace) cur0++;      
     cur1 = 0;
     p = 1;
+    backspace = false;
   }
   if (len > 1500) { // new word (long, for beginners)
     lcd.setCursor(++cur0, 0);
