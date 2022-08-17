@@ -496,12 +496,14 @@ void pause(long len) {
         case PROSIGN_CHAR: // expand prosign
           messageLen--;
           message[messageLen++] = (byte)LEFT_BRACKET_CHAR;
+          scrollLeftIfNeeded();
           char* c = prosign;
           do {
             message[messageLen++] = *c++;
             scrollLeftIfNeeded();
           } while (*c != '\0');
           message[messageLen++] = (byte)RIGHT_BRACKET_CHAR;
+          scrollLeftIfNeeded();
           break;
       }
     }
