@@ -24,6 +24,8 @@ const int SPACE_CHAR = 2;
 const int BACKSPACE_CHAR = 3;
 const int PROSIGN_CHAR = 4;
 const int UNKNOWN_CHAR = 5;
+const int LEFT_BRACKET_CHAR = 6;
+const int RIGHT_BRACKET_CHAR = 7;
 
 const int MAX_MESSAGE = 16;
 char message[MAX_MESSAGE];
@@ -113,12 +115,36 @@ void setup() {
     0b11111,
   };
   
+  byte leftBracketChar[8] = {
+    0b00000,
+    0b00000,
+    0b00001,
+    0b00010,
+    0b00001,
+    0b00000,
+    0b00000,
+    0b00000,
+  };
+  
+  byte rightBracketChar[8] = {
+    0b00000,
+    0b00000,
+    0b10000,
+    0b01000,
+    0b10000,
+    0b00000,
+    0b00000,
+    0b00000,
+  };
+  
   lcd.createChar(DIT_CHAR, ditChar);
   lcd.createChar(DAH_CHAR, dahChar);
   lcd.createChar(SPACE_CHAR, spaceChar);
   lcd.createChar(BACKSPACE_CHAR, backspaceChar);
   lcd.createChar(PROSIGN_CHAR, prosignChar);
   lcd.createChar(UNKNOWN_CHAR, unknownChar);
+  lcd.createChar(LEFT_BRACKET_CHAR, leftBracketChar);
+  lcd.createChar(RIGHT_BRACKET_CHAR, rightBracketChar);
 }
 
 enum State {
@@ -387,6 +413,8 @@ void setProsign(char* sign) {
   }
 }
 
+bool recentBackspace = false;
+
 void decode(bool dah) {
   p = p * 2; // dit doubles, dah doubles + 1
   if (dah) {
@@ -403,28 +431,28 @@ void decode(bool dah) {
       }
       break;
     case 21:
-      setProsign("<AA>");
+      setProsign("AA");
       break;
     case 34:
-      setProsign("<VE>");
+      setProsign("VE");
       break;
     case 37:
-      setProsign("<INT>");
+      setProsign("INT");
       break;
     case 42:
-      setProsign("<AR>");
+      setProsign("AR");
       break;
     case 53:
-      setProsign("<CT>");
+      setProsign("CT");
       break;
     case 69:
-      setProsign("<SK>");
+      setProsign("SK");
       break;
     case 103:
-      setProsign("<NJ>");
+      setProsign("NJ");
       break;
     case 568:
-      setProsign("<SOS>");
+      setProsign("SOS");
       break;
     case 256: // correction (clear)
       messageLen = 0;
@@ -440,6 +468,7 @@ void decode(bool dah) {
           updateLcd();
         }
       } else {
+        recentBackspace = false;
         char c = morse[p];
         if (p < 4) messageLen++; // first dit/dah
         scrollLeftIfNeeded();
@@ -455,24 +484,24 @@ void pause(long len) {
     if (messageLen > 0) {
       switch (message[messageLen - 1]) {
         case BACKSPACE_CHAR: // backspace
-          if (messageLen > 1) {
-            messageLen -= 2;
-            if (messageLen > 0 && message[messageLen] == ' ') {
-              messageLen--; // delete trailing space too
-            }
-          } else {
-            messageLen = 0;
+          messageLen = messageLen > 1 ? messageLen - 2 : 0;
+          if (message[messageLen] == RIGHT_BRACKET_CHAR) { // delete whole prosign
+            while (message[messageLen--] != LEFT_BRACKET_CHAR) {}
+            messageLen++;
           }
           dirty = true;
+          recentBackspace = true;
           updateLcd();
           break;
         case PROSIGN_CHAR: // expand prosign
           messageLen--;
+          message[messageLen++] = (byte)LEFT_BRACKET_CHAR;
           char* c = prosign;
           do {
             message[messageLen++] = *c++;
             scrollLeftIfNeeded();
           } while (*c != '\0');
+          message[messageLen++] = (byte)RIGHT_BRACKET_CHAR;
           break;
       }
     }
@@ -481,7 +510,7 @@ void pause(long len) {
     dirty = true;
     updateLcd();
   }
-  if (len > 7 * DIT * FARNSWORTH && messageLen != 0 && message[messageLen - 1] != ' ') { // word break
+  if (((!recentBackspace && len > 7 * DIT * FARNSWORTH) || (recentBackspace && len > 21 * DIT * FARNSWORTH)) && messageLen != 0 && message[messageLen - 1] != ' ') { // word break
     message[messageLen++] = ' ';
     scrollLeftIfNeeded();
     updateLcd();
