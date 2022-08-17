@@ -10,23 +10,89 @@ const int STRAIGHT_KEY = 2;
 const int BUZZER = 3;
 
 const int FREQ = 600;
-const int WPM = 15;
+const int WPM = 20;
 const int DIT = 60000 / (WPM * 50);
 const int DAH = DIT * 3;
 const int PAUSE = DIT;
 const int FARNSWORTH = 3;
-const int NEW_MESSAGE = 4000;
 const int DEBOUNCE = DIT / 4;
+const int SCROLL = DIT * 100;
+
+const int DIT_CHAR = 0;
+const int DAH_CHAR = 1;
+const int SPACE_CHAR = 2;
+const int UNKNOWN_CHAR = 3;
+
+const int MAX_MESSAGE = 16;
+char message[MAX_MESSAGE];
+int messageLen = 0;
+
+const int MAX_OFFSCREEN = 1000;
+char offscreen[MAX_OFFSCREEN];
+int offscreenLen = 0;
+
+const int MAX_CODE = 15;
+char code[MAX_CODE];
+int codeLen = 0;
 
 void setup() {
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
-  lcd.print("Morse Decoder");
+  lcd.print("Morse Decoder v1");
   lcd.setCursor(0, 1);
-  lcd.print("didahdit.com");
+  lcd.print("www.didahdit.com");
   pinMode(STRAIGHT_KEY, INPUT);
   digitalWrite(STRAIGHT_KEY, HIGH);
   pinMode(BUZZER, OUTPUT);
+
+  byte ditChar[8] = {
+    0b00000,
+    0b00000,
+    0b00000,
+    0b00100,
+    0b00000,
+    0b00000,
+    0b00000,
+    0b00000
+  };
+
+  byte dahChar[8] = {
+    0b00000,
+    0b00000,
+    0b00000,
+    0b11111,
+    0b00000,
+    0b00000,
+    0b00000,
+    0b00000
+  };
+
+  byte spaceChar[8] = {
+    0b00000,
+    0b00000,
+    0b00000,
+    0b00000,
+    0b00000,
+    0b00000,
+    0b10001,
+    0b11111
+  };
+
+  byte unknownChar[8] = {
+    0b11111,
+    0b10001,
+    0b00000,
+    0b10001,
+    0b10001,
+    0b00000,
+    0b10001,
+    0b11111,
+  };
+  
+  lcd.createChar(DIT_CHAR, ditChar);
+  lcd.createChar(DAH_CHAR, dahChar);
+  lcd.createChar(SPACE_CHAR, spaceChar);
+  lcd.createChar(UNKNOWN_CHAR, unknownChar);
 }
 
 enum State {
@@ -56,7 +122,7 @@ long predictDah = 0;
 long repeat = 0;
 bool lastSqueeze = false;
 
-long quietStart = -NEW_MESSAGE; // cause initial LCD clear
+long quietStart = 0;
 void playTone(bool dah, bool openEnded) {
   long len = dah ? DAH : DIT;
   lastOpenEndedTone = openEnded;
@@ -102,19 +168,30 @@ void loop() {
       }
       if (ms > quietUntil) {
         if (key) {
-          pause(ms - quietStart);
           state = Key;
           break;
         }
         if (left) {
-          pause(ms - quietStart);
           state = Left;
           break;
         }
         if (right) {
-          pause(ms - quietStart);
           state = Right;
           break;
+        }
+
+        long time = ms - quietStart;
+        pause(time);
+        if (time > SCROLL) {
+          int len = offscreenLen + messageLen;
+          if (len > 15) {
+            int scroll = ((time - SCROLL) / 350) % len;
+            lcd.setCursor(0, 0);
+            for (int i = 0; i < 16; i++) {
+              int j = scroll + i;
+              lcd.write(offscreen[j % len]);
+            }
+          }
         }
       }
       break;
@@ -232,51 +309,84 @@ void loop() {
   }
 }
 
-int cur0 = 0;
-int cur1 = 0;
+char* morse = "  ETIANMSURWDKGOHVF L PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
+int p = 1;
 
-char* morse = "  ETIANMSURWDKGOHVF?L?PJBXCYZQ??54?3???2??+????16=/?????7???8?90";
-int p = 0;
-bool backspace = false;
+bool dirty = true;
+
+void updateLcd() {
+  if (dirty) lcd.clear();
+  lcd.setCursor(0, 0);
+  for (int m = 0; m < messageLen && m < 16; m++) {
+    lcd.write(message[m]);
+  }
+  if (p == 1) lcd.write((byte)SPACE_CHAR);
+  lcd.setCursor(0, 1);
+  for (int c = 0; c < codeLen && c < 16; c++) {
+    lcd.write(code[c]);
+  }
+}
+
+void appendCode(char c) {
+  if (codeLen < MAX_CODE) {
+    code[codeLen++] = c;
+    updateLcd();
+  }
+}
+
+void scrollLeftIfNeeded() {
+  for (int j = 0; j < messageLen; j++) {
+    offscreen[offscreenLen + j] = message[j];
+  }
+  if (messageLen == MAX_MESSAGE) {
+    offscreenLen++;
+    if (offscreenLen >= MAX_OFFSCREEN) {
+      offscreenLen = 0;
+    }
+    messageLen--;
+    for (int i = 0; i < MAX_MESSAGE - 1; i++) {
+      message[i] = message[i + 1];
+    }
+    dirty = true;
+  }
+}
 
 void decode(bool dah) {
-  lcd.setCursor(cur1++, 1);
   p = p * 2; // dit doubles, dah doubles + 1
   if (dah) {
     p++;
-    lcd.print('-');
+    appendCode(DAH_CHAR);
   } else {
-    lcd.print('.');
+    appendCode(DIT_CHAR);
   }
-  lcd.setCursor(cur0, 0);
-  if (p >= 64) {
-    backspace = (p >= 256); // ........
-    lcd.print(backspace ? ' ' : '?');
-    if (backspace && cur0 > 0) {
-      lcd.setCursor(--cur0, 0);
-      lcd.print(' ');
+  if (p >= 121) {
+    message[messageLen] = (byte)UNKNOWN_CHAR;
+    if (p == 256) { // ........
+      messageLen = 0;
+      offscreenLen = 0;
+      codeLen = 0;
+      dirty = true;
     }
+    updateLcd();
   } else {
-    lcd.print(morse[p]);
+    char c = morse[p];
+    if (p < 4) messageLen++; // first dit/dah
+    scrollLeftIfNeeded();
+    message[messageLen - 1] = c == ' ' ? (byte)UNKNOWN_CHAR : c;
+    updateLcd();
   }
 }
 
 void pause(long len) {
-  if (cur0 >= 15) cur0 = -1; // wrap
-  if (len > DIT * FARNSWORTH) { // letter break
-    lcd.setCursor(0, 1);
-    lcd.print("                ");
-    if (!backspace) cur0++;      
-    cur1 = 0;
+  if (len > DIT * FARNSWORTH && p != 1) { // letter break
+    codeLen = 0;
     p = 1;
-    backspace = false;
+    dirty = true;
+    updateLcd();
   }
-  if (len > 7 * DIT * FARNSWORTH && cur0 != 0) { 
-    lcd.setCursor(++cur0, 0);
-    lcd.print(' ');
-  }
-  if (len > NEW_MESSAGE) { // new message
-    lcd.clear();
-    cur0 = 0;
+  if (len > 7 * DIT * FARNSWORTH && messageLen != 0 && message[messageLen - 1] != ' ') { // word break
+    message[messageLen++] = ' ';
+    scrollLeftIfNeeded();
+    updateLcd();
   }
 }
