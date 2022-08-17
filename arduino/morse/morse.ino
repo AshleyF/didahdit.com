@@ -21,7 +21,9 @@ const int SCROLL = DIT * 100;
 const int DIT_CHAR = 0;
 const int DAH_CHAR = 1;
 const int SPACE_CHAR = 2;
-const int UNKNOWN_CHAR = 3;
+const int BACKSPACE_CHAR = 3;
+const int PROSIGN_CHAR = 4;
+const int UNKNOWN_CHAR = 5;
 
 const int MAX_MESSAGE = 16;
 char message[MAX_MESSAGE];
@@ -78,6 +80,28 @@ void setup() {
     0b11111
   };
 
+  byte backspaceChar[8] = {
+    0b00011,
+    0b00101,
+    0b01001,
+    0b10001,
+    0b10001,
+    0b01001,
+    0b00101,
+    0b00011
+  };
+
+  byte prosignChar[8] = {
+    0b00000,
+    0b00000,
+    0b01010,
+    0b10001,
+    0b01010,
+    0b00000,
+    0b00000,
+    0b00000
+  };
+
   byte unknownChar[8] = {
     0b11111,
     0b10001,
@@ -92,6 +116,8 @@ void setup() {
   lcd.createChar(DIT_CHAR, ditChar);
   lcd.createChar(DAH_CHAR, dahChar);
   lcd.createChar(SPACE_CHAR, spaceChar);
+  lcd.createChar(BACKSPACE_CHAR, backspaceChar);
+  lcd.createChar(PROSIGN_CHAR, prosignChar);
   lcd.createChar(UNKNOWN_CHAR, unknownChar);
 }
 
@@ -351,6 +377,16 @@ void scrollLeftIfNeeded() {
   }
 }
 
+char* prosign = "";
+
+void setProsign(char* sign) {
+  if (messageLen > 0) {
+    prosign = sign;
+    message[messageLen - 1] = (byte)PROSIGN_CHAR;
+    updateLcd();
+  }
+}
+
 void decode(bool dah) {
   p = p * 2; // dit doubles, dah doubles + 1
   if (dah) {
@@ -359,26 +395,87 @@ void decode(bool dah) {
   } else {
     appendCode(DIT_CHAR);
   }
-  if (p >= 121) {
-    message[messageLen] = (byte)UNKNOWN_CHAR;
-    if (p == 256) { // ........
+  switch (p) {
+    case 31: // backspace
+      if (messageLen > 0) {
+        message[messageLen - 1] = (byte)BACKSPACE_CHAR;
+        updateLcd();
+      }
+      break;
+    case 21:
+      setProsign("<AA>");
+      break;
+    case 34:
+      setProsign("<VE>");
+      break;
+    case 37:
+      setProsign("<INT>");
+      break;
+    case 42:
+      setProsign("<AR>");
+      break;
+    case 53:
+      setProsign("<CT>");
+      break;
+    case 69:
+      setProsign("<SK>");
+      break;
+    case 103:
+      setProsign("<NJ>");
+      break;
+    case 568:
+      setProsign("<SOS>");
+      break;
+    case 256: // correction (clear)
       messageLen = 0;
       offscreenLen = 0;
       codeLen = 0;
       dirty = true;
-    }
-    updateLcd();
-  } else {
-    char c = morse[p];
-    if (p < 4) messageLen++; // first dit/dah
-    scrollLeftIfNeeded();
-    message[messageLen - 1] = c == ' ' ? (byte)UNKNOWN_CHAR : c;
-    updateLcd();
+      updateLcd();
+      break;
+    default:
+      if (p >= 121) {
+        if (messageLen > 0) {
+          message[messageLen - 1] = (byte)UNKNOWN_CHAR;
+          updateLcd();
+        }
+      } else {
+        char c = morse[p];
+        if (p < 4) messageLen++; // first dit/dah
+        scrollLeftIfNeeded();
+        message[messageLen - 1] = c == ' ' ? (byte)UNKNOWN_CHAR : c;
+        updateLcd();
+      }
+      break;
   }
 }
 
 void pause(long len) {
   if (len > DIT * FARNSWORTH && p != 1) { // letter break
+    if (messageLen > 0) {
+      switch (message[messageLen - 1]) {
+        case BACKSPACE_CHAR: // backspace
+          if (messageLen > 1) {
+            messageLen -= 2;
+            if (messageLen > 0 && message[messageLen] == ' ') {
+              messageLen--; // delete trailing space too
+            }
+          } else {
+            messageLen = 0;
+          }
+          dirty = true;
+          updateLcd();
+          break;
+        case PROSIGN_CHAR: // expand prosign
+          messageLen--;
+          char* c = prosign;
+          do {
+            message[messageLen++] = *c++;
+            scrollLeftIfNeeded();
+          } while (*c != '\0');
+          break;
+      }
+    }
     codeLen = 0;
     p = 1;
     dirty = true;
