@@ -9,6 +9,7 @@ For the moment, here are some idea and nice sites and apps out there:
 - Purely audio to letters and fist/sound to letters. No visual dits and dahs!
 - Simulated static and interference (a la G4FON).
 - Simulated QSOs.
+- Automatic increase/decrease speed with success/failure.
 
 ## Sites
 
@@ -23,3 +24,4 @@ For the moment, here are some idea and nice sites and apps out there:
 
 - *Morse Machine* [for iOS](https://apps.apple.com/us/app/morse-machine/id1455507957) or [for Android](https://play.google.com/store/apps/details?id=com.iu4apc.morsemachine&hl=en_US&gl=US).
 - [MorseZapp](https://apps.apple.com/us/app/morsezapp-learn-morse-code/id1397107048) for iOS. Not free, but this one is addictive to me for some reason. The urgency as the letters fall seems to keep me strictly engaged.
+- [RufZXP](https://www.rufzxp.net/) for Windows. Copy callsigns with automatic 3% increase/descrease in speed, depending on how you're doing.
