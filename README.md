@@ -17,8 +17,9 @@ For the moment, here are some idea and nice sites and apps out there:
 - [*CWOpps*](https://cwops.org/) Older group of people, an academy, and great resources.
 - [*morsle.fun*](https://morsle.fun/) A Wordle-like Morse Code game. I suggest selecting "Hard Mode" in settings to hide the key.
 - [*G4FON*](http://www.g4fon.net/) A nice site and a set of interesting (old) apps.
-- [Morse Code Ninja](https://morsecode.ninja/)
-- [Morse Code World](https://morsecode.world/)
+- [Morse Code Ninja](https://morsecode.ninja/).
+- [Morse Code World](https://morsecode.world/).
+- [Slow Speed [Con]test](http://www.k1usn.com/sst).
 
 ## Apps
 
