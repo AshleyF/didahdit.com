@@ -1,0 +1,62 @@
+<html>
+    <head>
+        <title>Test</title>
+        <script>
+            function load() {
+                if (!("serial" in navigator)) {
+                    // The Web Serial API is supported.
+                    alert("SERIAL UNAVAILABLE");
+                }
+                navigator.serial.addEventListener('connect', (e) => {
+                    // Connect to `e.target` or add it to a list of available ports.
+                    alert("Connected: " + JSON.stringify(e));
+                });
+                navigator.serial.addEventListener('disconnect', (e) => {
+                    // Remove `e.target` from the list of available ports.
+                    alert("Disconnected: " + JSON.stringify(e));
+                });
+            }
+
+            var connectedPort = null;
+
+            function connect() {
+                // const port = await navigator.serial.requestPort();
+                //const usbVendorId = 0xABCD;
+                //navigator.serial.requestPort({ filters: [{ usbVendorId }]}).then((port) => {
+                navigator.serial.requestPort().then((port) => {
+                    // Connect to `port` or add it to the list of available ports.
+                    port.open({ baudRate: 9600 }).then(() => {
+                        connectedPort = port;
+                    }).catch(e => alert("ERROR OPENING: " + e));
+                    //navigator.serial.getPorts().then((ports) => {
+                    //    // Initialize the list of available ports with `ports` on page load.
+                    //    alert("Ports: " + JSON.stringify(ports));
+                    //});
+                }).catch((e) => {
+                    // The user didn't select a port.
+                    alert("ERROR NO PORT CHOSEN: " + JSON.stringify(e));
+                });
+            }
+
+            function send() {
+                if (connectedPort != null) {
+                    var message = document.getElementById("foo").value;
+                    const writer = connectedPort.writable.getWriter();
+                    data = new Uint8Array([46, 45, 46]);
+                    writer.write(data).then(() => { /* alert("WRITTEN") */ });
+                        // const textEncoder = new TextEncoderStream();
+                        // const writableStreamClosed = textEncoder.readable.pipeTo(connectedPort.writable);
+                        // const writer = textEncoder.writable.getWriter();
+                        // writer.write(message).then(() => alert("WRITTEN"));
+                    writer.releaseLock();
+                }
+            }
+        </script>
+    </head>
+    <body onload="load()">
+        <h1>Test</h1>
+        <textarea id="foo"></textarea>
+        <button onclick="connect()">Connect</button>
+        <button onclick="send()">Send</button>
+    </body>
+</html>

@@ -1,20 +1,25 @@
 #include <LiquidCrystal.h>
 
+#define TONE false // pizzo tone, else relay
+
 LiquidCrystal lcd(12, 11, 7, 6, 5, 4);
 
 const bool MODE_B = true;
 
-const int PADDLE_LEFT = 0;
-const int PADDLE_RIGHT = 1;
+const int PADDLE_LEFT = 8;
+const int PADDLE_RIGHT = 9;
 const int STRAIGHT_KEY = 2;
 const int BUZZER = 3;
 
 const int FREQ = 600;
-const int WPM = 20;
+const int WPM = 25;
 const int DIT = 60000 / (WPM * 50);
 const int DAH = DIT * 3;
+const int LETTER = DIT * 3;
+const int WORD = DIT * 7;
 const int PAUSE = DIT;
-const int FARNSWORTH = 3;
+const int SEND_FARNSWORTH = 3;
+const int COPY_FARNSWORTH = 3;
 const int DEBOUNCE = DIT / 4;
 const int SCROLL = DIT * 100;
 
@@ -40,6 +45,7 @@ char code[MAX_CODE];
 int codeLen = 0;
 
 void setup() {
+  Serial.begin(9600);
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
   lcd.print("Morse Decoder v1");
@@ -47,6 +53,10 @@ void setup() {
   lcd.print("www.didahdit.com");
   pinMode(STRAIGHT_KEY, INPUT);
   digitalWrite(STRAIGHT_KEY, HIGH);
+  pinMode(PADDLE_LEFT, INPUT);
+  digitalWrite(PADDLE_LEFT, HIGH);
+  pinMode(PADDLE_RIGHT, INPUT);
+  digitalWrite(PADDLE_RIGHT, HIGH);
   pinMode(BUZZER, OUTPUT);
 
   byte ditChar[8] = {
@@ -149,6 +159,7 @@ void setup() {
 
 enum State {
   Waiting,
+  Protocol,
   Key,
   Left,
   Right,
@@ -175,22 +186,30 @@ long repeat = 0;
 bool lastSqueeze = false;
 
 long quietStart = 0;
-void playTone(bool dah, bool openEnded) {
+void playTone(bool dah, bool openEnded, bool copy) {
   long len = dah ? DAH : DIT;
   lastOpenEndedTone = openEnded;
-  if (!openEnded) {
+  if (!openEnded && copy) {
     decode(dah);
     quietUntil = millis() + len + DIT;
   }
   oppositeLast = !dah;
-  tone(BUZZER, FREQ, len);
+  if (TONE) {
+    tone(BUZZER, FREQ, len);
+  } else {
+    digitalWrite(BUZZER, HIGH);
+  }
   toneStart = millis();
   toneUntil = toneStart + len;
   quietStart = toneUntil;
 }
 
 void stopTone() {
-  noTone(BUZZER);
+  if (TONE) {
+    noTone(BUZZER);
+  } else {
+    digitalWrite(BUZZER, LOW);
+  }
   quietStart = millis();
 }
 
@@ -199,6 +218,7 @@ void loop() {
   bool key = digitalRead(STRAIGHT_KEY) == LOW;
   bool left = digitalRead(PADDLE_LEFT) == LOW;
   bool right = digitalRead(PADDLE_RIGHT) == LOW;
+  if (state != Key && toneUntil != 0 && ms > toneUntil) stopTone();
   switch (state) {
     case Waiting:
       debounceTimeout = 0;
@@ -216,9 +236,13 @@ void loop() {
       if (MODE_B && lastSqueeze && ms > quietUntil) {
         lastSqueeze = false;
         toneUntil = ms + (oppositeLast ? DAH : DIT);
-        playTone(oppositeLast, false);
+        playTone(oppositeLast, false, true);
       }
       if (ms > quietUntil) {
+        if (Serial.available() > 0) {
+          state = Protocol;
+          break;
+        }
         if (key) {
           state = Key;
           break;
@@ -247,6 +271,30 @@ void loop() {
         }
       }
       break;
+    case Protocol:
+      if (quietUntil != 0 && ms > quietUntil && Serial.available() > 0) {
+        char c = Serial.read();
+        switch (c) {
+          case '.':
+            playTone(false, false, false);
+            quietUntil = 0;
+            toneUntil = ms + DIT;
+            break;
+          case '-':
+            playTone(true, false, false);
+            quietUntil = 0;
+            toneUntil = ms + DAH;
+            break;
+          case ' ':
+            quietUntil = ms + LETTER * SEND_FARNSWORTH;
+            break;
+          case '/':
+            quietUntil = ms + WORD * SEND_FARNSWORTH;
+            break;
+        }
+      }
+      state = Waiting;
+      break;
     case Key:
       setDebounceTimeout();
       if (!key && ms > debounceTimeout) {
@@ -254,7 +302,7 @@ void loop() {
         break;
       }
       if (toneUntil == 0) {
-        playTone(true, true); // maximum, open-ended
+        playTone(true, true, true); // maximum, open-ended
         quietUntil = 0;
         toneUntil = ms + DIT; // minimum
         predictDah = ms + DAH / 2;
@@ -268,7 +316,7 @@ void loop() {
         if (lastOpenEndedTone) {
           decode(true); // must have been a dah to repeat
         }
-        playTone(true, false);
+        playTone(true, false, true);
         toneUntil = ms + DAH;
         repeat = toneUntil + PAUSE;
       }
@@ -284,13 +332,13 @@ void loop() {
         break;
       }
       if (toneUntil == 0) {
-        playTone(false, false);
+        playTone(false, false, true);
         quietUntil = 0;
         toneUntil = ms + DIT;
         repeat = toneUntil + PAUSE;
       }
       if (ms > repeat) {
-        playTone(false, false);
+        playTone(false, false, true);
         lastSqueeze = false;
         toneUntil = ms + DIT;
         repeat = toneUntil + PAUSE;
@@ -307,13 +355,13 @@ void loop() {
         break;
       }
       if (toneUntil == 0) {
-        playTone(true, false);
+        playTone(true, false, true);
         quietUntil = 0;
         toneUntil = ms + DAH;
         repeat = toneUntil + PAUSE;
       }
       if (ms > repeat) {
-        playTone(true, false);
+        playTone(true, false, true);
         lastSqueeze = false;
         toneUntil = ms + DAH;
         repeat = toneUntil + PAUSE;
@@ -327,14 +375,14 @@ void loop() {
       }
       lastSqueeze = true;
       if (toneUntil == 0) {
-        playTone(true, false);
+        playTone(true, false, true);
         quietUntil = 0;
         toneUntil = ms + DAH;
         repeat = toneUntil + PAUSE;
       }
       if (ms > repeat) {
         long send = oppositeLast ? DAH : DIT;
-        playTone(oppositeLast, false);
+        playTone(oppositeLast, false, true);
         toneUntil = ms + send;
         repeat = toneUntil + PAUSE;
       }
@@ -346,14 +394,14 @@ void loop() {
       }
       lastSqueeze = true;
       if (toneUntil == 0) {
-        playTone(false, false);
+        playTone(false, false, true);
         quietUntil = 0;
         toneUntil = ms + DIT;
         repeat = toneUntil + PAUSE;
       }
       if (ms > repeat) {
         long send = oppositeLast ? DAH : DIT;
-        playTone(oppositeLast, false);
+        playTone(oppositeLast, false, true);
         toneUntil = ms + send;
         repeat = toneUntil + PAUSE;
       }
@@ -420,8 +468,10 @@ void decode(bool dah) {
   if (dah) {
     p++;
     appendCode(DAH_CHAR);
+    Serial.write('-');
   } else {
     appendCode(DIT_CHAR);
+    Serial.write('.');
   }
   switch (p) {
     case 31: // backspace
@@ -480,8 +530,9 @@ void decode(bool dah) {
 }
 
 void pause(long len) {
-  if (len > DIT * FARNSWORTH && p != 1) { // letter break
+  if (len > DIT * COPY_FARNSWORTH && p != 1) { // letter break
     if (messageLen > 0) {
+      Serial.write(' ');
       switch (message[messageLen - 1]) {
         case BACKSPACE_CHAR: // backspace
           messageLen = messageLen > 1 ? messageLen - 2 : 0;
@@ -512,7 +563,8 @@ void pause(long len) {
     dirty = true;
     updateLcd();
   }
-  if (((!recentBackspace && len > 7 * DIT * FARNSWORTH) || (recentBackspace && len > 21 * DIT * FARNSWORTH)) && messageLen != 0 && message[messageLen - 1] != ' ') { // word break
+  if (((!recentBackspace && len > WORD * COPY_FARNSWORTH) || (recentBackspace && len > 3 * WORD * COPY_FARNSWORTH)) && messageLen != 0 && message[messageLen - 1] != ' ') { // word break
+    Serial.write("/ ");
     message[messageLen++] = ' ';
     scrollLeftIfNeeded();
     updateLcd();
