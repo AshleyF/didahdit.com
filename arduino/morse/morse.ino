@@ -239,7 +239,7 @@ void loop() {
         playTone(oppositeLast, false, true);
       }
       if (ms > quietUntil) {
-        if (Serial.available() > 0) {
+        if (ms > toneUntil && Serial.available() > 0) {
           state = Protocol;
           break;
         }
@@ -272,26 +272,23 @@ void loop() {
       }
       break;
     case Protocol:
-      if (quietUntil != 0 && ms > quietUntil && Serial.available() > 0) {
-        char c = Serial.read();
-        switch (c) {
-          case '.':
-            playTone(false, false, false);
-            quietUntil = 0;
-            toneUntil = ms + DIT;
-            break;
-          case '-':
-            playTone(true, false, false);
-            quietUntil = 0;
-            toneUntil = ms + DAH;
-            break;
-          case ' ':
-            quietUntil = ms + LETTER * SEND_FARNSWORTH;
-            break;
-          case '/':
-            quietUntil = ms + WORD * SEND_FARNSWORTH;
-            break;
-        }
+      switch (Serial.read()) {
+        case '.':
+          playTone(false, false, false);
+          quietUntil = 0;
+          toneUntil = ms + DIT;
+          break;
+        case '-':
+          playTone(true, false, false);
+          quietUntil = 0;
+          toneUntil = ms + DAH;
+          break;
+        case ' ':
+          quietUntil = ms + LETTER * SEND_FARNSWORTH;
+          break;
+        case '/':
+          quietUntil = ms + WORD * SEND_FARNSWORTH;
+          break;
       }
       state = Waiting;
       break;
@@ -409,7 +406,7 @@ void loop() {
   }
 }
 
-char* morse = "  ETIANMSURWDKGOHVF L PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
+String morse = "  ETIANMSURWDKGOHVF L PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
 int p = 1;
 
 bool dirty = true;
@@ -451,9 +448,9 @@ void scrollLeftIfNeeded() {
   }
 }
 
-char* prosign = "";
+String prosign = "";
 
-void setProsign(char* sign) {
+void setProsign(String sign) {
   if (messageLen > 0) {
     prosign = sign;
     message[messageLen - 1] = (byte)PROSIGN_CHAR;
@@ -531,8 +528,8 @@ void decode(bool dah) {
 
 void pause(long len) {
   if (len > DIT * COPY_FARNSWORTH && p != 1) { // letter break
+    Serial.write(' ');
     if (messageLen > 0) {
-      Serial.write(' ');
       switch (message[messageLen - 1]) {
         case BACKSPACE_CHAR: // backspace
           messageLen = messageLen > 1 ? messageLen - 2 : 0;
@@ -548,11 +545,10 @@ void pause(long len) {
           messageLen--;
           message[messageLen++] = (byte)LEFT_BRACKET_CHAR;
           scrollLeftIfNeeded();
-          char* c = prosign;
-          do {
-            message[messageLen++] = *c++;
+          for (int i = 0; i < prosign.length(); i++) {
+            message[messageLen++] = prosign.charAt(i);
             scrollLeftIfNeeded();
-          } while (*c != '\0');
+          }
           message[messageLen++] = (byte)RIGHT_BRACKET_CHAR;
           scrollLeftIfNeeded();
           break;
@@ -564,7 +560,7 @@ void pause(long len) {
     updateLcd();
   }
   if (((!recentBackspace && len > WORD * COPY_FARNSWORTH) || (recentBackspace && len > 3 * WORD * COPY_FARNSWORTH)) && messageLen != 0 && message[messageLen - 1] != ' ') { // word break
-    Serial.write("/ ");
+    Serial.write("/");
     message[messageLen++] = ' ';
     scrollLeftIfNeeded();
     updateLcd();

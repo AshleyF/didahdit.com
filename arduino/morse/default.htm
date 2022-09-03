@@ -2,6 +2,13 @@
     <head>
         <title>Test</title>
         <script>
+            var connectedPort = null;
+            var morse = "  ETIANMSURWDKGOHVF L PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
+            var p = 1;
+            var message = "";
+            var char = '';
+            var sent = "";
+
             function load() {
                 if (!("serial" in navigator)) {
                     // The Web Serial API is supported.
@@ -15,9 +22,8 @@
                     // Remove `e.target` from the list of available ports.
                     alert("Disconnected: " + JSON.stringify(e));
                 });
+                read();
             }
-
-            var connectedPort = null;
 
             function connect() {
                 // const port = await navigator.serial.requestPort();
@@ -27,7 +33,9 @@
                     // Connect to `port` or add it to the list of available ports.
                     port.open({ baudRate: 9600 }).then(() => {
                         connectedPort = port;
-                    }).catch(e => alert("ERROR OPENING: " + e));
+                    }).catch(e => {
+                        alert("ERROR OPENING: " + e);
+                    });
                     //navigator.serial.getPorts().then((ports) => {
                     //    // Initialize the list of available ports with `ports` on page load.
                     //    alert("Ports: " + JSON.stringify(ports));
@@ -37,26 +45,174 @@
                     alert("ERROR NO PORT CHOSEN: " + JSON.stringify(e));
                 });
             }
-
-            function send() {
+            
+            function disconnect() {
                 if (connectedPort != null) {
-                    var message = document.getElementById("foo").value;
+                    connectedPort.close();
+                }
+            }
+
+            function send(message) {
+                if (connectedPort != null) {
+                    sent += message.toUpperCase() + ' ';
+                    updateDisplay();
+                    data = [];
+                    word = [];
+                    for (var i in message) {
+                        var m = message[i];
+                        if (m == '/') { // word break
+                            data.push(47);
+                        } else {
+                            var j = morse.indexOf(m.toUpperCase());
+                            while (j > 1) {
+                                if (j % 2 == 0) {
+                                    word.push(46); // dit
+                                    j /= 2;
+                                } else {
+                                    word.push(45); // dah
+                                    j = (j - 1) / 2;
+                                }
+                            }
+                            data = data.concat(word.reverse());
+                            word = [];
+                            data.push(32); // letter-break
+                        }
+                    }
                     const writer = connectedPort.writable.getWriter();
-                    data = new Uint8Array([46, 45, 46]);
-                    writer.write(data).then(() => { /* alert("WRITTEN") */ });
-                        // const textEncoder = new TextEncoderStream();
-                        // const writableStreamClosed = textEncoder.readable.pipeTo(connectedPort.writable);
-                        // const writer = textEncoder.writable.getWriter();
-                        // writer.write(message).then(() => alert("WRITTEN"));
-                    writer.releaseLock();
+                    writer.write(new Uint8Array(data)).then(() => {
+                        /* alert("WRITTEN"); */
+                        writer.releaseLock();
+                    });
+                }
+            }
+
+            function sendMessage() {
+                if (connectedPort != null) {
+                    var message = document.getElementById("message").value;
+                    send(message);
+                }
+            }
+
+            function updateDisplay() {
+                document.getElementById('copy').innerText = message + char;
+                document.getElementById("sent").innerHTML = sent;
+            }
+
+            function reset() {
+                p = 1;
+                message = "";
+                char = '';
+                sent = "";
+                updateDisplay();
+                document.getElementById("message").innerHTML = "";
+            }
+
+            function copy(bytes) {
+                function setProsign(sign) {
+                    // TODO
+                }
+                function updateCharacter() {
+                    switch (p) {
+                        case 31: // backspace
+                            // TODO
+                            break;
+                        case 21:
+                            setProsign("AA");
+                            break;
+                        case 34:
+                            setProsign("VE");
+                            break;
+                        case 37:
+                            setProsign("INT");
+                            break;
+                        case 42:
+                            setProsign("AR");
+                            break;
+                        case 53:
+                            setProsign("CT");
+                            break;
+                        case 69:
+                            setProsign("SK");
+                            break;
+                        case 103:
+                            setProsign("NJ");
+                            break;
+                        case 568:
+                            setProsign("SOS");
+                            break;
+                        case 256: // correction (clear)
+                            // TODO
+                            message = "";
+                            char = '';
+                            updateDisplay;
+                            break;
+                        default:
+                            if (p >= 121) { // unknown
+                                // TODO
+                                char = "";
+                            } else {
+                                char = morse[p];
+                            }
+                            updateDisplay();
+                            break;
+                    }
+                }
+                for (var i in bytes) {
+                    var b = bytes[i];
+                    switch (b) {
+                        case 46: // dit
+                            p *= 2;
+                            updateCharacter();
+                            break;
+                        case 45: // dah
+                            p = p * 2 + 1;
+                            updateCharacter();
+                            break;
+                        case 32: // letter-break
+                            message += char;
+                            char = "";
+                            p = 1;
+                            updateDisplay();
+                            break;
+                        case 47: // word-break
+                            message += " ";
+                            char = "";
+                            p = 1;
+                            updateDisplay();
+                            break;
+                    }
+                }
+
+            }
+
+            function read() {
+                if (connectedPort != null) {
+                    const reader = connectedPort.readable.getReader();
+                    reader.read().then(x =>
+                    {
+                        copy(x.value);
+                        reader.releaseLock();
+                        window.setTimeout(read, 10);
+                    });
+                } else {
+                    window.setTimeout(read, 10);
                 }
             }
         </script>
     </head>
     <body onload="load()">
-        <h1>Test</h1>
-        <textarea id="foo"></textarea>
-        <button onclick="connect()">Connect</button>
-        <button onclick="send()">Send</button>
+        <h1 id="copy"></h1>
+        <h2 id="sent"></h2>
+        <textarea id="message" rows="5" cols="100"></textarea>
+        <hr />
+        <button id="connect" onclick="connect()">Connect</button>
+        <button id="disconnect" onclick="disconnect()">Disconnect</button>
+        <button id="send" onclick="sendMessage()">Send</button>
+        <button id="reset" onclick="reset()">Clear</button>
+        <hr />
+        <a href="javascript:send('CQ')">CQ</a>
+        <a href="javascript:send('DE')">DE</a>
+        <a href="javascript:send('KK7HXU')">KK7HXU</a>
+        <a href="javascript:send('K')">K</a>
     </body>
 </html>
