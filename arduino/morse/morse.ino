@@ -1,15 +1,15 @@
 #include <LiquidCrystal.h>
 
-#define TONE false // pizzo tone, else relay
-
 LiquidCrystal lcd(12, 11, 7, 6, 5, 4);
 
-const bool MODE_B = true;
+bool MODE_B = true;
+bool TONE = false;
 
 const int PADDLE_LEFT = 8;
 const int PADDLE_RIGHT = 9;
 const int STRAIGHT_KEY = 2;
-const int BUZZER = 3;
+const int RADIO = 3;
+const int BUZZER = 13;
 
 const int FREQ = 600;
 const int WPM = 25;
@@ -57,7 +57,7 @@ void setup() {
   digitalWrite(PADDLE_LEFT, HIGH);
   pinMode(PADDLE_RIGHT, INPUT);
   digitalWrite(PADDLE_RIGHT, HIGH);
-  pinMode(BUZZER, OUTPUT);
+  pinMode(RADIO, OUTPUT);
 
   byte ditChar[8] = {
     0b00000,
@@ -165,7 +165,7 @@ enum State {
   Right,
   LeftRight,
   RightLeft,
-} state = Waiting;
+} state = Waiting, lastState = Waiting;
 
 long debounceTimeout = 0;
 
@@ -196,9 +196,8 @@ void playTone(bool dah, bool openEnded, bool copy) {
   oppositeLast = !dah;
   if (TONE) {
     tone(BUZZER, FREQ, len);
-  } else {
-    digitalWrite(BUZZER, HIGH);
   }
+  digitalWrite(RADIO, HIGH);
   toneStart = millis();
   toneUntil = toneStart + len;
   quietStart = toneUntil;
@@ -207,10 +206,24 @@ void playTone(bool dah, bool openEnded, bool copy) {
 void stopTone() {
   if (TONE) {
     noTone(BUZZER);
-  } else {
-    digitalWrite(BUZZER, LOW);
   }
+  digitalWrite(RADIO, LOW);
   quietStart = millis();
+}
+
+void serialDit() {
+  Serial.write('.');
+}
+
+void serialDah() {
+  Serial.write('-');
+}
+
+void serialKeyUpdate(bool leftDown, bool rightDown, bool straightDown) {
+  Serial.write((byte)(
+    (leftDown     ? 0b010 : 0b000) |
+    (rightDown    ? 0b001 : 0b000) |
+    (straightDown ? 0b100 : 0b000)));
 }
 
 void loop() {
@@ -218,6 +231,27 @@ void loop() {
   bool key = digitalRead(STRAIGHT_KEY) == LOW;
   bool left = digitalRead(PADDLE_LEFT) == LOW;
   bool right = digitalRead(PADDLE_RIGHT) == LOW;
+  if (state != lastState) {
+    switch (state) {
+      case Left:
+        serialKeyUpdate(true, false, false);
+        break;
+      case Right:
+        serialKeyUpdate(false, true, false);
+        break;
+      case LeftRight:
+      case RightLeft:
+        serialKeyUpdate(true, true, false);
+        break;
+      case Key:
+        serialKeyUpdate(false, false, true);
+        break;
+      default:
+        serialKeyUpdate(false, false, false);
+        break;
+    }
+    lastState = state;
+  }
   if (state != Key && toneUntil != 0 && ms > toneUntil) stopTone();
   switch (state) {
     case Waiting:
@@ -366,9 +400,19 @@ void loop() {
       break;
     case LeftRight:
       setDebounceTimeout();
-      if (!right && ms > debounceTimeout) {
-        state = Left;
-        break;
+      if (ms > debounceTimeout) {
+        if (!left && right) {
+          state = Right;
+          break;
+        }
+        if (left && !right) {
+          state = Left;
+          break;
+        }
+        if (!left && !right) {
+          state = Waiting;
+          break;
+        }
       }
       lastSqueeze = true;
       if (toneUntil == 0) {
@@ -385,9 +429,19 @@ void loop() {
       }
     case RightLeft:
       setDebounceTimeout();
-      if (!left && ms > debounceTimeout) {
-        state = Right;
-        break;
+      if (ms > debounceTimeout) {
+        if (!left && right) {
+          state = Right;
+          break;
+        }
+        if (left && !right) {
+          state = Left;
+          break;
+        }
+        if (!left && !right) {
+          state = Waiting;
+          break;
+        }
       }
       lastSqueeze = true;
       if (toneUntil == 0) {
@@ -465,10 +519,10 @@ void decode(bool dah) {
   if (dah) {
     p++;
     appendCode(DAH_CHAR);
-    Serial.write('-');
+    serialDah();
   } else {
     appendCode(DIT_CHAR);
-    Serial.write('.');
+    serialDit();
   }
   switch (p) {
     case 31: // backspace

@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>Test</title>
+        <title>CW Tools</title>
         <script>
             var connectedPort = null;
             var morse = "  ETIANMSURWDKGOHVF L PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
@@ -23,6 +23,7 @@
                     alert("Disconnected: " + JSON.stringify(e));
                 });
                 read();
+                drawKeyState();
             }
 
             function connect() {
@@ -49,6 +50,7 @@
             function disconnect() {
                 if (connectedPort != null) {
                     connectedPort.close();
+                    // TODO: reader busy/locked https://stackoverflow.com/questions/65748344/how-can-i-interrupt-a-reader-when-it-hangs-need-a-timeout-on-reader-read
                 }
             }
 
@@ -185,14 +187,56 @@
 
             }
 
+            var cursor = 0;
+            var leftDown = false;
+            var rightDown = false;
+            var straightDown = false;
+            function drawKeyState() {
+                var canvas = document.getElementById("canvas");
+                var ctx = canvas.getContext("2d");
+                ctx.fillStyle = "#FFF";
+                ctx.fillRect(cursor, 0, 1, 100);
+                if (straightDown) {
+                    ctx.fillStyle = "#000";
+                    ctx.fillRect(cursor, 0, 1, 10);
+                }
+                if (leftDown) {
+                    ctx.fillStyle = "#00F";
+                    ctx.fillRect(cursor, 15, 1, 10);
+                }
+                if (rightDown) {
+                    ctx.fillStyle = "#F00";
+                    ctx.fillRect(cursor, 30, 1, 10);
+                }
+                cursor++;
+                if (cursor >= 800) cursor = 0;
+                ctx.fillStyle = "#0F0";
+                ctx.fillRect(cursor, 0, 1, 100);
+                window.setTimeout(drawKeyState, 10);
+            }
+
+            function keyUpdate(left, right, straight) {
+                leftDown = left;
+                rightDown = right;
+                straightDown = straight;
+            }
+
             function read() {
                 if (connectedPort != null) {
                     const reader = connectedPort.readable.getReader();
                     reader.read().then(x =>
                     {
-                        copy(x.value);
+                        for (var i in x.value) {
+                            var v = x.value[i];
+                            if (v < 8) {
+                                document.getElementById("debug").innerText = v;
+                                keyUpdate((v & 0x2) != 0, (v & 0x1) != 0, (v & 0x4) != 0);
+                            } else {
+                                copy(v);
+                            }
+                        }
                         reader.releaseLock();
-                        window.setTimeout(read, 10);
+                        window.setTimeout(read, 1);
                     });
                 } else {
                     window.setTimeout(read, 10);
@@ -203,7 +247,10 @@
     <body onload="load()">
         <h1 id="copy"></h1>
         <h2 id="sent"></h2>
-        <textarea id="message" rows="5" cols="100"></textarea>
+        <h2 id="debug"></h2>
+        <textarea id="message" rows="5" cols="98"></textarea>
+        <hr />
+        <canvas id="canvas" width="800px" height="100px" style="border: 1px solid black"></canvas>
         <hr />
         <button id="connect" onclick="connect()">Connect</button>
         <button id="disconnect" onclick="disconnect()">Disconnect</button>
@@ -212,7 +259,12 @@
         <hr />
         <a href="javascript:send('CQ')">CQ</a>
         <a href="javascript:send('DE')">DE</a>
-        <a href="javascript:send('KK7HXU')">KK7HXU</a>
         <a href="javascript:send('K')">K</a>
+        <a href="javascript:send('OP')">OP</a>
+        <a href="javascript:send('NAME')">NAME</a>
+        <a href="javascript:send('IS')">IS</a>
+        <hr />
+        <a href="javascript:send('KK7HXU')">KK7HXU</a>
+        <a href="javascript:send('ASHLEY')">ASHLEY</a>
     </body>
 </html>
