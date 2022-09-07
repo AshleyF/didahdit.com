@@ -9,6 +9,64 @@
             var char = '';
             var sent = "";
 
+            var audioCtx;
+            var gain;
+
+            function startAudio() {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                var oscillator = audioCtx.createOscillator();
+                oscillator.frequency.value = 750;
+                gain = audioCtx.createGain();
+                gain.gain.value = 0;
+                oscillator.connect(gain);
+                gain.connect(audioCtx.destination);
+                oscillator.start(0);
+            }
+
+            var rate = 20; // WPM
+            var ditlen = 1.2 / rate;
+            var delay = 0.03;
+            var ramp = 0.001;
+
+            function toneStart() {
+                gain.gain.setTargetAtTime(1, audioCtx.currentTime + delay, ramp);
+            }
+
+            function toneStop() {
+                gain.gain.setTargetAtTime(0, audioCtx.currentTime + delay, ramp);
+            }
+
+            t = 0;
+
+            function setTime() {
+                var c = audioCtx.currentTime;
+                t = c > t ? c : t;
+            }
+
+            function dit() {
+                setTime();
+                gain.gain.setTargetAtTime(1, t, ramp);
+                gain.gain.setTargetAtTime(0, t + ditlen, ramp);
+                t += 2 * ditlen;
+            }
+
+            function dah() {
+                setTime();
+                gain.gain.setTargetAtTime(1, t, ramp);
+                gain.gain.setTargetAtTime(0, t + 3 * ditlen, ramp);
+                t += 4 * ditlen;
+            }
+
+            function characterBreak() {
+                setTime();
+                t += 4 * ditlen;
+            }
+
+            function wordBreak() {
+                setTime();
+                t += 8 * ditlen;
+            }
+
             function load() {
                 if (!("serial" in navigator)) {
                     // The Web Serial API is supported.
@@ -22,8 +80,14 @@
                     // Remove `e.target` from the list of available ports.
                     alert("Disconnected: " + JSON.stringify(e));
                 });
+                document.getElementById("message").addEventListener('keypress', (e) => {
+                    if (e.charCode == 13 && connectedPort != null) {
+                        sendMessage();
+                        e.target.value = "";
+                        e.preventDefault();
+                    }
+                })
                 read();
-                drawKeyState();
             }
 
             function connect() {
@@ -45,6 +109,9 @@
                     // The user didn't select a port.
                     alert("ERROR NO PORT CHOSEN: " + JSON.stringify(e));
                 });
+
+                drawKeyState();
+                startAudio();
             }
             
             function disconnect() {
@@ -80,6 +147,7 @@
                             data.push(32); // letter-break
                         }
                     }
+                    data.push(47); // final word break
                     const writer = connectedPort.writable.getWriter();
                     writer.write(new Uint8Array(data)).then(() => {
                         /* alert("WRITTEN"); */
@@ -109,7 +177,7 @@
                 document.getElementById("message").innerHTML = "";
             }
 
-            function copy(bytes) {
+            function copy(b) {
                 function setProsign(sign) {
                     // TODO
                 }
@@ -159,32 +227,32 @@
                             break;
                     }
                 }
-                for (var i in bytes) {
-                    var b = bytes[i];
-                    switch (b) {
-                        case 46: // dit
-                            p *= 2;
-                            updateCharacter();
-                            break;
-                        case 45: // dah
-                            p = p * 2 + 1;
-                            updateCharacter();
-                            break;
-                        case 32: // letter-break
-                            message += char;
-                            char = "";
-                            p = 1;
-                            updateDisplay();
-                            break;
-                        case 47: // word-break
-                            message += " ";
-                            char = "";
-                            p = 1;
-                            updateDisplay();
-                            break;
-                    }
+                switch (b) {
+                    case 46: // dit
+                        dit();
+                        p *= 2;
+                        updateCharacter();
+                        break;
+                    case 45: // dah
+                        dah();
+                        p = p * 2 + 1;
+                        updateCharacter();
+                        break;
+                    case 32: // letter-break
+                        characterBreak();
+                        message += char;
+                        char = "";
+                        p = 1;
+                        updateDisplay();
+                        break;
+                    case 47: // word-break
+                        wordBreak();
+                        message += " ";
+                        char = "";
+                        p = 1;
+                        updateDisplay();
+                        break;
                 }
-
             }
 
             var cursor = 0;
@@ -229,7 +297,7 @@
                         for (var i in x.value) {
                             var v = x.value[i];
                             if (v < 8) {
-                                document.getElementById("debug").innerText = v;
+                                //document.getElementById("debug").innerText = v;
                                 keyUpdate((v & 0x2) != 0, (v & 0x1) != 0, (v & 0x4) != 0);
                             } else {
                                 copy(v);

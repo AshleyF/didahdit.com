@@ -12,7 +12,7 @@ const int RADIO = 3;
 const int BUZZER = 13;
 
 const int FREQ = 600;
-const int WPM = 25;
+const int WPM = 20;
 const int DIT = 60000 / (WPM * 50);
 const int DAH = DIT * 3;
 const int LETTER = DIT * 3;
