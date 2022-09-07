@@ -26,7 +26,7 @@
             var rate = 20; // WPM
             var ditlen = 1.2 / rate;
             var delay = 0.03;
-            var ramp = 0.001;
+            var ramp = 0.01;
 
             function toneStart() {
                 gain.gain.setTargetAtTime(1, audioCtx.currentTime + delay, ramp);
@@ -36,7 +36,7 @@
                 gain.gain.setTargetAtTime(0, audioCtx.currentTime + delay, ramp);
             }
 
-            t = 0;
+            var t = 0;
 
             function setTime() {
                 var c = audioCtx.currentTime;
@@ -48,13 +48,21 @@
                 gain.gain.setTargetAtTime(1, t, ramp);
                 gain.gain.setTargetAtTime(0, t + ditlen, ramp);
                 t += 2 * ditlen;
+                tonePlaying = true;
+                window.setTimeout(_ =>
+                {
+                    tonePlaying = false;
+                }, ditlen * 1000);
             }
 
             function dah() {
                 setTime();
+                var len = 3 * ditlen;
                 gain.gain.setTargetAtTime(1, t, ramp);
-                gain.gain.setTargetAtTime(0, t + 3 * ditlen, ramp);
-                t += 4 * ditlen;
+                gain.gain.setTargetAtTime(0, t + len, ramp);
+                t += len + ditlen;
+                tonePlaying = true;
+                window.setTimeout(_ => tonePlaying = false, len * 1000);
             }
 
             function characterBreak() {
@@ -110,7 +118,7 @@
                     alert("ERROR NO PORT CHOSEN: " + JSON.stringify(e));
                 });
 
-                drawKeyState();
+                drawKeyAndToneState();
                 startAudio();
             }
             
@@ -259,28 +267,40 @@
             var leftDown = false;
             var rightDown = false;
             var straightDown = false;
-            function drawKeyState() {
+            var tonePlaying = false;
+            var lastTonePlaying = false;
+            function drawKeyAndToneState() {
+                const width = 800;
+                const height = 40;
                 var canvas = document.getElementById("canvas");
                 var ctx = canvas.getContext("2d");
-                ctx.fillStyle = "#FFF";
-                ctx.fillRect(cursor, 0, 1, 100);
+                if (tonePlaying != lastTonePlaying) {
+                    ctx.fillStyle = "#CCC"; // mark tone boundaries
+                    lastTonePlaying = tonePlaying;
+                } else {
+                    ctx.fillStyle = "#FFF"; // erase cursor
+                }
+                ctx.fillRect(cursor, 0, 1, height);
                 if (straightDown) {
-                    ctx.fillStyle = "#000";
-                    ctx.fillRect(cursor, 0, 1, 10);
+                    ctx.fillStyle = "#FF0";
+                    ctx.fillRect(cursor, 0, 1, 5);
                 }
                 if (leftDown) {
                     ctx.fillStyle = "#00F";
-                    ctx.fillRect(cursor, 15, 1, 10);
+                    ctx.fillRect(cursor, 10, 1, 5);
                 }
                 if (rightDown) {
                     ctx.fillStyle = "#F00";
-                    ctx.fillRect(cursor, 30, 1, 10);
+                    ctx.fillRect(cursor, 20, 1, 5);
                 }
-                cursor++;
-                if (cursor >= 800) cursor = 0;
+                if (tonePlaying) {
+                    ctx.fillStyle = "#000";
+                    ctx.fillRect(cursor, 30, 1, 5);
+                }
+                cursor = ++cursor % width;
                 ctx.fillStyle = "#0F0";
-                ctx.fillRect(cursor, 0, 1, 100);
-                window.setTimeout(drawKeyState, 10);
+                ctx.fillRect(cursor, 0, 1, height);
+                window.setTimeout(drawKeyAndToneState, 10);
             }
 
             function keyUpdate(left, right, straight) {
@@ -318,7 +338,7 @@
         <h2 id="debug"></h2>
         <textarea id="message" rows="5" cols="98"></textarea>
         <hr />
-        <canvas id="canvas" width="800px" height="100px" style="border: 1px solid black"></canvas>
+        <canvas id="canvas" width="800px" height="40px" style="border: 1px solid black"></canvas>
         <hr />
         <button id="connect" onclick="connect()">Connect</button>
         <button id="disconnect" onclick="disconnect()">Disconnect</button>
