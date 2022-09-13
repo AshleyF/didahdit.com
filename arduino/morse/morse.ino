@@ -2,7 +2,6 @@
 
 LiquidCrystal lcd(12, 11, 7, 6, 5, 4);
 
-bool MODE_B = true;
 bool TONE = false;
 
 const int PADDLE_LEFT = 8;
@@ -157,6 +156,12 @@ void setup() {
   lcd.createChar(RIGHT_BRACKET_CHAR, rightBracketChar);
 }
 
+enum Mode {
+  IambicA,
+  IambicB,
+  Ultimatic,
+} mode = Ultimatic;
+
 enum State {
   Waiting,
   Protocol,
@@ -267,7 +272,7 @@ void loop() {
           quietUntil = ms + PAUSE;
         }
       }
-      if (MODE_B && lastSqueeze && ms > quietUntil) {
+      if (mode == IambicB && lastSqueeze && ms > quietUntil) {
         lastSqueeze = false;
         toneUntil = ms + (oppositeLast ? DAH : DIT);
         playTone(oppositeLast, false, true);
@@ -370,7 +375,7 @@ void loop() {
       }
       if (ms > repeat) {
         playTone(false, false, true);
-        lastSqueeze = false;
+        if (mode == IambicB) lastSqueeze = false;
         toneUntil = ms + DIT;
         repeat = toneUntil + PAUSE;
       }
@@ -393,7 +398,7 @@ void loop() {
       }
       if (ms > repeat) {
         playTone(true, false, true);
-        lastSqueeze = false;
+        if (mode == IambicB) lastSqueeze = false;
         toneUntil = ms + DAH;
         repeat = toneUntil + PAUSE;
       }
@@ -414,7 +419,7 @@ void loop() {
           break;
         }
       }
-      lastSqueeze = true;
+      if (mode == IambicB) lastSqueeze = true;
       if (toneUntil == 0) {
         playTone(true, false, true);
         quietUntil = 0;
@@ -422,9 +427,14 @@ void loop() {
         repeat = toneUntil + PAUSE;
       }
       if (ms > repeat) {
-        long send = oppositeLast ? DAH : DIT;
-        playTone(oppositeLast, false, true);
-        toneUntil = ms + send;
+        if (mode == IambicB) {
+          long send = oppositeLast ? DAH : DIT;
+          playTone(oppositeLast, false, true);
+          toneUntil = ms + send;
+        } else if (mode == Ultimatic) {
+          playTone(true, false, true);
+          toneUntil = ms + DAH;
+        }
         repeat = toneUntil + PAUSE;
       }
     case RightLeft:
@@ -443,7 +453,7 @@ void loop() {
           break;
         }
       }
-      lastSqueeze = true;
+      if (mode == IambicB) lastSqueeze = true;
       if (toneUntil == 0) {
         playTone(false, false, true);
         quietUntil = 0;
@@ -451,9 +461,14 @@ void loop() {
         repeat = toneUntil + PAUSE;
       }
       if (ms > repeat) {
-        long send = oppositeLast ? DAH : DIT;
-        playTone(oppositeLast, false, true);
-        toneUntil = ms + send;
+        if (mode == IambicB) {
+          long send = oppositeLast ? DAH : DIT;
+          playTone(oppositeLast, false, true);
+          toneUntil = ms + send;
+        } else if (mode == Ultimatic) {
+          playTone(false, false, true);
+          toneUntil = ms + DIT;
+        }
         repeat = toneUntil + PAUSE;
       }
       break;

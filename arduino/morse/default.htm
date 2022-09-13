@@ -9,6 +9,7 @@
             var char = '';
             var sent = "";
 
+            var audioStarted = false;
             var audioCtx;
             var gain;
 
@@ -21,6 +22,7 @@
                 oscillator.connect(gain);
                 gain.connect(audioCtx.destination);
                 oscillator.start(0);
+                audioStarted = true;
             }
 
             var rate = 20; // WPM
@@ -29,33 +31,37 @@
             var ramp = 0.01;
 
             function toneStart() {
+                if (!audioStarted) startAudio();
                 gain.gain.setTargetAtTime(1, audioCtx.currentTime + delay, ramp);
             }
 
             function toneStop() {
+                if (!audioStarted) startAudio();
                 gain.gain.setTargetAtTime(0, audioCtx.currentTime + delay, ramp);
             }
 
             var t = 0;
 
             function setTime() {
+                if (!audioStarted) startAudio();
                 var c = audioCtx.currentTime;
                 t = c > t ? c : t;
             }
 
             function dit() {
+                p *= 2;
+                updateCharacter();
                 setTime();
                 gain.gain.setTargetAtTime(1, t, ramp);
                 gain.gain.setTargetAtTime(0, t + ditlen, ramp);
                 t += 2 * ditlen;
                 tonePlaying = true;
-                window.setTimeout(_ =>
-                {
-                    tonePlaying = false;
-                }, ditlen * 1000);
+                window.setTimeout(_ => tonePlaying = false, ditlen * 1000);
             }
 
             function dah() {
+                p = p * 2 + 1;
+                updateCharacter();
                 setTime();
                 var len = 3 * ditlen;
                 gain.gain.setTargetAtTime(1, t, ramp);
@@ -94,8 +100,39 @@
                         e.target.value = "";
                         e.preventDefault();
                     }
-                })
+                });
+                document.body.addEventListener('keydown', (e) => {
+                    if (!e.repeat) {
+                        switch (e.code) {
+                            case "Comma":
+                                leftDown = true;
+                                break;
+                            case "Period":
+                                rightDown = true;
+                                break;
+                            case "Slash":
+                                straightDown = true;
+                                break;
+                        }
+                    }
+                });
+                document.body.addEventListener('keyup', (e) => {
+                    if (!e.repeat) {
+                        switch (e.code) {
+                            case "Comma":
+                                leftDown = false;
+                                break;
+                            case "Period":
+                                rightDown = false;
+                                break;
+                            case "Slash":
+                                straightDown = false;
+                                break;
+                        }
+                    }
+                });
                 read();
+                drawKeyAndToneState();
             }
 
             function connect() {
@@ -117,9 +154,6 @@
                     // The user didn't select a port.
                     alert("ERROR NO PORT CHOSEN: " + JSON.stringify(e));
                 });
-
-                drawKeyAndToneState();
-                startAudio();
             }
             
             function disconnect() {
@@ -185,66 +219,63 @@
                 document.getElementById("message").innerHTML = "";
             }
 
-            function copy(b) {
+            function updateCharacter() {
                 function setProsign(sign) {
                     // TODO
                 }
-                function updateCharacter() {
-                    switch (p) {
-                        case 31: // backspace
+                switch (p) {
+                    case 31: // backspace
+                        // TODO
+                        break;
+                    case 21:
+                        setProsign("AA");
+                        break;
+                    case 34:
+                        setProsign("VE");
+                        break;
+                    case 37:
+                        setProsign("INT");
+                        break;
+                    case 42:
+                        setProsign("AR");
+                        break;
+                    case 53:
+                        setProsign("CT");
+                        break;
+                    case 69:
+                        setProsign("SK");
+                        break;
+                    case 103:
+                        setProsign("NJ");
+                        break;
+                    case 568:
+                        setProsign("SOS");
+                        break;
+                    case 256: // correction (clear)
+                        // TODO
+                        message = "";
+                        char = '';
+                        updateDisplay;
+                        break;
+                    default:
+                        if (p >= 121) { // unknown
                             // TODO
-                            break;
-                        case 21:
-                            setProsign("AA");
-                            break;
-                        case 34:
-                            setProsign("VE");
-                            break;
-                        case 37:
-                            setProsign("INT");
-                            break;
-                        case 42:
-                            setProsign("AR");
-                            break;
-                        case 53:
-                            setProsign("CT");
-                            break;
-                        case 69:
-                            setProsign("SK");
-                            break;
-                        case 103:
-                            setProsign("NJ");
-                            break;
-                        case 568:
-                            setProsign("SOS");
-                            break;
-                        case 256: // correction (clear)
-                            // TODO
-                            message = "";
-                            char = '';
-                            updateDisplay;
-                            break;
-                        default:
-                            if (p >= 121) { // unknown
-                                // TODO
-                                char = "";
-                            } else {
-                                char = morse[p];
-                            }
-                            updateDisplay();
-                            break;
-                    }
+                            char = "";
+                        } else {
+                            char = morse[p];
+                        }
+                        updateDisplay();
+                        break;
                 }
+            }
+
+            function copy(b) {
                 switch (b) {
                     case 46: // dit
                         dit();
-                        p *= 2;
-                        updateCharacter();
                         break;
                     case 45: // dah
                         dah();
-                        p = p * 2 + 1;
-                        updateCharacter();
                         break;
                     case 32: // letter-break
                         characterBreak();
@@ -282,7 +313,7 @@
                 }
                 ctx.fillRect(cursor, 0, 1, height);
                 if (straightDown) {
-                    ctx.fillStyle = "#FF0";
+                    ctx.fillStyle = "#F0F";
                     ctx.fillRect(cursor, 0, 1, 5);
                 }
                 if (leftDown) {
