@@ -10,17 +10,17 @@ const int STRAIGHT_KEY = 2;
 const int RADIO = 3;
 const int BUZZER = 13;
 
-const int FREQ = 600;
-const int WPM = 20;
-const int DIT = 60000 / (WPM * 50);
-const int DAH = DIT * 3;
-const int LETTER = DIT * 3;
-const int WORD = DIT * 7;
-const int PAUSE = DIT;
-const int SEND_FARNSWORTH = 3;
-const int COPY_FARNSWORTH = 3;
-const int DEBOUNCE = DIT / 4;
-const int SCROLL = DIT * 100;
+const int FREQ = 750;
+const long WPM = 25;
+const long DIT = 60000000 / (WPM * 50);
+const long DAH = DIT * 3;
+const long LETTER = DIT * 3;
+const long WORD = DIT * 7;
+const long PAUSE = DIT;
+const long SEND_FARNSWORTH = 3;
+const long COPY_FARNSWORTH = 3;
+const long DEBOUNCE = 2000;
+const long SCROLL = DIT * 100;
 
 const int DIT_CHAR = 0;
 const int DAH_CHAR = 1;
@@ -42,6 +42,28 @@ int offscreenLen = 0;
 const int MAX_CODE = 15;
 char code[MAX_CODE];
 int codeLen = 0;
+
+enum Mode {
+  IambicA,
+  IambicB,
+  Ultimatic,
+} mode = Ultimatic;
+
+enum DitDah {
+  None,
+  Dit,
+  Dah,
+} memory = None;
+
+enum State {
+  Waiting,
+  Protocol,
+  Key,
+  Left,
+  Right,
+  LeftRight,
+  RightLeft,
+} state = Waiting, lastState = Waiting;
 
 void setup() {
   Serial.begin(9600);
@@ -156,31 +178,15 @@ void setup() {
   lcd.createChar(RIGHT_BRACKET_CHAR, rightBracketChar);
 }
 
-enum Mode {
-  IambicA,
-  IambicB,
-  Ultimatic,
-} mode = Ultimatic;
-
-enum State {
-  Waiting,
-  Protocol,
-  Key,
-  Left,
-  Right,
-  LeftRight,
-  RightLeft,
-} state = Waiting, lastState = Waiting;
-
 long debounceTimeout = 0;
 
 void setDebounceTimeout() {
   if (debounceTimeout == 0) {
-    debounceTimeout = millis() + DEBOUNCE;
+    debounceTimeout = micros() + DEBOUNCE;
   }
 }
 
-bool oppositeLast = false; // true=Dah, false=Dit
+DitDah oppositeLast = None;
 
 bool lastOpenEndedTone = false;
 long toneStart = 0;
@@ -191,21 +197,30 @@ long repeat = 0;
 bool lastSqueeze = false;
 
 long quietStart = 0;
-void playTone(bool dah, bool openEnded, bool copy) {
-  long len = dah ? DAH : DIT;
-  lastOpenEndedTone = openEnded;
-  if (!openEnded && copy) {
-    decode(dah);
-    quietUntil = millis() + len + DIT;
+void playTone(DitDah ditDah, bool openEnded, bool copy) {
+  if (ditDah != None) {
+    long len = ditDah == Dah ? DAH : DIT;
+    lastOpenEndedTone = openEnded;
+    if (!openEnded && copy) {
+      decode(ditDah);
+      quietUntil = micros() + len + DIT;
+    }
+    oppositeLast = ditDah == Dit ? Dah : Dit;
+    if (TONE) {
+      tone(BUZZER, FREQ, len / 1000);
+    }
+    digitalWrite(RADIO, HIGH);
+    toneStart = micros();
+    toneUntil = toneStart + len;
+    quietStart = toneUntil;
   }
-  oppositeLast = !dah;
-  if (TONE) {
-    tone(BUZZER, FREQ, len);
-  }
-  digitalWrite(RADIO, HIGH);
-  toneStart = millis();
-  toneUntil = toneStart + len;
-  quietStart = toneUntil;
+}
+
+bool playMemory() {
+  if (memory == None) return false;
+  playTone(memory, false, true);
+  memory = None;
+  return true;
 }
 
 void stopTone() {
@@ -213,7 +228,7 @@ void stopTone() {
     noTone(BUZZER);
   }
   digitalWrite(RADIO, LOW);
-  quietStart = millis();
+  quietStart = micros();
 }
 
 void serialDit() {
@@ -226,13 +241,13 @@ void serialDah() {
 
 void serialKeyUpdate(bool leftDown, bool rightDown, bool straightDown) {
   Serial.write((byte)(
-    (leftDown     ? 0b010 : 0b000) |
-    (rightDown    ? 0b001 : 0b000) |
+    (leftDown     ? 0b001 : 0b000) |
+    (rightDown    ? 0b010 : 0b000) |
     (straightDown ? 0b100 : 0b000)));
 }
 
 void loop() {
-  long ms = millis();
+  long now = micros();
   bool key = digitalRead(STRAIGHT_KEY) == LOW;
   bool left = digitalRead(PADDLE_LEFT) == LOW;
   bool right = digitalRead(PADDLE_RIGHT) == LOW;
@@ -257,50 +272,57 @@ void loop() {
     }
     lastState = state;
   }
-  if (state != Key && toneUntil != 0 && ms > toneUntil) stopTone();
+  if (state != Key && toneUntil != 0 && now > toneUntil) stopTone();
   switch (state) {
     case Waiting:
-      debounceTimeout = 0;
-      if (toneUntil != 0 && ms > toneUntil) {
+      if (toneUntil != 0 && now > toneUntil) {
         stopTone();
         if (lastOpenEndedTone) {
-          decode(ms - toneStart >= DAH);
+          decode(now - toneStart >= DAH ? Dah : Dit);
         }
         toneUntil = 0;
         predictDah = 0;
         if (quietUntil == 0) {
-          quietUntil = ms + PAUSE;
+          quietUntil = now + PAUSE;
         }
       }
-      if (mode == IambicB && lastSqueeze && ms > quietUntil) {
+      if (mode == IambicB && lastSqueeze && now > quietUntil) {
         lastSqueeze = false;
-        toneUntil = ms + (oppositeLast ? DAH : DIT);
+        toneUntil = now + (oppositeLast == Dah ? DAH : DIT);
         playTone(oppositeLast, false, true);
       }
-      if (ms > quietUntil) {
-        if (ms > toneUntil && Serial.available() > 0) {
+      if (now > quietUntil && now > toneUntil) {
+        playMemory();
+        if (Serial.available() > 0) {
           state = Protocol;
           break;
         }
+      }
+      setDebounceTimeout();
+      if (now > debounceTimeout) {
+        debounceTimeout = 0;
         if (key) {
           state = Key;
           break;
         }
         if (left) {
           state = Left;
+          memory = Dit;
           break;
         }
         if (right) {
           state = Right;
+          memory = Dah;
           break;
         }
-
-        long time = ms - quietStart;
+      }
+      if (now > quietUntil) {
+        long time = now - quietStart;
         pause(time);
         if (time > SCROLL) {
           int len = offscreenLen + messageLen;
           if (len > 15) {
-            int scroll = ((time - SCROLL) / 350) % len;
+            int scroll = ((time - SCROLL) / 350000) % len;
             lcd.setCursor(0, 0);
             for (int i = 0; i < 16; i++) {
               int j = scroll + i;
@@ -313,99 +335,117 @@ void loop() {
     case Protocol:
       switch (Serial.read()) {
         case '.':
-          playTone(false, false, false);
+          playTone(Dit, false, false);
           quietUntil = 0;
-          toneUntil = ms + DIT;
+          toneUntil = now + DIT;
           break;
         case '-':
-          playTone(true, false, false);
+          playTone(Dah, false, false);
           quietUntil = 0;
-          toneUntil = ms + DAH;
+          toneUntil = now + DAH;
           break;
         case ' ':
-          quietUntil = ms + LETTER * SEND_FARNSWORTH;
+          quietUntil = now + LETTER * SEND_FARNSWORTH;
           break;
         case '/':
-          quietUntil = ms + WORD * SEND_FARNSWORTH;
+          quietUntil = now + WORD * SEND_FARNSWORTH;
           break;
       }
       state = Waiting;
       break;
     case Key:
       setDebounceTimeout();
-      if (!key && ms > debounceTimeout) {
+      if (!key && now > debounceTimeout) {
+        debounceTimeout = 0;
         state = Waiting;
         break;
       }
-      if (toneUntil == 0) {
-        playTone(true, true, true); // maximum, open-ended
-        quietUntil = 0;
-        toneUntil = ms + DIT; // minimum
-        predictDah = ms + DAH / 2;
-        repeat = ms + DAH + PAUSE;
-      }
-      if (predictDah != 0 && ms > predictDah) {
-        toneUntil += DIT * 2;
-        predictDah = 0;
-      }
-      if (ms > repeat) {
-        if (lastOpenEndedTone) {
-          decode(true); // must have been a dah to repeat
+      if (now > quietUntil) {
+        if (toneUntil == 0) {
+          playTone(Dah, true, true); // maximum, open-ended
+          quietUntil = 0;
+          toneUntil = now + DIT; // minimum
+          predictDah = now + DAH / 2;
+          repeat = now + DAH + PAUSE;
         }
-        playTone(true, false, true);
-        toneUntil = ms + DAH;
-        repeat = toneUntil + PAUSE;
+        if (predictDah != 0 && now > predictDah) {
+          toneUntil += DIT * 2;
+          predictDah = 0;
+        }
+        if (now > repeat) {
+          if (lastOpenEndedTone) {
+            decode(Dah); // must have been a dah to repeat
+          }
+          playTone(Dah, false, true);
+          toneUntil = now + DAH;
+          repeat = toneUntil + PAUSE;
+        }
       }
       break;
     case Left:
       setDebounceTimeout();
-      if (!left && ms > debounceTimeout) {
+      if (!left && now > debounceTimeout) {
+        debounceTimeout = 0;
         state = Waiting;
         break;
       }
       if (right) {
+        debounceTimeout = 0;
         state = LeftRight;
+        memory = Dah;
         break;
       }
-      if (toneUntil == 0) {
-        playTone(false, false, true);
-        quietUntil = 0;
-        toneUntil = ms + DIT;
-        repeat = toneUntil + PAUSE;
-      }
-      if (ms > repeat) {
-        playTone(false, false, true);
-        if (mode == IambicB) lastSqueeze = false;
-        toneUntil = ms + DIT;
-        repeat = toneUntil + PAUSE;
+      if (now > quietUntil) {
+        if (toneUntil == 0) {
+          playMemory();
+          quietUntil = 0;
+          toneUntil = now + DIT;
+          repeat = toneUntil + PAUSE;
+        }
+        if (now > repeat) {
+          if (!playMemory()) {
+            playTone(Dit, false, true);
+            if (mode == IambicB) lastSqueeze = false;
+            toneUntil = now + DIT;
+          }
+          repeat = toneUntil + PAUSE;
+        }
       }
       break;
     case Right:
       setDebounceTimeout();
-      if (!right && ms > debounceTimeout) {
+      if (!right && now > debounceTimeout) {
+        debounceTimeout = 0;
         state = Waiting;
         break;
       }
       if (left) {
+        debounceTimeout = 0;
         state = RightLeft;
+        memory = Dit;
         break;
       }
-      if (toneUntil == 0) {
-        playTone(true, false, true);
-        quietUntil = 0;
-        toneUntil = ms + DAH;
-        repeat = toneUntil + PAUSE;
-      }
-      if (ms > repeat) {
-        playTone(true, false, true);
-        if (mode == IambicB) lastSqueeze = false;
-        toneUntil = ms + DAH;
-        repeat = toneUntil + PAUSE;
+      if (now > quietUntil) {
+        if (toneUntil == 0) {
+          playMemory();
+          quietUntil = 0;
+          toneUntil = now + DAH;
+          repeat = toneUntil + PAUSE;
+        }
+        if (now > repeat) {
+          if (!playMemory()) {
+            playTone(Dah, false, true);
+            if (mode == IambicB) lastSqueeze = false;
+            toneUntil = now + DAH;
+          }
+          repeat = toneUntil + PAUSE;
+        }
       }
       break;
     case LeftRight:
       setDebounceTimeout();
-      if (ms > debounceTimeout) {
+      if (now > debounceTimeout) {
+        debounceTimeout = 0;
         if (!left && right) {
           state = Right;
           break;
@@ -421,25 +461,28 @@ void loop() {
       }
       if (mode == IambicB) lastSqueeze = true;
       if (toneUntil == 0) {
-        playTone(true, false, true);
+        playMemory();
         quietUntil = 0;
-        toneUntil = ms + DAH;
+        toneUntil = now + DAH;
         repeat = toneUntil + PAUSE;
       }
-      if (ms > repeat) {
-        if (mode == IambicB) {
-          long send = oppositeLast ? DAH : DIT;
-          playTone(oppositeLast, false, true);
-          toneUntil = ms + send;
-        } else if (mode == Ultimatic) {
-          playTone(true, false, true);
-          toneUntil = ms + DAH;
+      if (now > repeat) {
+        if (!playMemory()) {
+          if (mode == IambicB) {
+            long send = oppositeLast == Dah ? DAH : DIT;
+            playTone(oppositeLast, false, true);
+            toneUntil = now + send;
+          } else if (mode == Ultimatic) {
+            playTone(Dah, false, true);
+            toneUntil = now + DAH;
+          }
         }
         repeat = toneUntil + PAUSE;
       }
     case RightLeft:
       setDebounceTimeout();
-      if (ms > debounceTimeout) {
+      if (now > debounceTimeout) {
+        debounceTimeout = 0;
         if (!left && right) {
           state = Right;
           break;
@@ -455,19 +498,21 @@ void loop() {
       }
       if (mode == IambicB) lastSqueeze = true;
       if (toneUntil == 0) {
-        playTone(false, false, true);
+        playMemory();
         quietUntil = 0;
-        toneUntil = ms + DIT;
+        toneUntil = now + DIT;
         repeat = toneUntil + PAUSE;
       }
-      if (ms > repeat) {
-        if (mode == IambicB) {
-          long send = oppositeLast ? DAH : DIT;
-          playTone(oppositeLast, false, true);
-          toneUntil = ms + send;
-        } else if (mode == Ultimatic) {
-          playTone(false, false, true);
-          toneUntil = ms + DIT;
+      if (now > repeat) {
+        if (!playMemory()) {
+          if (mode == IambicB) {
+            long send = oppositeLast == Dah ? DAH : DIT;
+            playTone(oppositeLast, false, true);
+            toneUntil = now + send;
+          } else if (mode == Ultimatic) {
+            playTone(Dit, false, true);
+            toneUntil = now + DIT;
+          }
         }
         repeat = toneUntil + PAUSE;
       }
@@ -529,13 +574,13 @@ void setProsign(String sign) {
 
 bool recentBackspace = false;
 
-void decode(bool dah) {
+void decode(DitDah ditDah) {
   p = p * 2; // dit doubles, dah doubles + 1
-  if (dah) {
+  if (ditDah == Dah) {
     p++;
     appendCode(DAH_CHAR);
     serialDah();
-  } else {
+  } else if (ditDah == Dit) {
     appendCode(DIT_CHAR);
     serialDit();
   }

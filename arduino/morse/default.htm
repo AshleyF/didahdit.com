@@ -25,7 +25,7 @@
                 audioStarted = true;
             }
 
-            var rate = 20; // WPM
+            var rate = 25; // WPM
             var ditlen = 1.2 / rate;
             var delay = 0.03;
             var ramp = 0.01;
@@ -338,6 +338,7 @@
                 leftDown = left;
                 rightDown = right;
                 straightDown = straight;
+                //console.log("L " + leftDown + " R " + rightDown + " (" + new Date() + ")");
             }
 
             function read() {
