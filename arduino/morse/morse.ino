@@ -19,8 +19,8 @@ const long WORD = DIT * 7;
 const long PAUSE = DIT;
 const long SEND_FARNSWORTH = 3;
 const long COPY_FARNSWORTH = 3;
-const long DEBOUNCE = DIT;
 const long SCROLL = DIT * 100;
+const long DEBOUNCE = DIT;
 
 const int DIT_CHAR = 0;
 const int DAH_CHAR = 1;
@@ -178,13 +178,12 @@ void setup() {
   lcd.createChar(RIGHT_BRACKET_CHAR, rightBracketChar);
 }
 
+bool left = false;
 long lastLeftChange = 0;
+bool right = false;
 long lastRightChange = 0;
+bool key = false;
 long lastKeyChange = 0;
-
-bool debounce(long lastDown, long now) {
-    return (now - lastDown) > DEBOUNCE;
-}
 
 DitDah oppositeLast = None;
 
@@ -248,9 +247,31 @@ void serialKeyUpdate(bool leftDown, bool rightDown, bool straightDown) {
 
 void loop() {
   long now = micros();
-  bool key = digitalRead(STRAIGHT_KEY) == LOW;
-  bool left = digitalRead(PADDLE_LEFT) == LOW;
-  bool right = digitalRead(PADDLE_RIGHT) == LOW;
+  bool keyState = digitalRead(STRAIGHT_KEY) == LOW;
+  bool leftState = digitalRead(PADDLE_LEFT) == LOW;
+  bool rightState = digitalRead(PADDLE_RIGHT) == LOW;
+
+  if (keyState != key) {
+    if ((now - lastKeyChange) > DEBOUNCE) {
+      key = keyState;
+      lastKeyChange = now;
+    }
+  }
+
+  if (leftState != left) {
+    if ((now - lastLeftChange) > DEBOUNCE) {
+      left = leftState;
+      lastLeftChange = now;
+    }
+  }
+
+  if (rightState != right) {
+    if ((now - lastRightChange) > DEBOUNCE) {
+      right = rightState;
+      lastRightChange = now;
+    }
+  }
+
   if (state != lastState) {
     switch (state) {
       case Left:
@@ -298,20 +319,17 @@ void loop() {
           break;
         }
       }
-      if (key && debounce(lastKeyChange, now)) {
-        lastKeyChange = now;
+      if (key) {
         state = Key;
         break;
       }
-      if (left && debounce(lastLeftChange, now)) {
+      if (left) {
         memory = Dit;
-        lastLeftChange = now;
         state = Left;
         break;
       }
-      if (right && debounce(lastRightChange, now)) {
+      if (right) {
         memory = Dah;
-        lastRightChange = now;
         state = Right;
         break;
       }
@@ -354,7 +372,6 @@ void loop() {
       break;
     case Key:
       if (!key) {
-        lastKeyChange = now;
         state = Waiting;
         break;
       }
@@ -382,13 +399,11 @@ void loop() {
       break;
     case Left:
       if (!left) {
-        lastLeftChange = now;
         state = Waiting;
         break;
       }
-      if (right && debounce(lastRightChange, now)) {
+      if (right) {
         memory = Dah;
-        lastRightChange = now;
         state = LeftRight;
         break;
       }
@@ -411,13 +426,11 @@ void loop() {
       break;
     case Right:
       if (!right) {
-        lastRightChange = now;
         state = Waiting;
         break;
       }
-      if (left && debounce(lastLeftChange, now)) {
+      if (left) {
         memory = Dit;
-        lastLeftChange = now;
         state = RightLeft;
         break;
       }
@@ -440,17 +453,14 @@ void loop() {
       break;
     case LeftRight:
       if (!left && right) {
-        lastLeftChange = now;
         state = Right;
         break;
       }
       if (left && !right) {
-        lastRightChange = now;
         state = Left;
         break;
       }
       if (!left && !right) {
-        lastLeftChange = lastRightChange = now;
         state = Waiting;
         break;
       }
@@ -476,17 +486,14 @@ void loop() {
       }
     case RightLeft:
       if (!left && right) {
-        lastLeftChange = now;
         state = Right;
         break;
       }
       if (left && !right) {
-        lastRightChange = now;
         state = Left;
         break;
       }
       if (!left && !right) {
-        lastLeftChange = lastRightChange = now;
         state = Waiting;
         break;
       }
