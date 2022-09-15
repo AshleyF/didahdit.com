@@ -19,7 +19,8 @@ const long WORD = DIT * 7;
 const long PAUSE = DIT;
 const long SEND_FARNSWORTH = 3;
 const long COPY_FARNSWORTH = 3;
-const long DEBOUNCE = 10000;
+const long DEBOUNCE_DIT = DIT * 2;
+const long DEBOUNCE_DAH = DAH + DIT;
 const long SCROLL = DIT * 100;
 
 const int DIT_CHAR = 0;
@@ -182,8 +183,8 @@ long lastLeftDown = 0;
 long lastRightDown = 0;
 long lastKeyDown = 0;
 
-bool debounce(long lastDown, long now) {
-    return (now - lastDown) > DEBOUNCE;
+bool debounce(long lastDown, long now, long debounce) {
+    return (now - lastDown) > debounce;
 }
 
 DitDah oppositeLast = None;
@@ -298,23 +299,19 @@ void loop() {
           break;
         }
       }
-      if (key) {
+      if (key && debounce(lastKeyDown, now, DEBOUNCE_DAH)) {
         lastKeyDown = now;
         state = Key;
         break;
       }
-      if (left) {
-        if (debounce(lastLeftDown, now)) {
-          memory = Dit;
-        }
+      if (left && debounce(lastLeftDown, now, DEBOUNCE_DIT)) {
+        memory = Dit;
         lastLeftDown = now;
         state = Left;
         break;
       }
-      if (right) {
-        if (debounce(lastRightDown, now)) {
-          memory = Dah;
-        }
+      if (right && debounce(lastRightDown, now, DEBOUNCE_DAH)) {
+        memory = Dah;
         lastRightDown = now;
         state = Right;
         break;
@@ -357,7 +354,7 @@ void loop() {
       state = Waiting;
       break;
     case Key:
-      if (!key && debounce(lastKeyDown, now)) {
+      if (!key) {
         state = Waiting;
         break;
       }
@@ -384,14 +381,12 @@ void loop() {
       }
       break;
     case Left:
-      if (!left && debounce(lastLeftDown, now)) {
+      if (!left) {
         state = Waiting;
         break;
       }
-      if (right) {
-        if (debounce(lastRightDown, now)) {
-          memory = Dah;
-        }
+      if (right && debounce(lastRightDown, now, DEBOUNCE_DAH)) {
+        memory = Dah;
         lastRightDown = now;
         state = LeftRight;
         break;
@@ -414,14 +409,12 @@ void loop() {
       }
       break;
     case Right:
-      if (!right && debounce(lastRightDown, now)) {
+      if (!right) {
         state = Waiting;
         break;
       }
-      if (left) {
-        if (debounce(lastLeftDown, now)) {
-          memory = Dit;
-        }
+      if (left && debounce(lastLeftDown, now, DEBOUNCE_DIT)) {
+        memory = Dit;
         lastLeftDown = now;
         state = RightLeft;
         break;
@@ -444,15 +437,15 @@ void loop() {
       }
       break;
     case LeftRight:
-      if (!left && right && debounce(lastLeftDown, now)) {
+      if (!left && right) {
         state = Right;
         break;
       }
-      if (left && !right && debounce(lastRightDown, now)) {
+      if (left && !right) {
         state = Left;
         break;
       }
-      if (!left && !right && debounce(lastLeftDown, now) && debounce(lastRightDown, now)) {
+      if (!left && !right) {
         state = Waiting;
         break;
       }
@@ -477,15 +470,15 @@ void loop() {
         repeat = toneUntil + PAUSE;
       }
     case RightLeft:
-      if (!left && right && debounce(lastLeftDown, now)) {
+      if (!left && right) {
         state = Right;
         break;
       }
-      if (left && !right && debounce(lastRightDown, now)) {
+      if (left && !right) {
         state = Left;
         break;
       }
-      if (!left && !right && debounce(lastLeftDown, now) && debounce(lastRightDown, now)) {
+      if (!left && !right) {
         state = Waiting;
         break;
       }
