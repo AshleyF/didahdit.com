@@ -19,7 +19,7 @@ const long WORD = DIT * 7;
 const long PAUSE = DIT;
 const long SEND_FARNSWORTH = 3;
 const long COPY_FARNSWORTH = 3;
-const long DEBOUNCE = 2000;
+const long DEBOUNCE = 10000;
 const long SCROLL = DIT * 100;
 
 const int DIT_CHAR = 0;
@@ -178,12 +178,12 @@ void setup() {
   lcd.createChar(RIGHT_BRACKET_CHAR, rightBracketChar);
 }
 
-long debounceTimeout = 0;
+long lastLeftDown = 0;
+long lastRightDown = 0;
+long lastKeyDown = 0;
 
-void setDebounceTimeout() {
-  if (debounceTimeout == 0) {
-    debounceTimeout = micros() + DEBOUNCE;
-  }
+bool debounce(long lastDown, long now) {
+    return (now - lastDown) > DEBOUNCE;
 }
 
 DitDah oppositeLast = None;
@@ -298,23 +298,26 @@ void loop() {
           break;
         }
       }
-      setDebounceTimeout();
-      if (now > debounceTimeout) {
-        debounceTimeout = 0;
-        if (key) {
-          state = Key;
-          break;
-        }
-        if (left) {
-          state = Left;
+      if (key) {
+        lastKeyDown = now;
+        state = Key;
+        break;
+      }
+      if (left) {
+        if (debounce(lastLeftDown, now)) {
           memory = Dit;
-          break;
         }
-        if (right) {
-          state = Right;
+        lastLeftDown = now;
+        state = Left;
+        break;
+      }
+      if (right) {
+        if (debounce(lastRightDown, now)) {
           memory = Dah;
-          break;
         }
+        lastRightDown = now;
+        state = Right;
+        break;
       }
       if (now > quietUntil) {
         long time = now - quietStart;
@@ -354,9 +357,7 @@ void loop() {
       state = Waiting;
       break;
     case Key:
-      setDebounceTimeout();
-      if (!key && now > debounceTimeout) {
-        debounceTimeout = 0;
+      if (!key && debounce(lastKeyDown, now)) {
         state = Waiting;
         break;
       }
@@ -383,16 +384,16 @@ void loop() {
       }
       break;
     case Left:
-      setDebounceTimeout();
-      if (!left && now > debounceTimeout) {
-        debounceTimeout = 0;
+      if (!left && debounce(lastLeftDown, now)) {
         state = Waiting;
         break;
       }
       if (right) {
-        debounceTimeout = 0;
+        if (debounce(lastRightDown, now)) {
+          memory = Dah;
+        }
+        lastRightDown = now;
         state = LeftRight;
-        memory = Dah;
         break;
       }
       if (now > quietUntil) {
@@ -413,16 +414,16 @@ void loop() {
       }
       break;
     case Right:
-      setDebounceTimeout();
-      if (!right && now > debounceTimeout) {
-        debounceTimeout = 0;
+      if (!right && debounce(lastRightDown, now)) {
         state = Waiting;
         break;
       }
       if (left) {
-        debounceTimeout = 0;
+        if (debounce(lastLeftDown, now)) {
+          memory = Dit;
+        }
+        lastLeftDown = now;
         state = RightLeft;
-        memory = Dit;
         break;
       }
       if (now > quietUntil) {
@@ -443,21 +444,17 @@ void loop() {
       }
       break;
     case LeftRight:
-      setDebounceTimeout();
-      if (now > debounceTimeout) {
-        debounceTimeout = 0;
-        if (!left && right) {
-          state = Right;
-          break;
-        }
-        if (left && !right) {
-          state = Left;
-          break;
-        }
-        if (!left && !right) {
-          state = Waiting;
-          break;
-        }
+      if (!left && right && debounce(lastLeftDown, now)) {
+        state = Right;
+        break;
+      }
+      if (left && !right && debounce(lastRightDown, now)) {
+        state = Left;
+        break;
+      }
+      if (!left && !right && debounce(lastLeftDown, now) && debounce(lastRightDown, now)) {
+        state = Waiting;
+        break;
       }
       if (mode == IambicB) lastSqueeze = true;
       if (toneUntil == 0) {
@@ -480,21 +477,17 @@ void loop() {
         repeat = toneUntil + PAUSE;
       }
     case RightLeft:
-      setDebounceTimeout();
-      if (now > debounceTimeout) {
-        debounceTimeout = 0;
-        if (!left && right) {
-          state = Right;
-          break;
-        }
-        if (left && !right) {
-          state = Left;
-          break;
-        }
-        if (!left && !right) {
-          state = Waiting;
-          break;
-        }
+      if (!left && right && debounce(lastLeftDown, now)) {
+        state = Right;
+        break;
+      }
+      if (left && !right && debounce(lastRightDown, now)) {
+        state = Left;
+        break;
+      }
+      if (!left && !right && debounce(lastLeftDown, now) && debounce(lastRightDown, now)) {
+        state = Waiting;
+        break;
       }
       if (mode == IambicB) lastSqueeze = true;
       if (toneUntil == 0) {
