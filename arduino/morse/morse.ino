@@ -2,8 +2,6 @@
 
 LiquidCrystal lcd(12, 11, 7, 6, 5, 4);
 
-bool TONE = false;
-
 const int PADDLE_LEFT = 8;
 const int PADDLE_RIGHT = 9;
 const int STRAIGHT_KEY = 2;
@@ -11,16 +9,17 @@ const int RADIO = 3;
 const int BUZZER = 13;
 
 const int FREQ = 750;
-const long WPM = 25;
-const long DIT = 60000000 / (WPM * 50);
-const long DAH = DIT * 3;
-const long LETTER = DIT * 3;
-const long WORD = DIT * 7;
-const long PAUSE = DIT;
-const long SEND_FARNSWORTH = 3;
-const long COPY_FARNSWORTH = 3;
-const long SCROLL = DIT * 100;
-const long DEBOUNCE = DIT;
+
+long WPM;
+long DIT;
+long DAH;
+long LETTER;
+long WORD;
+long PAUSE;
+long SEND_FARNSWORTH;
+long COPY_FARNSWORTH;
+long SCROLL;
+long DEBOUNCE;
 
 const int DIT_CHAR = 0;
 const int DAH_CHAR = 1;
@@ -42,6 +41,8 @@ int offscreenLen = 0;
 const int MAX_CODE = 15;
 char code[MAX_CODE];
 int codeLen = 0;
+
+bool sideTone = true;
 
 enum Mode {
   IambicA,
@@ -65,7 +66,21 @@ enum State {
   RightLeft,
 } state = Waiting, lastState = Waiting;
 
+void setSpeed(long wpm) {
+  WPM = wpm;
+  DIT = 60000000 / (WPM * 50);
+  DAH = DIT * 3;
+  LETTER = DIT * 3;
+  WORD = DIT * 7;
+  PAUSE = DIT;
+  SEND_FARNSWORTH = 3;
+  COPY_FARNSWORTH = 3;
+  SCROLL = DIT * 100;
+  DEBOUNCE = DIT;
+}
+
 void setup() {
+  setSpeed(25);
   Serial.begin(9600);
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
@@ -205,7 +220,7 @@ void playTone(DitDah ditDah, bool openEnded, bool copy) {
       quietUntil = micros() + len + DIT;
     }
     oppositeLast = ditDah == Dit ? Dah : Dit;
-    if (TONE) {
+    if (sideTone) {
       tone(BUZZER, FREQ, len / 1000);
     }
     digitalWrite(RADIO, HIGH);
@@ -223,7 +238,7 @@ bool playMemory() {
 }
 
 void stopTone() {
-  if (TONE) {
+  if (sideTone) {
     noTone(BUZZER);
   }
   digitalWrite(RADIO, LOW);
@@ -232,10 +247,12 @@ void stopTone() {
 
 void serialDit() {
   Serial.write('.');
+  Serial.flush();
 }
 
 void serialDah() {
   Serial.write('-');
+  Serial.flush();
 }
 
 void serialKeyUpdate(bool leftDown, bool rightDown, bool straightDown) {
@@ -243,6 +260,7 @@ void serialKeyUpdate(bool leftDown, bool rightDown, bool straightDown) {
     (leftDown     ? 0b001 : 0b000) |
     (rightDown    ? 0b010 : 0b000) |
     (straightDown ? 0b100 : 0b000)));
+  Serial.flush();
 }
 
 void loop() {
@@ -307,13 +325,15 @@ void loop() {
           quietUntil = now + PAUSE;
         }
       }
-      if (mode == IambicB && lastSqueeze && now > quietUntil) {
+      if (mode == IambicB && lastSqueeze && now > toneUntil && now > quietUntil) {
         lastSqueeze = false;
         toneUntil = now + (oppositeLast == Dah ? DAH : DIT);
         playTone(oppositeLast, false, true);
       }
       if (now > quietUntil && now > toneUntil) {
-        playMemory();
+        if (mode != IambicB) {
+          playMemory();
+        }
         if (Serial.available() > 0) {
           state = Protocol;
           break;
@@ -350,6 +370,7 @@ void loop() {
       }
       break;
     case Protocol:
+      lcd.clear();
       switch (Serial.read()) {
         case '.':
           playTone(Dit, false, false);
@@ -367,6 +388,59 @@ void loop() {
         case '/':
           quietUntil = now + WORD * SEND_FARNSWORTH;
           break;
+        case 'A':
+          mode = IambicA;
+          break;
+        case 'B':
+          mode = IambicB;
+          break;
+        case 'U':
+          mode = Ultimatic;
+          break;
+        case 'Z':
+          sideTone = !sideTone;
+          break;
+        case 205:
+          setSpeed(5);
+          break;
+        case 210:
+          setSpeed(10);
+          break;
+        case 215:
+          setSpeed(15);
+          break;
+        case 220:
+          setSpeed(20);
+          break;
+        case 221:
+          setSpeed(21);
+          break;
+        case 222:
+          setSpeed(22);
+          break;
+        case 223:
+          setSpeed(23);
+          break;
+        case 224:
+          setSpeed(24);
+          break;
+        case 225:
+          setSpeed(25);
+          break;
+        case 230:
+          setSpeed(30);
+          break;
+        case 240:
+          setSpeed(40);
+          break;
+        case 250:
+          setSpeed(50);
+          break;
+        //default:
+        //  if (b > 200) {
+        //    setSpeed(b - 200);
+        //  }
+        //  break;
       }
       state = Waiting;
       break;
@@ -407,7 +481,7 @@ void loop() {
         state = LeftRight;
         break;
       }
-      if (now > quietUntil) {
+      if (now > quietUntil && now > toneUntil) {
         if (toneUntil == 0) {
           playMemory();
           quietUntil = 0;
@@ -434,7 +508,7 @@ void loop() {
         state = RightLeft;
         break;
       }
-      if (now > quietUntil) {
+      if (now > quietUntil && now > toneUntil) {
         if (toneUntil == 0) {
           playMemory();
           quietUntil = 0;
@@ -473,7 +547,7 @@ void loop() {
       }
       if (now > repeat) {
         if (!playMemory()) {
-          if (mode == IambicB) {
+          if (mode == IambicA || mode == IambicB) {
             long send = oppositeLast == Dah ? DAH : DIT;
             playTone(oppositeLast, false, true);
             toneUntil = now + send;
@@ -506,7 +580,7 @@ void loop() {
       }
       if (now > repeat) {
         if (!playMemory()) {
-          if (mode == IambicB) {
+          if (mode == IambicA || mode == IambicB) {
             long send = oppositeLast == Dah ? DAH : DIT;
             playTone(oppositeLast, false, true);
             toneUntil = now + send;
@@ -644,6 +718,7 @@ void decode(DitDah ditDah) {
 void pause(long len) {
   if (len > DIT * COPY_FARNSWORTH && p != 1) { // letter break
     Serial.write(' ');
+    Serial.flush();
     if (messageLen > 0) {
       switch (message[messageLen - 1]) {
         case BACKSPACE_CHAR: // backspace
@@ -676,6 +751,7 @@ void pause(long len) {
   }
   if (((!recentBackspace && len > WORD * COPY_FARNSWORTH) || (recentBackspace && len > 3 * WORD * COPY_FARNSWORTH)) && messageLen != 0 && message[messageLen - 1] != ' ') { // word break
     Serial.write("/");
+    Serial.flush();
     message[messageLen++] = ' ';
     scrollLeftIfNeeded();
     updateLcd();

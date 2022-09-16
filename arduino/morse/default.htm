@@ -25,14 +25,20 @@
                 audioStarted = true;
             }
 
-            var rate = 25; // WPM
-            var ditlen = 1.2 / rate;
+            var rate;
+            var ditlen;
             var delay = 0.03;
             var ramp = 0.01;
+
+            function setRate(wpm) {
+                rate = wpm;
+                ditlen = 1.2 / rate;
+            }
 
             function toneStart() {
                 if (!audioStarted) startAudio();
                 gain.gain.setTargetAtTime(1, audioCtx.currentTime + delay, ramp);
+                updateDrawUntil(0); // TODO: how long?
             }
 
             function toneStop() {
@@ -57,6 +63,7 @@
                 t += 2 * ditlen;
                 tonePlaying = true;
                 window.setTimeout(_ => tonePlaying = false, ditlen * 1000);
+                updateDrawUntil(ditlen);
             }
 
             function dah() {
@@ -69,6 +76,7 @@
                 t += len + ditlen;
                 tonePlaying = true;
                 window.setTimeout(_ => tonePlaying = false, len * 1000);
+                updateDrawUntil(len);
             }
 
             function characterBreak() {
@@ -131,6 +139,7 @@
                         }
                     }
                 });
+                setRate(25);
                 read();
                 drawKeyAndToneState();
             }
@@ -163,6 +172,26 @@
                 }
             }
 
+            function setMode(mode) { // (Iambic)A (Imabic)B U(ltimatic)
+                if (connectedPort != null) {
+                    const writer = connectedPort.writable.getWriter();
+                    writer.write(new Uint8Array([mode])).then(() => {
+                        writer.releaseLock();
+                    });
+                }
+            }
+
+            function setSpeed(speed) {
+                if (connectedPort != null) {
+                    const writer = connectedPort.writable.getWriter();
+                    writer.write(new Uint8Array([speed + 200])).then(() => {
+                        writer.releaseLock();
+                        setRate(speed);
+                    });
+                }
+            }
+
+
             function send(message) {
                 if (connectedPort != null) {
                     sent += message.toUpperCase() + ' ';
@@ -192,7 +221,6 @@
                     data.push(47); // final word break
                     const writer = connectedPort.writable.getWriter();
                     writer.write(new Uint8Array(data)).then(() => {
-                        /* alert("WRITTEN"); */
                         writer.releaseLock();
                     });
                 }
@@ -255,7 +283,7 @@
                         // TODO
                         message = "";
                         char = '';
-                        updateDisplay;
+                        updateDisplay();
                         break;
                     default:
                         if (p >= 121) { // unknown
@@ -294,43 +322,63 @@
                 }
             }
 
-            var cursor = 0;
+            var cursor = 20;
             var leftDown = false;
             var rightDown = false;
             var straightDown = false;
             var tonePlaying = false;
             var lastTonePlaying = false;
+            var drawUntil = 0;
+            var clearNext = false;
+
+            function updateDrawUntil(len) {
+                drawUntil = (new Date()).getTime() / 1000 + len + (ditlen * 7);
+            }
+
             function drawKeyAndToneState() {
                 const width = 800;
                 const height = 40;
-                var canvas = document.getElementById("canvas");
-                var ctx = canvas.getContext("2d");
-                if (tonePlaying != lastTonePlaying) {
-                    ctx.fillStyle = "#CCC"; // mark tone boundaries
-                    lastTonePlaying = tonePlaying;
-                } else {
-                    ctx.fillStyle = "#FFF"; // erase cursor
+                var now = (new Date()).getTime() / 1000;
+                if (now < drawUntil) {
+                    var canvas = document.getElementById("canvas");
+                    var ctx = canvas.getContext("2d");
+                    if (clearNext) {
+                        ctx.fillStyle = "#FFF";
+                        ctx.fillRect(0, 0, width, height);
+                        cursor = 20;
+                        clearNext = false;
+                    }
+                    if (tonePlaying != lastTonePlaying) {
+                        ctx.fillStyle = "#CCC"; // mark tone boundaries
+                        lastTonePlaying = tonePlaying;
+                    } else {
+                        ctx.fillStyle = "#FFF"; // erase cursor
+                    }
+                    ctx.fillRect(cursor, 0, 1, height);
+                    if (straightDown) {
+                        ctx.fillStyle = "#F0F";
+                        ctx.fillRect(cursor, 0, 1, 5);
+                    }
+                    if (leftDown) {
+                        ctx.fillStyle = "#00F";
+                        ctx.fillRect(cursor, 10, 1, 5);
+                    }
+                    if (rightDown) {
+                        ctx.fillStyle = "#F00";
+                        ctx.fillRect(cursor, 20, 1, 5);
+                    }
+                    if (tonePlaying) {
+                        ctx.fillStyle = "#000";
+                        ctx.fillRect(cursor, 30, 1, 5);
+                    }
+                    cursor = ++cursor % width;
+                    ctx.fillStyle = "#0F0";
+                    ctx.fillRect(cursor, 0, 1, height);
                 }
-                ctx.fillRect(cursor, 0, 1, height);
-                if (straightDown) {
-                    ctx.fillStyle = "#F0F";
-                    ctx.fillRect(cursor, 0, 1, 5);
+                if (now - drawUntil > ditlen * 7.0) {
+                    clearNext = true;
                 }
-                if (leftDown) {
-                    ctx.fillStyle = "#00F";
-                    ctx.fillRect(cursor, 10, 1, 5);
-                }
-                if (rightDown) {
-                    ctx.fillStyle = "#F00";
-                    ctx.fillRect(cursor, 20, 1, 5);
-                }
-                if (tonePlaying) {
-                    ctx.fillStyle = "#000";
-                    ctx.fillRect(cursor, 30, 1, 5);
-                }
-                cursor = ++cursor % width;
-                ctx.fillStyle = "#0F0";
-                ctx.fillRect(cursor, 0, 1, height);
+
                 window.setTimeout(drawKeyAndToneState, 10);
             }
 
@@ -356,7 +404,7 @@
                             }
                         }
                         reader.releaseLock();
-                        window.setTimeout(read, 1);
+                        window.setTimeout(read, 10);
                     });
                 } else {
                     window.setTimeout(read, 10);
@@ -376,6 +424,24 @@
         <button id="disconnect" onclick="disconnect()">Disconnect</button>
         <button id="send" onclick="sendMessage()">Send</button>
         <button id="reset" onclick="reset()">Clear</button>
+        <hr />
+        <button id="buzzer" onclick="setMode(90)">Buzzer</button>
+        <button id="iambicA" onclick="setMode(65)">Iambic A</button>
+        <button id="iambicB" onclick="setMode(66)">Iambic B</button>
+        <button id="iambicU" onclick="setMode(85)">Ultimatic</button>
+        <hr />
+        <button id="speed5" onclick="setSpeed(5)">5 WPM</button>
+        <button id="speed10" onclick="setSpeed(10)">10 WPM</button>
+        <button id="speed15" onclick="setSpeed(15)">15 WPM</button>
+        <button id="speed20" onclick="setSpeed(20)">20 WPM</button>
+        <button id="speed21" onclick="setSpeed(21)">21 WPM</button>
+        <button id="speed22" onclick="setSpeed(22)">22 WPM</button>
+        <button id="speed23" onclick="setSpeed(23)">23 WPM</button>
+        <button id="speed24" onclick="setSpeed(24)">24 WPM</button>
+        <button id="speed25" onclick="setSpeed(25)">25 WPM</button>
+        <button id="speed30" onclick="setSpeed(30)">30 WPM</button>
+        <button id="speed40" onclick="setSpeed(40)">40 WPM</button>
+        <button id="speed50" onclick="setSpeed(50)">50 WPM</button>
         <hr />
         <a href="javascript:send('CQ')">CQ</a>
         <a href="javascript:send('DE')">DE</a>
