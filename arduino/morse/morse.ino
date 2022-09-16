@@ -1,4 +1,5 @@
 #include <LiquidCrystal.h>
+#include <EEPROM.h>
 
 LiquidCrystal lcd(12, 11, 7, 6, 5, 4);
 
@@ -42,7 +43,7 @@ const int MAX_CODE = 15;
 char code[MAX_CODE];
 int codeLen = 0;
 
-bool sideTone = true;
+bool buzzerEnabled = false;
 
 enum Mode {
   IambicA,
@@ -66,7 +67,14 @@ enum State {
   RightLeft,
 } state = Waiting, lastState = Waiting;
 
+const int EEPROM_VERSION = 1;
+const int VERSION_SLOT = 8;
+const int MODE_SLOT = 9;
+const int SPEED_SLOT = 10;
+const int BUZZER_SLOT = 11;
+
 void setSpeed(long wpm) {
+  EEPROM.write(SPEED_SLOT, wpm);
   WPM = wpm;
   DIT = 60000000 / (WPM * 50);
   DAH = DIT * 3;
@@ -79,8 +87,46 @@ void setSpeed(long wpm) {
   DEBOUNCE = DIT;
 }
 
+void setMode(Mode m) {
+  EEPROM.write(MODE_SLOT, m);
+  mode = m;
+}
+
+void setBuzzer(bool buzz) {
+  EEPROM.write(BUZZER_SLOT, buzz ? 1 : 0);
+  buzzerEnabled = buzz;
+}
+
+int initEeprom() {
+  if (EEPROM.read(0) != 'D' ||
+      EEPROM.read(1) != 'I' || 
+      EEPROM.read(2) != 'D' || 
+      EEPROM.read(3) != 'A' || 
+      EEPROM.read(4) != 'H' || 
+      EEPROM.read(5) != 'D' || 
+      EEPROM.read(6) != 'I' || 
+      EEPROM.read(7) != 'T' ||
+      EEPROM.read(VERSION_SLOT) != EEPROM_VERSION) {
+        EEPROM.write(0, 'D');
+        EEPROM.write(1, 'I');
+        EEPROM.write(2, 'D');
+        EEPROM.write(3, 'A');
+        EEPROM.write(4, 'H');
+        EEPROM.write(5, 'D');
+        EEPROM.write(6, 'I');
+        EEPROM.write(7, 'T');
+        EEPROM.write(VERSION_SLOT, EEPROM_VERSION);
+        EEPROM.write(MODE_SLOT, 'U');
+        EEPROM.write(SPEED_SLOT, 25);
+        EEPROM.write(BUZZER_SLOT, 0);
+      }
+  setMode(EEPROM.read(MODE_SLOT));
+  setSpeed(EEPROM.read(SPEED_SLOT));
+  setBuzzer(EEPROM.read(BUZZER_SLOT) == 1);
+}
+
 void setup() {
-  setSpeed(25);
+  initEeprom();
   Serial.begin(9600);
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
@@ -220,7 +266,7 @@ void playTone(DitDah ditDah, bool openEnded, bool copy) {
       quietUntil = micros() + len + DIT;
     }
     oppositeLast = ditDah == Dit ? Dah : Dit;
-    if (sideTone) {
+    if (buzzerEnabled) {
       tone(BUZZER, FREQ, len / 1000);
     }
     digitalWrite(RADIO, HIGH);
@@ -238,7 +284,7 @@ bool playMemory() {
 }
 
 void stopTone() {
-  if (sideTone) {
+  if (buzzerEnabled) {
     noTone(BUZZER);
   }
   digitalWrite(RADIO, LOW);
@@ -370,7 +416,6 @@ void loop() {
       }
       break;
     case Protocol:
-      lcd.clear();
       switch (Serial.read()) {
         case '.':
           playTone(Dit, false, false);
@@ -389,16 +434,16 @@ void loop() {
           quietUntil = now + WORD * SEND_FARNSWORTH;
           break;
         case 'A':
-          mode = IambicA;
+          setMode(IambicA);
           break;
         case 'B':
-          mode = IambicB;
+          setMode(IambicB);
           break;
         case 'U':
-          mode = Ultimatic;
+          setMode(Ultimatic);
           break;
         case 'Z':
-          sideTone = !sideTone;
+          setBuzzer(!buzzerEnabled);
           break;
         case 205:
           setSpeed(5);
