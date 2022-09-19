@@ -329,24 +329,31 @@
             var tonePlaying = false;
             var lastTonePlaying = false;
             var drawUntil = 0;
-            var clearNext = false;
+            var clearNextKeyState = false;
+            var clearNextMessage = false;
 
             function updateDrawUntil(len) {
                 drawUntil = (new Date()).getTime() / 1000 + len + (ditlen * 7);
             }
 
             function drawKeyAndToneState() {
-                const width = 800;
-                const height = 40;
+                const width = 1450;
+                const height = 120;
+                const ribbon = 15;
                 var now = (new Date()).getTime() / 1000;
                 if (now < drawUntil) {
                     var canvas = document.getElementById("canvas");
                     var ctx = canvas.getContext("2d");
-                    if (clearNext) {
+                    if (clearNextKeyState) {
                         ctx.fillStyle = "#FFF";
                         ctx.fillRect(0, 0, width, height);
                         cursor = 20;
-                        clearNext = false;
+                        clearNextKeyState = false;
+                    }
+                    if (clearNextMessage) {
+                        message = "";
+                        updateDisplay();
+                        clearNextMessage = false;
                     }
                     if (tonePlaying != lastTonePlaying) {
                         ctx.fillStyle = "#CCC"; // mark tone boundaries
@@ -357,29 +364,32 @@
                     ctx.fillRect(cursor, 0, 1, height);
                     if (straightDown) {
                         ctx.fillStyle = "#F0F";
-                        ctx.fillRect(cursor, 0, 1, 5);
+                        ctx.fillRect(cursor, 0, 1, ribbon);
                     }
                     if (leftDown) {
                         ctx.fillStyle = "#00F";
-                        ctx.fillRect(cursor, 10, 1, 5);
+                        ctx.fillRect(cursor, ribbon * 2, 1, ribbon);
                     }
                     if (rightDown) {
                         ctx.fillStyle = "#F00";
-                        ctx.fillRect(cursor, 20, 1, 5);
+                        ctx.fillRect(cursor, ribbon * 4, 1, ribbon);
                     }
                     if (tonePlaying) {
                         ctx.fillStyle = "#000";
-                        ctx.fillRect(cursor, 30, 1, 5);
+                        ctx.fillRect(cursor, ribbon * 6, 1, ribbon);
                     }
                     cursor = ++cursor % width;
                     ctx.fillStyle = "#0F0";
                     ctx.fillRect(cursor, 0, 1, height);
                 }
                 if (now - drawUntil > ditlen * 7.0) {
-                    clearNext = true;
+                    clearNextKeyState = true;
+                }
+                if (now - drawUntil > ditlen * 50) {
+                    clearNextMessage = true;
                 }
 
-                window.setTimeout(drawKeyAndToneState, 10);
+                window.setTimeout(drawKeyAndToneState, 1);
             }
 
             function keyUpdate(left, right, straight) {
@@ -418,7 +428,7 @@
         <h2 id="debug"></h2>
         <textarea id="message" rows="5" cols="98"></textarea>
         <hr />
-        <canvas id="canvas" width="800px" height="40px" style="border: 1px solid black"></canvas>
+        <canvas id="canvas" width="1450px" height="120px" style="border: 1px solid black"></canvas>
         <hr />
         <button id="connect" onclick="connect()">Connect</button>
         <button id="disconnect" onclick="disconnect()">Disconnect</button>
