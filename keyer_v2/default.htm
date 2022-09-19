@@ -1,0 +1,465 @@
+<html>
+    <head>
+        <title>CW Tools</title>
+        <script>
+            var connectedPort = null;
+            var morse = "  ETIANMSURWDKGOHVF L PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
+            var p = 1;
+            var message = "";
+            var char = '';
+            var sent = "";
+
+            var audioStarted = false;
+            var audioCtx;
+            var gain;
+
+            function startAudio() {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                var oscillator = audioCtx.createOscillator();
+                oscillator.frequency.value = 750;
+                gain = audioCtx.createGain();
+                gain.gain.value = 0;
+                oscillator.connect(gain);
+                gain.connect(audioCtx.destination);
+                oscillator.start(0);
+                audioStarted = true;
+            }
+
+            var rate;
+            var ditlen;
+            var delay = 0.03;
+            var ramp = 0.01;
+
+            function setRate(wpm) {
+                rate = wpm;
+                ditlen = 1.2 / rate;
+            }
+
+            function toneStart() {
+                if (!audioStarted) startAudio();
+                gain.gain.setTargetAtTime(1, audioCtx.currentTime + delay, ramp);
+                updateDrawUntil(0); // TODO: how long?
+            }
+
+            function toneStop() {
+                if (!audioStarted) startAudio();
+                gain.gain.setTargetAtTime(0, audioCtx.currentTime + delay, ramp);
+            }
+
+            var t = 0;
+
+            function setTime() {
+                if (!audioStarted) startAudio();
+                var c = audioCtx.currentTime;
+                t = c > t ? c : t;
+            }
+
+            function dit() {
+                p *= 2;
+                updateCharacter();
+                setTime();
+                gain.gain.setTargetAtTime(1, t, ramp);
+                gain.gain.setTargetAtTime(0, t + ditlen, ramp);
+                t += 2 * ditlen;
+                tonePlaying = true;
+                window.setTimeout(_ => tonePlaying = false, ditlen * 1000);
+                updateDrawUntil(ditlen);
+            }
+
+            function dah() {
+                p = p * 2 + 1;
+                updateCharacter();
+                setTime();
+                var len = 3 * ditlen;
+                gain.gain.setTargetAtTime(1, t, ramp);
+                gain.gain.setTargetAtTime(0, t + len, ramp);
+                t += len + ditlen;
+                tonePlaying = true;
+                window.setTimeout(_ => tonePlaying = false, len * 1000);
+                updateDrawUntil(len);
+            }
+
+            function characterBreak() {
+                setTime();
+                t += 4 * ditlen;
+            }
+
+            function wordBreak() {
+                setTime();
+                t += 8 * ditlen;
+            }
+
+            function load() {
+                if (!("serial" in navigator)) {
+                    // The Web Serial API is supported.
+                    alert("SERIAL UNAVAILABLE");
+                }
+                navigator.serial.addEventListener('connect', (e) => {
+                    // Connect to `e.target` or add it to a list of available ports.
+                    //alert("Connected: " + JSON.stringify(e));
+                });
+                navigator.serial.addEventListener('disconnect', (e) => {
+                    // Remove `e.target` from the list of available ports.
+                    //alert("Disconnected: " + JSON.stringify(e));
+                });
+                document.getElementById("message").addEventListener('keypress', (e) => {
+                    if (e.charCode == 13 && connectedPort != null) {
+                        sendMessage();
+                        e.target.value = "";
+                        e.preventDefault();
+                    }
+                });
+                document.body.addEventListener('keydown', (e) => {
+                    if (!e.repeat) {
+                        switch (e.code) {
+                            case "Comma":
+                                leftDown = true;
+                                break;
+                            case "Period":
+                                rightDown = true;
+                                break;
+                            case "Slash":
+                                straightDown = true;
+                                break;
+                        }
+                    }
+                });
+                document.body.addEventListener('keyup', (e) => {
+                    if (!e.repeat) {
+                        switch (e.code) {
+                            case "Comma":
+                                leftDown = false;
+                                break;
+                            case "Period":
+                                rightDown = false;
+                                break;
+                            case "Slash":
+                                straightDown = false;
+                                break;
+                        }
+                    }
+                });
+                setRate(25);
+                read();
+                drawKeyAndToneState();
+            }
+
+            function connect() {
+                // const port = await navigator.serial.requestPort();
+                //const usbVendorId = 0xABCD;
+                //navigator.serial.requestPort({ filters: [{ usbVendorId }]}).then((port) => {
+                navigator.serial.requestPort().then((port) => {
+                    // Connect to `port` or add it to the list of available ports.
+                    port.open({ baudRate: 9600 }).then(() => {
+                        connectedPort = port;
+                    }).catch(e => {
+                        alert("ERROR OPENING: " + e);
+                    });
+                    //navigator.serial.getPorts().then((ports) => {
+                    //    // Initialize the list of available ports with `ports` on page load.
+                    //    alert("Ports: " + JSON.stringify(ports));
+                    //});
+                }).catch((e) => {
+                    // The user didn't select a port.
+                    alert("ERROR NO PORT CHOSEN: " + JSON.stringify(e));
+                });
+            }
+            
+            function disconnect() {
+                if (connectedPort != null) {
+                    connectedPort.close();
+                    // TODO: reader busy/locked https://stackoverflow.com/questions/65748344/how-can-i-interrupt-a-reader-when-it-hangs-need-a-timeout-on-reader-read
+                }
+            }
+
+            function setMode(mode) { // (Iambic)A (Imabic)B U(ltimatic)
+                if (connectedPort != null) {
+                    const writer = connectedPort.writable.getWriter();
+                    writer.write(new Uint8Array([mode])).then(() => {
+                        writer.releaseLock();
+                    });
+                }
+            }
+
+            function setSpeed(speed) {
+                if (connectedPort != null) {
+                    const writer = connectedPort.writable.getWriter();
+                    writer.write(new Uint8Array([speed + 200])).then(() => {
+                        writer.releaseLock();
+                        setRate(speed);
+                    });
+                }
+            }
+
+
+            function send(message) {
+                if (connectedPort != null) {
+                    sent += message.toUpperCase() + ' ';
+                    updateDisplay();
+                    data = [];
+                    word = [];
+                    for (var i in message) {
+                        var m = message[i];
+                        if (m == '/') { // word break
+                            data.push(47);
+                        } else {
+                            var j = morse.indexOf(m.toUpperCase());
+                            while (j > 1) {
+                                if (j % 2 == 0) {
+                                    word.push(46); // dit
+                                    j /= 2;
+                                } else {
+                                    word.push(45); // dah
+                                    j = (j - 1) / 2;
+                                }
+                            }
+                            data = data.concat(word.reverse());
+                            word = [];
+                            data.push(32); // letter-break
+                        }
+                    }
+                    data.push(47); // final word break
+                    const writer = connectedPort.writable.getWriter();
+                    writer.write(new Uint8Array(data)).then(() => {
+                        writer.releaseLock();
+                    });
+                }
+            }
+
+            function sendMessage() {
+                if (connectedPort != null) {
+                    var message = document.getElementById("message").value;
+                    send(message);
+                }
+            }
+
+            function updateDisplay() {
+                document.getElementById('copy').innerText = message + char;
+                document.getElementById("sent").innerHTML = sent;
+            }
+
+            function reset() {
+                p = 1;
+                message = "";
+                char = '';
+                sent = "";
+                updateDisplay();
+                document.getElementById("message").innerHTML = "";
+            }
+
+            function updateCharacter() {
+                function setProsign(sign) {
+                    // TODO
+                }
+                switch (p) {
+                    case 31: // backspace
+                        // TODO
+                        break;
+                    case 21:
+                        setProsign("AA");
+                        break;
+                    case 34:
+                        setProsign("VE");
+                        break;
+                    case 37:
+                        setProsign("INT");
+                        break;
+                    case 42:
+                        setProsign("AR");
+                        break;
+                    case 53:
+                        setProsign("CT");
+                        break;
+                    case 69:
+                        setProsign("SK");
+                        break;
+                    case 103:
+                        setProsign("NJ");
+                        break;
+                    case 568:
+                        setProsign("SOS");
+                        break;
+                    case 256: // correction (clear)
+                        // TODO
+                        message = "";
+                        char = '';
+                        updateDisplay();
+                        break;
+                    default:
+                        if (p >= 121) { // unknown
+                            // TODO
+                            char = "";
+                        } else {
+                            char = morse[p];
+                        }
+                        updateDisplay();
+                        break;
+                }
+            }
+
+            function copy(b) {
+                switch (b) {
+                    case 46: // dit
+                        dit();
+                        break;
+                    case 45: // dah
+                        dah();
+                        break;
+                    case 32: // letter-break
+                        characterBreak();
+                        message += char;
+                        char = "";
+                        p = 1;
+                        updateDisplay();
+                        break;
+                    case 47: // word-break
+                        wordBreak();
+                        message += " ";
+                        char = "";
+                        p = 1;
+                        updateDisplay();
+                        break;
+                }
+            }
+
+            var cursor = 20;
+            var leftDown = false;
+            var rightDown = false;
+            var straightDown = false;
+            var tonePlaying = false;
+            var lastTonePlaying = false;
+            var drawUntil = 0;
+            var clearNextKeyState = false;
+            var clearNextMessage = false;
+
+            function updateDrawUntil(len) {
+                drawUntil = (new Date()).getTime() / 1000 + len + (ditlen * 7);
+            }
+
+            function drawKeyAndToneState() {
+                const width = 1450;
+                const height = 120;
+                const ribbon = 15;
+                var now = (new Date()).getTime() / 1000;
+                if (true || now < drawUntil) {
+                    var canvas = document.getElementById("canvas");
+                    var ctx = canvas.getContext("2d");
+                    if (clearNextKeyState) {
+                        ctx.fillStyle = "#FFF";
+                        ctx.fillRect(0, 0, width, height);
+                        cursor = 20;
+                        clearNextKeyState = false;
+                    }
+                    if (clearNextMessage) {
+                        message = "";
+                        updateDisplay();
+                        clearNextMessage = false;
+                    }
+                    if (tonePlaying != lastTonePlaying) {
+                        ctx.fillStyle = "#CCC"; // mark tone boundaries
+                        lastTonePlaying = tonePlaying;
+                    } else {
+                        ctx.fillStyle = "#FFF"; // erase cursor
+                    }
+                    ctx.fillRect(cursor, 0, 1, height);
+                    if (straightDown) {
+                        ctx.fillStyle = "#F0F";
+                        ctx.fillRect(cursor, 0, 1, ribbon);
+                    }
+                    if (leftDown) {
+                        ctx.fillStyle = "#00F";
+                        ctx.fillRect(cursor, ribbon * 2, 1, ribbon);
+                    }
+                    if (rightDown) {
+                        ctx.fillStyle = "#F00";
+                        ctx.fillRect(cursor, ribbon * 4, 1, ribbon);
+                    }
+                    if (tonePlaying) {
+                        ctx.fillStyle = "#000";
+                        ctx.fillRect(cursor, ribbon * 6, 1, ribbon);
+                    }
+                    cursor = ++cursor % width;
+                    ctx.fillStyle = "#0F0";
+                    ctx.fillRect(cursor, 0, 1, height);
+                }
+                // if (now - drawUntil > ditlen * 7.0) {
+                //     clearNextKeyState = true;
+                // }
+                // if (now - drawUntil > ditlen * 50) {
+                //     clearNextMessage = true;
+                // }
+
+                window.setTimeout(drawKeyAndToneState, 1);
+            }
+
+            function keyUpdate(left, right, straight) {
+                leftDown = left;
+                rightDown = right;
+                straightDown = straight;
+                //console.log("L " + leftDown + " R " + rightDown + " (" + new Date() + ")");
+            }
+
+            function read() {
+                if (connectedPort != null) {
+                    const reader = connectedPort.readable.getReader();
+                    reader.read().then(x =>
+                    {
+                        for (var i in x.value) {
+                            var v = x.value[i];
+                            if (v < 8) {
+                                //document.getElementById("debug").innerText = v;
+                                keyUpdate((v & 0x2) != 0, (v & 0x1) != 0, (v & 0x4) != 0);
+                            } else {
+                                copy(v);
+                            }
+                        }
+                        reader.releaseLock();
+                        window.setTimeout(read, 10);
+                    });
+                } else {
+                    window.setTimeout(read, 10);
+                }
+            }
+        </script>
+    </head>
+    <body onload="load()">
+        <h1 id="copy"></h1>
+        <h2 id="sent"></h2>
+        <h2 id="debug"></h2>
+        <textarea id="message" rows="5" cols="98"></textarea>
+        <hr />
+        <canvas id="canvas" width="1450px" height="120px" style="border: 1px solid black"></canvas>
+        <hr />
+        <button id="connect" onclick="connect()">Connect</button>
+        <button id="disconnect" onclick="disconnect()">Disconnect</button>
+        <button id="send" onclick="sendMessage()">Send</button>
+        <button id="reset" onclick="reset()">Clear</button>
+        <hr />
+        <button id="iambicA" onclick="setMode(65)">Iambic A</button>
+        <button id="iambicB" onclick="setMode(66)">Iambic B</button>
+        <button id="iambicU" onclick="setMode(85)">Ultimatic</button>
+        <hr />
+        <button id="speed5" onclick="setSpeed(5)">5 WPM</button>
+        <button id="speed10" onclick="setSpeed(10)">10 WPM</button>
+        <button id="speed15" onclick="setSpeed(15)">15 WPM</button>
+        <button id="speed20" onclick="setSpeed(20)">20 WPM</button>
+        <button id="speed21" onclick="setSpeed(21)">21 WPM</button>
+        <button id="speed22" onclick="setSpeed(22)">22 WPM</button>
+        <button id="speed23" onclick="setSpeed(23)">23 WPM</button>
+        <button id="speed24" onclick="setSpeed(24)">24 WPM</button>
+        <button id="speed25" onclick="setSpeed(25)">25 WPM</button>
+        <button id="speed30" onclick="setSpeed(30)">30 WPM</button>
+        <button id="speed40" onclick="setSpeed(40)">40 WPM</button>
+        <button id="speed50" onclick="setSpeed(50)">50 WPM</button>
+        <hr />
+        <a href="javascript:send('CQ')">CQ</a>
+        <a href="javascript:send('DE')">DE</a>
+        <a href="javascript:send('K')">K</a>
+        <a href="javascript:send('OP')">OP</a>
+        <a href="javascript:send('NAME')">NAME</a>
+        <a href="javascript:send('IS')">IS</a>
+        <hr />
+        <a href="javascript:send('KK7HXU')">KK7HXU</a>
+        <a href="javascript:send('ASHLEY')">ASHLEY</a>
+    </body>
+</html>
