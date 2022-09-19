@@ -1,4 +1,4 @@
-# Arduino Morse Decoder
+# v1 Arduino Morse Decoder
 
 This is a very simple Arduino build of a sounder and LCD screen to display decoding.
 
@@ -10,10 +10,6 @@ It's simply a button on pin 2, a piezo buzzer on pin 3 and an LCD screen wired [
 
 It displays the dits and dahs on the second row while showing the decoding on the first.
 
-# Internals
+----
 
-There is not much interesting in the < 100 lines of code. However the decoding is a little bit clever and should be explained briefly.
-
-All of Morse Code is described in the single `morse` string. A pointer (`p`) begins at index `1`. Each dit doubles this pointer while each dah doubles and adds one. This way a tree is walked; each node of which is the decoded character.
-
-![Morse Tree](morse_tree.png)
+I've added connectors for a paddle and to a radio, a transistor to key the radio, and a serial interface with the web page to display what's being keyed and to send text to be keyed on the radio.
