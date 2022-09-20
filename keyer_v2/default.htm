@@ -2,12 +2,15 @@
     <head>
         <title>CW Tools</title>
         <script>
+            const canvasWidth = 1450;
+            const canvasHeight = 120;
+
             var connectedPort = null;
             var morse = "  ETIANMSURWDKGOHVF L PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
             var p = 1;
-            var message = "";
+            var message = "&nbsp;";
+            var sending = "";
             var char = '';
-            var sent = "";
 
             var audioStarted = false;
             var audioCtx;
@@ -90,6 +93,9 @@
                             case "Period":
                                 rightDown = true;
                                 break;
+                            case "Escape":
+                                reset();
+                                break;
                         }
                     }
                 });
@@ -160,7 +166,7 @@
 
             function send(message) {
                 if (connectedPort != null) {
-                    sent += message.toUpperCase() + ' ';
+                    sending += message.toUpperCase() + ' ';
                     updateDisplay();
                     data = [];
                     word = [];
@@ -194,28 +200,30 @@
 
             function sendMessage() {
                 if (connectedPort != null) {
-                    var message = document.getElementById("message").value;
-                    send(message);
+                    send(document.getElementById("message").value);
                 }
             }
 
             function updateDisplay() {
-                document.getElementById('copy').innerText = message + char;
-                document.getElementById("sent").innerHTML = sent;
+                document.getElementById('copy').innerHTML = message + char + "<span style='color:gainsboro'>" + sending + "</span>";
             }
 
             function reset() {
+                message = "&nbsp;";
+                sending = "";
                 p = 1;
-                message = "";
                 char = '';
-                sent = "";
                 updateDisplay();
-                document.getElementById("message").innerHTML = "";
+                var canvas = document.getElementById("canvas");
+                var ctx = canvas.getContext("2d");
+                ctx.fillStyle = "#FFF";
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                cursor = 20;
             }
 
             function updateCharacter() {
                 function setProsign(sign) {
-                    // TODO
+                    char = '<' + sign + '>';
                 }
                 switch (p) {
                     case 31: // backspace
@@ -247,20 +255,27 @@
                         break;
                     case 256: // correction (clear)
                         // TODO
-                        message = "";
+                        message = "&nbsp;";
                         char = '';
-                        updateDisplay();
                         break;
                     default:
                         if (p >= 121) { // unknown
                             // TODO
-                            char = "";
+                            char = '';
                         } else {
                             char = morse[p];
+                            if (char == ' ') { // unknown?
+                                char = '';
+                            }
                         }
-                        updateDisplay();
                         break;
                 }
+                if (sending.startsWith(char)) {
+                    sending = sending.substring(char.length);
+                } else if (sending.startsWith(' ') && sending.length > 1 && sending.substring(1).startsWith(char)) {
+                    sending = sending.substring(char.length + 1);
+                }
+                updateDisplay();
             }
 
             function copy(b) {
@@ -284,8 +299,6 @@
             var clearNextMessage = false;
 
             function drawKeyAndToneState() {
-                const width = 1450;
-                const height = 120;
                 const ribbon = 15;
                 var now = (new Date()).getTime() / 1000;
                 if (now < wordBreak) {
@@ -293,12 +306,12 @@
                     var ctx = canvas.getContext("2d");
                     if (clearNextKeyState) {
                         ctx.fillStyle = "#FFF";
-                        ctx.fillRect(0, 0, width, height);
+                        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
                         cursor = 20;
                         clearNextKeyState = false;
                     }
                     if (clearNextMessage) {
-                        message = "";
+                        message = "&nbsp;";
                         updateDisplay();
                         clearNextMessage = false;
                     }
@@ -309,7 +322,7 @@
                     } else {
                         ctx.fillStyle = "#FFF"; // erase cursor
                     }
-                    ctx.fillRect(cursor, 0, 1, height);
+                    ctx.fillRect(cursor, 0, 1, canvasHeight);
                     if (leftDown) {
                         ctx.fillStyle = "#00F";
                         ctx.fillRect(cursor, ribbon * 2, 1, ribbon);
@@ -322,9 +335,9 @@
                         ctx.fillStyle = "#000";
                         ctx.fillRect(cursor, ribbon * 6, 1, ribbon);
                     }
-                    cursor = ++cursor % width;
+                    cursor = ++cursor % canvasWidth;
                     ctx.fillStyle = "#0F0";
-                    ctx.fillRect(cursor, 0, 1, height);
+                    ctx.fillRect(cursor, 0, 1, canvasHeight);
                 }
                 if (now - letterBreak > 0) {
                     message += char;
@@ -368,9 +381,7 @@
         </script>
     </head>
     <body onload="load()">
-        <h1 id="copy"></h1>
-        <h2 id="sent"></h2>
-        <h2 id="debug"></h2>
+        <h1 id="copy">&nbsp;</h1>
         <textarea id="message" rows="5" cols="98"></textarea>
         <hr />
         <canvas id="canvas" width="1450px" height="120px" style="border: 1px solid black"></canvas>
