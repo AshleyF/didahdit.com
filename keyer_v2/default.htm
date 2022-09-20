@@ -35,58 +35,30 @@
                 ditlen = 1.2 / rate;
             }
 
-            function toneStart() {
-                if (!audioStarted) startAudio();
-                gain.gain.setTargetAtTime(1, audioCtx.currentTime + delay, ramp);
-                updateDrawUntil(0); // TODO: how long?
-            }
-
-            function toneStop() {
-                if (!audioStarted) startAudio();
-                gain.gain.setTargetAtTime(0, audioCtx.currentTime + delay, ramp);
-            }
-
             var t = 0;
-
-            function setTime() {
+            function playTone(len) {
                 if (!audioStarted) startAudio();
                 var c = audioCtx.currentTime;
                 t = c > t ? c : t;
+                gain.gain.setTargetAtTime(1, t, ramp);
+                t += len;
+                gain.gain.setTargetAtTime(0, t, ramp);
+                t += ditlen;
+                var end = (new Date()).getTime() / 1000 + len;
+                letterBreak = end + (ditlen * 3);
+                wordBreak = end + (ditlen * 21);
             }
 
             function dit() {
                 p *= 2;
                 updateCharacter();
-                setTime();
-                gain.gain.setTargetAtTime(1, t, ramp);
-                gain.gain.setTargetAtTime(0, t + ditlen, ramp);
-                t += 2 * ditlen;
-                tonePlaying = true;
-                window.setTimeout(_ => tonePlaying = false, ditlen * 1000);
-                updateDrawUntil(ditlen);
+                playTone(ditlen)
             }
 
             function dah() {
                 p = p * 2 + 1;
                 updateCharacter();
-                setTime();
-                var len = 3 * ditlen;
-                gain.gain.setTargetAtTime(1, t, ramp);
-                gain.gain.setTargetAtTime(0, t + len, ramp);
-                t += len + ditlen;
-                tonePlaying = true;
-                window.setTimeout(_ => tonePlaying = false, len * 1000);
-                updateDrawUntil(len);
-            }
-
-            function characterBreak() {
-                setTime();
-                t += 4 * ditlen;
-            }
-
-            function wordBreak() {
-                setTime();
-                t += 8 * ditlen;
+                playTone(3 * ditlen);
             }
 
             function load() {
@@ -118,9 +90,6 @@
                             case "Period":
                                 rightDown = true;
                                 break;
-                            case "Slash":
-                                straightDown = true;
-                                break;
                         }
                     }
                 });
@@ -132,9 +101,6 @@
                                 break;
                             case "Period":
                                 rightDown = false;
-                                break;
-                            case "Slash":
-                                straightDown = false;
                                 break;
                         }
                     }
@@ -305,43 +271,24 @@
                     case 45: // dah
                         dah();
                         break;
-                    case 32: // letter-break
-                        characterBreak();
-                        message += char;
-                        char = "";
-                        p = 1;
-                        updateDisplay();
-                        break;
-                    case 47: // word-break
-                        wordBreak();
-                        message += " ";
-                        char = "";
-                        p = 1;
-                        updateDisplay();
-                        break;
                 }
             }
 
             var cursor = 20;
             var leftDown = false;
             var rightDown = false;
-            var straightDown = false;
-            var tonePlaying = false;
-            var lastTonePlaying = false;
-            var drawUntil = 0;
+            var letterBreak = 0;
+            var wordBreak = 0;
+            var lastGain = 0;
             var clearNextKeyState = false;
             var clearNextMessage = false;
-
-            function updateDrawUntil(len) {
-                drawUntil = (new Date()).getTime() / 1000 + len + (ditlen * 7);
-            }
 
             function drawKeyAndToneState() {
                 const width = 1450;
                 const height = 120;
                 const ribbon = 15;
                 var now = (new Date()).getTime() / 1000;
-                if (true || now < drawUntil) {
+                if (now < wordBreak) {
                     var canvas = document.getElementById("canvas");
                     var ctx = canvas.getContext("2d");
                     if (clearNextKeyState) {
@@ -355,17 +302,14 @@
                         updateDisplay();
                         clearNextMessage = false;
                     }
-                    if (tonePlaying != lastTonePlaying) {
+                    var currentGain = gain.gain.value;
+                    if ((lastGain < 0.5 && currentGain > 0.5) || (lastGain > 0.5 && currentGain < 0.5)) {
                         ctx.fillStyle = "#CCC"; // mark tone boundaries
-                        lastTonePlaying = tonePlaying;
+                        lastGain = currentGain;
                     } else {
                         ctx.fillStyle = "#FFF"; // erase cursor
                     }
                     ctx.fillRect(cursor, 0, 1, height);
-                    if (straightDown) {
-                        ctx.fillStyle = "#F0F";
-                        ctx.fillRect(cursor, 0, 1, ribbon);
-                    }
                     if (leftDown) {
                         ctx.fillStyle = "#00F";
                         ctx.fillRect(cursor, ribbon * 2, 1, ribbon);
@@ -374,7 +318,7 @@
                         ctx.fillStyle = "#F00";
                         ctx.fillRect(cursor, ribbon * 4, 1, ribbon);
                     }
-                    if (tonePlaying) {
+                   if (currentGain > 0.5) {
                         ctx.fillStyle = "#000";
                         ctx.fillRect(cursor, ribbon * 6, 1, ribbon);
                     }
@@ -382,21 +326,22 @@
                     ctx.fillStyle = "#0F0";
                     ctx.fillRect(cursor, 0, 1, height);
                 }
-                // if (now - drawUntil > ditlen * 7.0) {
-                //     clearNextKeyState = true;
-                // }
-                // if (now - drawUntil > ditlen * 50) {
-                //     clearNextMessage = true;
-                // }
+                if (now - letterBreak > 0) {
+                    message += char;
+                    char = '';
+                    p = 1;
+                }
+                if (now - wordBreak > 0 && !message.endsWith(' ')) {
+                    message += ' ';
+                }
+                if (now - wordBreak > ditlen * 7.0) {
+                    clearNextKeyState = true;
+                }
+                if (now - wordBreak > ditlen * 50) {
+                    clearNextMessage = true;
+                }
 
                 window.setTimeout(drawKeyAndToneState, 1);
-            }
-
-            function keyUpdate(left, right, straight) {
-                leftDown = left;
-                rightDown = right;
-                straightDown = straight;
-                //console.log("L " + leftDown + " R " + rightDown + " (" + new Date() + ")");
             }
 
             function read() {
@@ -406,9 +351,9 @@
                     {
                         for (var i in x.value) {
                             var v = x.value[i];
-                            if (v < 8) {
-                                //document.getElementById("debug").innerText = v;
-                                keyUpdate((v & 0x2) != 0, (v & 0x1) != 0, (v & 0x4) != 0);
+                            if (v < 4) {
+                                leftDown = (v & 0x2) != 0;
+                                rightDown = (v & 0x1) != 0;
                             } else {
                                 copy(v);
                             }
@@ -453,11 +398,16 @@
         <button id="speed50" onclick="setSpeed(50)">50 WPM</button>
         <hr />
         <a href="javascript:send('CQ')">CQ</a>
+        <a href="javascript:send('CU')">CU</a>
         <a href="javascript:send('DE')">DE</a>
         <a href="javascript:send('K')">K</a>
         <a href="javascript:send('OP')">OP</a>
         <a href="javascript:send('NAME')">NAME</a>
+        <a href="javascript:send('UR')">UR</a>
+        <a href="javascript:send('RST')">RST</a>
         <a href="javascript:send('IS')">IS</a>
+        <a href="javascript:send('599')">599</a>
+        <a href="javascript:send('5NN')">5NN</a>
         <hr />
         <a href="javascript:send('KK7HXU')">KK7HXU</a>
         <a href="javascript:send('ASHLEY')">ASHLEY</a>

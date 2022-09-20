@@ -2,18 +2,6 @@ const int PADDLE_LEFT = 8;
 const int PADDLE_RIGHT = 9;
 const int RADIO = 10;
 
-const int FREQ = 750;
-
-long WPM;
-long DIT;
-long DAH;
-long LETTER;
-long WORD;
-long PAUSE;
-long SEND_FARNSWORTH;
-long COPY_FARNSWORTH;
-long DEBOUNCE;
-
 enum Mode {
   IambicA,
   IambicB,
@@ -35,6 +23,15 @@ enum State {
   RightLeft,
 } state = Waiting, lastState = Waiting;
 
+long WPM;
+long DIT;
+long DAH;
+long LETTER;
+long WORD;
+long PAUSE;
+long FARNSWORTH;
+long DEBOUNCE;
+
 void setSpeed(long wpm) {
   WPM = wpm;
   DIT = 60000000 / (WPM * 50);
@@ -42,8 +39,7 @@ void setSpeed(long wpm) {
   LETTER = DIT * 3;
   WORD = DIT * 7;
   PAUSE = DIT;
-  SEND_FARNSWORTH = 3;
-  COPY_FARNSWORTH = 3;
+  FARNSWORTH = 3;
   DEBOUNCE = DIT;
 }
 
@@ -59,7 +55,6 @@ void setup() {
   digitalWrite(PADDLE_RIGHT, HIGH);
   pinMode(RADIO, OUTPUT);
   setSpeed(25);
-  setMode(Ultimatic);
 }
 
 bool left = false;
@@ -73,11 +68,24 @@ long toneUntil = 0;
 long quietUntil = 0;
 bool lastSqueeze = false;
 
+void relay(DitDah ditDah) {
+  switch (ditDah) {
+    case Dit:
+      Serial.write('.');
+      break;
+    case Dah:
+      Serial.write('-');
+      break;
+  }
+  Serial.flush();
+}
+
 void playTone(DitDah ditDah) {
   if (ditDah != None) {
     long len = ditDah == Dah ? DAH : DIT;
     oppositeLast = ditDah == Dit ? Dah : Dit;
     digitalWrite(RADIO, HIGH);
+    relay(ditDah);
     toneUntil = micros() + len;
     quietUntil = toneUntil + PAUSE;
   }
@@ -140,13 +148,14 @@ void loop() {
     lastState = state;
   }
   if (toneUntil != 0 && now > toneUntil) stopTone();
+  int b;
   switch (state) {
     case Waiting:
-      if (mode == IambicB && lastSqueeze && now > toneUntil && now > quietUntil) {
+      if (mode == IambicB && lastSqueeze && now > quietUntil) {
         lastSqueeze = false;
         playTone(oppositeLast);
       }
-      if (now > quietUntil && now > toneUntil) {
+      if (now > quietUntil) {
         if (mode != IambicB) {
           playMemory();
         }
@@ -167,7 +176,8 @@ void loop() {
       }
       break;
     case Protocol:
-      switch (Serial.read()) {
+      b = Serial.read();
+      switch (b) {
         case '.':
           playTone(Dit);
           break;
@@ -175,10 +185,10 @@ void loop() {
           playTone(Dah);
           break;
         case ' ':
-          quietUntil = now + LETTER * SEND_FARNSWORTH;
+          quietUntil = now + LETTER * FARNSWORTH;
           break;
         case '/':
-          quietUntil = now + WORD * SEND_FARNSWORTH;
+          quietUntil = now + WORD * FARNSWORTH;
           break;
         case 'A':
           setMode(IambicA);
@@ -189,47 +199,11 @@ void loop() {
         case 'U':
           setMode(Ultimatic);
           break;
-        case 205:
-          setSpeed(5);
+        default:
+          if (b > 200) {
+            setSpeed(b - 200);
+          }
           break;
-        case 210:
-          setSpeed(10);
-          break;
-        case 215:
-          setSpeed(15);
-          break;
-        case 220:
-          setSpeed(20);
-          break;
-        case 221:
-          setSpeed(21);
-          break;
-        case 222:
-          setSpeed(22);
-          break;
-        case 223:
-          setSpeed(23);
-          break;
-        case 224:
-          setSpeed(24);
-          break;
-        case 225:
-          setSpeed(25);
-          break;
-        case 230:
-          setSpeed(30);
-          break;
-        case 240:
-          setSpeed(40);
-          break;
-        case 250:
-          setSpeed(50);
-          break;
-        //default:
-        //  if (b > 200) {
-        //    setSpeed(b - 200);
-        //  }
-        //  break;
       }
       state = Waiting;
       break;
@@ -243,15 +217,14 @@ void loop() {
         state = LeftRight;
         break;
       }
-      if (now > quietUntil && now > toneUntil) {
+      if (now > quietUntil) {
         if (toneUntil == 0) {
           playMemory();
-          quietUntil = 0;
         }
         if (now > quietUntil) {
           if (!playMemory()) {
             playTone(Dit);
-            if (mode == IambicB) lastSqueeze = false;
+            lastSqueeze = false;
           }
         }
       }
@@ -266,15 +239,14 @@ void loop() {
         state = RightLeft;
         break;
       }
-      if (now > quietUntil && now > toneUntil) {
+      if (now > quietUntil) {
         if (toneUntil == 0) {
           playMemory();
-          quietUntil = 0;
         }
         if (now > quietUntil) {
           if (!playMemory()) {
             playTone(Dah);
-            if (mode == IambicB) lastSqueeze = false;
+            lastSqueeze = false;
           }
         }
       }
@@ -292,7 +264,7 @@ void loop() {
         state = Waiting;
         break;
       }
-      if (mode == IambicB) lastSqueeze = true;
+      lastSqueeze = true;
       if (toneUntil == 0) {
         playMemory();
       }
@@ -318,7 +290,7 @@ void loop() {
         state = Waiting;
         break;
       }
-      if (mode == IambicB) lastSqueeze = true;
+      lastSqueeze = true;
       if (toneUntil == 0) {
         playMemory();
       }
