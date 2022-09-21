@@ -1,9 +1,19 @@
 <html>
     <head>
         <title>CW Tools</title>
+        <style>
+            body {
+                background-color: black;
+                color: white;
+                font-family: sans-serif; }
+            a { color: #eee; }
+            button { background-color: #555; color: #eee; }
+            textarea { background-color: #555; color: #eee; }
+            hr { color: #555; }
+        </style>
         <script>
             const canvasWidth = 1450;
-            const canvasHeight = 120;
+            const canvasHeight = 64;
 
             var connectedPort = null;
             var morse = "  ETIANMSURWDKGOHVF L PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
@@ -111,7 +121,8 @@
                         }
                     }
                 });
-                setRate(25);
+                reset();
+                setRate(20);
                 read();
                 drawKeyAndToneState();
             }
@@ -205,7 +216,7 @@
             }
 
             function updateDisplay() {
-                document.getElementById('copy').innerHTML = message + char + "<span style='color:gainsboro'>" + sending + "</span>";
+                document.getElementById('copy').innerHTML = message + char + "<span style='color:#555'>" + sending + "</span>";
             }
 
             function reset() {
@@ -216,14 +227,14 @@
                 updateDisplay();
                 var canvas = document.getElementById("canvas");
                 var ctx = canvas.getContext("2d");
-                ctx.fillStyle = "#FFF";
+                ctx.fillStyle = "#000";
                 ctx.fillRect(0, 0, canvasWidth, canvasHeight);
                 cursor = 20;
             }
 
             function updateCharacter() {
                 function setProsign(sign) {
-                    char = '<' + sign + '>';
+                    char = '&lt;' + sign + '&gt;';
                 }
                 switch (p) {
                     case 31: // backspace
@@ -299,13 +310,13 @@
             var clearNextMessage = false;
 
             function drawKeyAndToneState() {
-                const ribbon = 15;
+                const ribbon = canvasHeight / 8;
                 var now = (new Date()).getTime() / 1000;
                 if (now < wordBreak) {
                     var canvas = document.getElementById("canvas");
                     var ctx = canvas.getContext("2d");
                     if (clearNextKeyState) {
-                        ctx.fillStyle = "#FFF";
+                        ctx.fillStyle = "#000";
                         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
                         cursor = 20;
                         clearNextKeyState = false;
@@ -317,23 +328,23 @@
                     }
                     var currentGain = gain.gain.value;
                     if ((lastGain < 0.5 && currentGain > 0.5) || (lastGain > 0.5 && currentGain < 0.5)) {
-                        ctx.fillStyle = "#CCC"; // mark tone boundaries
+                        ctx.fillStyle = "#555"; // mark tone boundaries
                         lastGain = currentGain;
                     } else {
-                        ctx.fillStyle = "#FFF"; // erase cursor
+                        ctx.fillStyle = "#000"; // erase cursor
                     }
                     ctx.fillRect(cursor, 0, 1, canvasHeight);
                     if (leftDown) {
                         ctx.fillStyle = "#00F";
-                        ctx.fillRect(cursor, ribbon * 2, 1, ribbon);
+                        ctx.fillRect(cursor, ribbon, 1, ribbon);
                     }
                     if (rightDown) {
                         ctx.fillStyle = "#F00";
-                        ctx.fillRect(cursor, ribbon * 4, 1, ribbon);
+                        ctx.fillRect(cursor, ribbon * 3, 1, ribbon);
                     }
                    if (currentGain > 0.5) {
-                        ctx.fillStyle = "#000";
-                        ctx.fillRect(cursor, ribbon * 6, 1, ribbon);
+                        ctx.fillStyle = "#fff";
+                        ctx.fillRect(cursor, ribbon * 5, 1, ribbon * 2);
                     }
                     cursor = ++cursor % canvasWidth;
                     ctx.fillStyle = "#0F0";
@@ -384,7 +395,7 @@
         <h1 id="copy">&nbsp;</h1>
         <textarea id="message" rows="5" cols="98"></textarea>
         <hr />
-        <canvas id="canvas" width="1450px" height="120px" style="border: 1px solid black"></canvas>
+        <canvas id="canvas" width="1450px" height="64px" style="border: 1px solid black"></canvas>
         <hr />
         <button id="connect" onclick="connect()">Connect</button>
         <button id="disconnect" onclick="disconnect()">Disconnect</button>

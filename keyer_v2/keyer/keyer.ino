@@ -1,3 +1,6 @@
+// BUG: Squeeze left+right and release between first dit and dah -- extra dit still sent
+// FEATURE: Upgrade dit to dah mid-dit by pressing right paddle while dit in progress (Ultimatic-only?)
+
 const int PADDLE_LEFT = 8;
 const int PADDLE_RIGHT = 9;
 const int RADIO = 10;
@@ -54,7 +57,7 @@ void setup() {
   pinMode(PADDLE_RIGHT, INPUT);
   digitalWrite(PADDLE_RIGHT, HIGH);
   pinMode(RADIO, OUTPUT);
-  setSpeed(25);
+  setSpeed(20);
 }
 
 bool left = false;
@@ -151,10 +154,6 @@ void loop() {
   int b;
   switch (state) {
     case Waiting:
-      if (mode == IambicB && lastSqueeze && now > quietUntil) {
-        lastSqueeze = false;
-        playTone(oppositeLast);
-      }
       if (now > quietUntil) {
         if (mode != IambicB) {
           playMemory();
@@ -162,6 +161,10 @@ void loop() {
         if (Serial.available() > 0) {
           state = Protocol;
           break;
+        }
+        if (mode == IambicB && lastSqueeze) {
+          lastSqueeze = false;
+          playTone(oppositeLast);
         }
       }
       if (left) {
@@ -224,7 +227,7 @@ void loop() {
         if (now > quietUntil) {
           if (!playMemory()) {
             playTone(Dit);
-            lastSqueeze = false;
+            if (mode == IambicB) lastSqueeze = false;
           }
         }
       }
@@ -246,7 +249,7 @@ void loop() {
         if (now > quietUntil) {
           if (!playMemory()) {
             playTone(Dah);
-            lastSqueeze = false;
+            if (mode == IambicB) lastSqueeze = false;
           }
         }
       }
@@ -264,7 +267,7 @@ void loop() {
         state = Waiting;
         break;
       }
-      lastSqueeze = true;
+      if (mode == IambicB) lastSqueeze = true;
       if (toneUntil == 0) {
         playMemory();
       }
@@ -290,7 +293,7 @@ void loop() {
         state = Waiting;
         break;
       }
-      lastSqueeze = true;
+      if (mode == IambicB) lastSqueeze = true;
       if (toneUntil == 0) {
         playMemory();
       }
