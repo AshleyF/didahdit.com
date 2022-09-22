@@ -1,5 +1,5 @@
-// BUG: Squeeze left+right and release between first dit and dah -- extra dit still sent
 // FEATURE: Upgrade dit to dah mid-dit by pressing right paddle while dit in progress (Ultimatic-only?)
+// FEATURE: Sending speed dictated by PC-side (tone+durration, quiet+durration)
 
 const int PADDLE_LEFT = 8;
 const int PADDLE_RIGHT = 9;
@@ -64,31 +64,23 @@ bool left = false;
 long lastLeftChange = 0;
 bool right = false;
 long lastRightChange = 0;
-
-DitDah oppositeLast = None;
-
+long now;
 long toneUntil = 0;
 long quietUntil = 0;
 bool lastSqueeze = false;
+DitDah oppositeLast = None;
 
-void relay(DitDah ditDah) {
-  switch (ditDah) {
-    case Dit:
-      Serial.write('.');
-      break;
-    case Dah:
-      Serial.write('-');
-      break;
-  }
-  Serial.flush();
+DitDah opposite(DitDah ditDah) {
+  return ditDah == Dit ? Dah : Dit;
 }
 
 void playTone(DitDah ditDah) {
-  if (ditDah != None) {
+  if (ditDah != None && now > quietUntil) {
     long len = ditDah == Dah ? DAH : DIT;
-    oppositeLast = ditDah == Dit ? Dah : Dit;
+    oppositeLast = opposite(ditDah);
     digitalWrite(RADIO, HIGH);
-    relay(ditDah);
+    Serial.write(ditDah == Dit ? '.' : '-');
+    Serial.flush();
     toneUntil = micros() + len;
     quietUntil = toneUntil + PAUSE;
   }
@@ -113,25 +105,22 @@ void serialKeyUpdate(bool leftDown, bool rightDown) {
   Serial.flush();
 }
 
-void loop() {
-  long now = micros();
-  bool leftState = digitalRead(PADDLE_LEFT) == LOW;
-  bool rightState = digitalRead(PADDLE_RIGHT) == LOW;
-
+void debounce(bool leftState, bool rightState) {
   if (leftState != left) {
     if ((now - lastLeftChange) > DEBOUNCE) {
       left = leftState;
       lastLeftChange = now;
     }
   }
-
   if (rightState != right) {
     if ((now - lastRightChange) > DEBOUNCE) {
       right = rightState;
       lastRightChange = now;
     }
   }
+}
 
+void serialRelayState() {
   if (state != lastState) {
     switch (state) {
       case Left:
@@ -150,162 +139,126 @@ void loop() {
     }
     lastState = state;
   }
+}
+
+void leftRightPaddle(bool current, DitDah currentDitDah, bool other, State oppositeState) {
+  if (!current) {
+    state = Waiting;
+    return;
+  }
+  if (other) {
+    memory = opposite(currentDitDah);
+    state = oppositeState;
+    return;
+  }
+  if (now > quietUntil) {
+    if (!playMemory()) {
+      playTone(currentDitDah);
+      if (mode == IambicB) lastSqueeze = false;
+    }
+  }
+}
+
+void squeezePaddle(DitDah currentDitDah) {
+  if (!left && right) {
+    state = Right;
+    return;
+  }
+  if (left && !right) {
+    state = Left;
+    return;
+  }
+  if (!left && !right) {
+    state = Waiting;
+    return;
+  }
+  if (mode == IambicB) lastSqueeze = true;
+  if (now > quietUntil) {
+    if (toneUntil == 0) playMemory();
+    if (mode == IambicA || mode == IambicB) {
+      playTone(oppositeLast);
+    } else if (mode == Ultimatic) {
+      playTone(currentDitDah);
+    }
+  }
+}
+
+void protocol() {
+  int b = Serial.read();
+  switch (b) {
+    case '.':
+      playTone(Dit);
+      break;
+    case '-':
+      playTone(Dah);
+      break;
+    case ' ':
+      quietUntil = now + LETTER * FARNSWORTH;
+      break;
+    case '/':
+      quietUntil = now + WORD * FARNSWORTH;
+      break;
+    case 'A':
+      setMode(IambicA);
+      break;
+    case 'B':
+      setMode(IambicB);
+      break;
+    case 'U':
+      setMode(Ultimatic);
+      break;
+    default:
+      if (b > 200) {
+        setSpeed(b - 200);
+      }
+      break;
+  }
+  state = Waiting;
+}
+
+void waiting() {
+  if (now > quietUntil) {
+    if (mode != IambicB) playMemory();
+    if (Serial.available() > 0) {
+      state = Protocol;
+      return;
+    }
+    if (mode == IambicB && lastSqueeze) {
+      lastSqueeze = false;
+      playTone(oppositeLast);
+    }
+  }
+  if (left) {
+    memory = Dit;
+    state = Left;
+  } else if (right) {
+    memory = Dah;
+    state = Right;
+  }
+}
+
+void loop() {
+  now = micros();
+  debounce(digitalRead(PADDLE_LEFT) == LOW, digitalRead(PADDLE_RIGHT) == LOW);
+  serialRelayState();
   if (toneUntil != 0 && now > toneUntil) stopTone();
-  int b;
   switch (state) {
     case Waiting:
-      if (now > quietUntil) {
-        if (mode != IambicB) {
-          playMemory();
-        }
-        if (Serial.available() > 0) {
-          state = Protocol;
-          break;
-        }
-        if (mode == IambicB && lastSqueeze) {
-          lastSqueeze = false;
-          playTone(oppositeLast);
-        }
-      }
-      if (left) {
-        memory = Dit;
-        state = Left;
-        break;
-      }
-      if (right) {
-        memory = Dah;
-        state = Right;
-        break;
-      }
+      waiting();
       break;
     case Protocol:
-      b = Serial.read();
-      switch (b) {
-        case '.':
-          playTone(Dit);
-          break;
-        case '-':
-          playTone(Dah);
-          break;
-        case ' ':
-          quietUntil = now + LETTER * FARNSWORTH;
-          break;
-        case '/':
-          quietUntil = now + WORD * FARNSWORTH;
-          break;
-        case 'A':
-          setMode(IambicA);
-          break;
-        case 'B':
-          setMode(IambicB);
-          break;
-        case 'U':
-          setMode(Ultimatic);
-          break;
-        default:
-          if (b > 200) {
-            setSpeed(b - 200);
-          }
-          break;
-      }
-      state = Waiting;
+      protocol();
       break;
     case Left:
-      if (!left) {
-        state = Waiting;
-        break;
-      }
-      if (right) {
-        memory = Dah;
-        state = LeftRight;
-        break;
-      }
-      if (now > quietUntil) {
-        if (toneUntil == 0) {
-          playMemory();
-        }
-        if (now > quietUntil) {
-          if (!playMemory()) {
-            playTone(Dit);
-            if (mode == IambicB) lastSqueeze = false;
-          }
-        }
-      }
+      leftRightPaddle(left, Dit, right, LeftRight);
       break;
     case Right:
-      if (!right) {
-        state = Waiting;
-        break;
-      }
-      if (left) {
-        memory = Dit;
-        state = RightLeft;
-        break;
-      }
-      if (now > quietUntil) {
-        if (toneUntil == 0) {
-          playMemory();
-        }
-        if (now > quietUntil) {
-          if (!playMemory()) {
-            playTone(Dah);
-            if (mode == IambicB) lastSqueeze = false;
-          }
-        }
-      }
+      leftRightPaddle(right, Dah, left, RightLeft);
       break;
     case LeftRight:
-      if (!left && right) {
-        state = Right;
-        break;
-      }
-      if (left && !right) {
-        state = Left;
-        break;
-      }
-      if (!left && !right) {
-        state = Waiting;
-        break;
-      }
-      if (mode == IambicB) lastSqueeze = true;
-      if (toneUntil == 0) {
-        playMemory();
-      }
-      if (now > quietUntil) {
-        if (!playMemory()) {
-          if (mode == IambicA || mode == IambicB) {
-            playTone(oppositeLast);
-          } else if (mode == Ultimatic) {
-            playTone(Dah);
-          }
-        }
-      }
+      squeezePaddle(Dah);
     case RightLeft:
-      if (!left && right) {
-        state = Right;
-        break;
-      }
-      if (left && !right) {
-        state = Left;
-        break;
-      }
-      if (!left && !right) {
-        state = Waiting;
-        break;
-      }
-      if (mode == IambicB) lastSqueeze = true;
-      if (toneUntil == 0) {
-        playMemory();
-      }
-      if (now > quietUntil) {
-        if (!playMemory()) {
-          if (mode == IambicA || mode == IambicB) {
-            playTone(oppositeLast);
-          } else if (mode == Ultimatic) {
-            playTone(Dit);
-          }
-        }
-      }
+      squeezePaddle(Dit);
       break;
   }
 }
