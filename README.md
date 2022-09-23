@@ -20,6 +20,8 @@ For the moment, here are some idea and nice sites and apps out there:
 - [Morse Code Ninja](https://morsecode.ninja/).
 - [Morse Code World](https://morsecode.world/).
 - [Slow Speed [Con]test](http://www.k1usn.com/sst).
+- [Contest Calendar](http://contestcalendar.com).
+- [Parks on the Air](http://pota.app).
 
 ## Apps
 
