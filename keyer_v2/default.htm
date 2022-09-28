@@ -59,7 +59,7 @@
                 t += ditlen;
                 var end = (new Date()).getTime() / 1000 + len;
                 letterBreak = end + (ditlen * 3);
-                wordBreak = end + (ditlen * 21);
+                wordBreak = end + (ditlen * 7);
             }
 
             function dit() {
@@ -95,13 +95,13 @@
                     }
                 });
                 document.body.addEventListener('keydown', (e) => {
-                    if (!e.repeat) {
+                    if (!e.repeat && e.srcElement.id != "message") {
                         switch (e.code) {
                             case "Comma":
-                                leftDown = true;
+                                setKeys(true, rightDown);
                                 break;
                             case "Period":
-                                rightDown = true;
+                                setKeys(leftDown, true);
                                 break;
                             case "Escape":
                                 reset();
@@ -110,19 +110,19 @@
                     }
                 });
                 document.body.addEventListener('keyup', (e) => {
-                    if (!e.repeat) {
+                    if (e.srcElement.id != "message") {
                         switch (e.code) {
                             case "Comma":
-                                leftDown = false;
+                                setKeys(false, rightDown);
                                 break;
                             case "Period":
-                                rightDown = false;
+                                setKeys(leftDown, false);
                                 break;
                         }
                     }
                 });
                 reset();
-                setRate(20);
+                setRate(25);
                 read();
                 drawKeyAndToneState();
             }
@@ -174,18 +174,31 @@
                 }
             }
 
+            function setKeys(left, right) {
+                leftDown = left;
+                rightDown = right;
+                if (connectedPort != null) {
+                    const writer = connectedPort.writable.getWriter();
+                    writer.write(new Uint8Array([(left ? 0x2 : 0) | (right ? 0x1 : 0)])).then(() => {
+                        writer.releaseLock();
+                    });
+                }
+            }
 
             function send(message) {
                 if (connectedPort != null) {
                     sending += message.toUpperCase() + ' ';
                     updateDisplay();
-                    data = [];
-                    word = [];
+                    var data = [];
+                    var word = [];
+                    var prosign = false;
                     for (var i in message) {
                         var m = message[i];
-                        if (m == '/') { // word break
+                        if (m == ' ') { // word break
                             data.push(47);
                         } else {
+                            if (m == '<') prosign = true;
+                            if (m == '>') prosign = false;
                             var j = morse.indexOf(m.toUpperCase());
                             while (j > 1) {
                                 if (j % 2 == 0) {
@@ -198,7 +211,7 @@
                             }
                             data = data.concat(word.reverse());
                             word = [];
-                            data.push(32); // letter-break
+                            if (!prosign) data.push(32); // letter-break
                         }
                     }
                     data.push(47); // final word break
@@ -230,6 +243,12 @@
                 ctx.fillStyle = "#000";
                 ctx.fillRect(0, 0, canvasWidth, canvasHeight);
                 cursor = 20;
+            }
+
+            var canvasVisible = true;
+            function toggle() {
+                document.getElementById('canvas').style.display = canvasVisible ? 'none' : '';
+                canvasVisible = !canvasVisible;
             }
 
             function updateCharacter() {
@@ -389,6 +408,21 @@
                     window.setTimeout(read, 10);
                 }
             }
+
+            function experimental() {
+                var keys = document.getElementById("message").value;
+                function updateKeyState() {
+                    if (keys.length > 0) {
+                        var k = keys[0];
+                        keys = keys.substring(1);
+                        setKeys(k == 'L' || k == 'S', k == 'R' || k == 'S');
+                        window.setTimeout(updateKeyState, ditlen * 1000 / 2);
+                    } else {
+                        setKeys(false, false);
+                    }
+                }
+                updateKeyState();
+            }
         </script>
     </head>
     <body onload="load()">
@@ -401,6 +435,8 @@
         <button id="disconnect" onclick="disconnect()">Disconnect</button>
         <button id="send" onclick="sendMessage()">Send</button>
         <button id="reset" onclick="reset()">Clear</button>
+        <button id="toggle" onclick="toggle()">Toggle</button>
+        <button id="key" onclick="experimental()">Experimental</button>
         <hr />
         <button id="iambicA" onclick="setMode(65)">Iambic A</button>
         <button id="iambicB" onclick="setMode(66)">Iambic B</button>
@@ -420,9 +456,11 @@
         <button id="speed50" onclick="setSpeed(50)">50 WPM</button>
         <hr />
         <a href="javascript:send('CQ')">CQ</a>
+        <a href="javascript:send('QRL?')">QRL?</a>
         <a href="javascript:send('CU')">CU</a>
         <a href="javascript:send('DE')">DE</a>
         <a href="javascript:send('K')">K</a>
+        <a href="javascript:send('KN')">KN</a>
         <a href="javascript:send('OP')">OP</a>
         <a href="javascript:send('NAME')">NAME</a>
         <a href="javascript:send('UR')">UR</a>

@@ -1,3 +1,4 @@
+// BUG: G in B-mode, switch to A-mode (extra memory dit cleared)
 // FEATURE: Upgrade dit to dah mid-dit by pressing right paddle while dit in progress (Ultimatic-only?)
 // FEATURE: Sending speed dictated by PC-side (tone+durration, quiet+durration)
 
@@ -32,7 +33,6 @@ long DAH;
 long LETTER;
 long WORD;
 long PAUSE;
-long FARNSWORTH;
 long DEBOUNCE;
 
 void setSpeed(long wpm) {
@@ -42,7 +42,6 @@ void setSpeed(long wpm) {
   LETTER = DIT * 3;
   WORD = DIT * 7;
   PAUSE = DIT;
-  FARNSWORTH = 3;
   DEBOUNCE = DIT;
 }
 
@@ -57,12 +56,14 @@ void setup() {
   pinMode(PADDLE_RIGHT, INPUT);
   digitalWrite(PADDLE_RIGHT, HIGH);
   pinMode(RADIO, OUTPUT);
-  setSpeed(20);
+  setSpeed(25);
 }
 
 bool left = false;
+bool leftProtocol = false;
 long lastLeftChange = 0;
 bool right = false;
+bool rightProtocol = false;
 long lastRightChange = 0;
 long now;
 long toneUntil = 0;
@@ -100,23 +101,19 @@ bool playMemory() {
 
 void serialKeyUpdate(bool leftDown, bool rightDown) {
   Serial.write((byte)(
-    (leftDown  ? 0b001 : 0b000) |
-    (rightDown ? 0b010 : 0b000)));
+    (leftDown  ? 0b10 : 0b00) |
+    (rightDown ? 0b01 : 0b00)));
   Serial.flush();
 }
 
 void debounce(bool leftState, bool rightState) {
-  if (leftState != left) {
-    if ((now - lastLeftChange) > DEBOUNCE) {
+  if (!leftProtocol && leftState != left && (now - lastLeftChange) > DEBOUNCE) {
       left = leftState;
       lastLeftChange = now;
-    }
   }
-  if (rightState != right) {
-    if ((now - lastRightChange) > DEBOUNCE) {
-      right = rightState;
-      lastRightChange = now;
-    }
+  if (!rightProtocol && rightState != right && (now - lastRightChange) > DEBOUNCE) {
+    right = rightState;
+    lastRightChange = now;
   }
 }
 
@@ -193,10 +190,10 @@ void protocol() {
       playTone(Dah);
       break;
     case ' ':
-      quietUntil = now + LETTER * FARNSWORTH;
+      quietUntil = now + LETTER;
       break;
     case '/':
-      quietUntil = now + WORD * FARNSWORTH;
+      quietUntil = now + WORD;
       break;
     case 'A':
       setMode(IambicA);
@@ -217,6 +214,11 @@ void protocol() {
 }
 
 void waiting() {
+  int peek = Serial.peek();
+  if (peek >= 0 && peek < 4) { // key signal?
+    state = Protocol;
+    return;
+  }
   if (now > quietUntil) {
     if (mode != IambicB) playMemory();
     if (Serial.available() > 0) {
@@ -241,6 +243,14 @@ void loop() {
   now = micros();
   debounce(digitalRead(PADDLE_LEFT) == LOW, digitalRead(PADDLE_RIGHT) == LOW);
   serialRelayState();
+  int peek = Serial.peek();
+  if (peek != -1 && peek < 4) { // key signal?
+    Serial.read();
+    leftProtocol = (peek & 0b10) != 0;
+    rightProtocol = (peek & 0b01) != 0;
+  }
+  if (leftProtocol) left = true;
+  if (rightProtocol) right = true;
   if (toneUntil != 0 && now > toneUntil) stopTone();
   switch (state) {
     case Waiting:
