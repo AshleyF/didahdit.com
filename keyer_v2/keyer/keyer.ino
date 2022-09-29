@@ -220,7 +220,7 @@ void waiting() {
     return;
   }
   if (now > quietUntil) {
-    if (mode != IambicB) playMemory();
+    playMemory();
     if (Serial.available() > 0) {
       state = Protocol;
       return;
