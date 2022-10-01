@@ -157,34 +157,23 @@
                 }
             }
 
-            function setMode(mode) { // (Iambic)A (Imabic)B U(ltimatic)
+            function sendByte(b) {
                 if (connectedPort != null) {
                     const writer = connectedPort.writable.getWriter();
-                    writer.write(new Uint8Array([mode])).then(() => {
+                    writer.write(new Uint8Array([b])).then(() => {
                         writer.releaseLock();
                     });
                 }
             }
 
             function setSpeed(speed) {
-                if (connectedPort != null) {
-                    const writer = connectedPort.writable.getWriter();
-                    writer.write(new Uint8Array([speed + 200])).then(() => {
-                        writer.releaseLock();
-                        setRate(speed);
-                    });
-                }
+                sendByte(speed + 200);
             }
 
             function setKeys(left, right) {
                 leftDown = left;
                 rightDown = right;
-                if (connectedPort != null) {
-                    const writer = connectedPort.writable.getWriter();
-                    writer.write(new Uint8Array([(left ? 0x2 : 0) | (right ? 0x1 : 0)])).then(() => {
-                        writer.releaseLock();
-                    });
-                }
+                sendByte((left ? 0x2 : 0) | (right ? 0x1 : 0));
             }
 
             function send(message) {
@@ -448,9 +437,12 @@
         <button id="toggle" onclick="toggle()">Toggle</button>
         <button id="experiment" onclick="experiment()">Experiment</button>
         <hr />
-        <button id="iambicA" onclick="setMode(65)">Iambic A</button>
-        <button id="iambicB" onclick="setMode(66)">Iambic B</button>
-        <button id="iambicU" onclick="setMode(85)">Ultimatic</button>
+        <button id="iambicA" onclick="sendByte(65)">Iambic A</button>
+        <button id="iambicB" onclick="sendByte(66)">Iambic B</button>
+        <button id="iambicU" onclick="sendByte(85)">Ultimatic</button>
+        <span>&nbsp;</span>
+        <button id="enableMemory" onclick="sendByte(77)">Enable Memory</button>
+        <button id="disableMemory" onclick="sendByte(78)">Disable Memory</button>
         <hr />
         <button id="speed5" onclick="setSpeed(5)">5 WPM</button>
         <button id="speed10" onclick="setSpeed(10)">10 WPM</button>
@@ -549,7 +541,7 @@
                         <a href="javascript:simulateKeys('LLRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR')">1</a>
                         <span>Squeeze/Ultimatic:</span>
                         <!--                              --  ------  -->
-                        <a href="javascript:simulateKeys('LSS')">A (quick)</a>
+                        <a href="javascript:simulateKeys('LSS')">A (quick, mem)</a>
                         <a href="javascript:simulateKeys('LLLSSS')"><i>A</i></a>
                         <a href="javascript:simulateKeys('LLLSSSSSSSS')">A</a>
                         <span>&nbsp;</span><!--           --  ------  ------  -->
@@ -586,8 +578,8 @@
                         <a href="javascript:simulateKeys('RRLLLLLLLLLLLLLLLLLLLLL')">6</a>
                         <span>Squeeze/Ultimatic:</span>
                         <!--                              ------  --  -->
-                        <a href="javascript:simulateKeys('RSS')"><I>N (quick)</I></a>
-                        <a href="javascript:simulateKeys('RRRSSS')">N</a>
+                        <a href="javascript:simulateKeys('RSS')"><I>N (quick, mem)</I></a>
+                        <a href="javascript:simulateKeys('RRRSSS')">N (mem)</a>
                         <a href="javascript:simulateKeys('RRRSSSSSSSS')">N</a>
                         <span>&nbsp;</span><!--           ------  --  --  -->
                         <a href="javascript:simulateKeys('RRSSSSSSSSSSS')">D</a>
@@ -609,48 +601,48 @@
                 <ul>
                     <li>
                         <span>Slap:</span><!--            --  --  ------  -->
-                        <a href="javascript:simulateKeys('LLLLLRR')"><i>U</i></a>
+                        <a href="javascript:simulateKeys('LLLLLRR')"><i>U (mem)</i></a>
                         <a href="javascript:simulateKeys('LLLLLLRR')"><i>U</i></a>
                         <a href="javascript:simulateKeys('LLLLLLLRR')">U</a>
                         <a href="javascript:simulateKeys('LLLLLL  RRRRRR')">U (on-beat)</a>
                         <a href="javascript:simulateKeys('LLLLLLL       RRRRR')">U (gap)</a>
                         <span>&nbsp;</span><!--           --  --  --  ------ -->
-                        <a href="javascript:simulateKeys('LLLLLLLLLRR')">V</a>
+                        <a href="javascript:simulateKeys('LLLLLLLLLRR')">V (mem)</a>
                         <a href="javascript:simulateKeys('LLLLLLLLLLRR')"><I>V</I></a>
                         <a href="javascript:simulateKeys('LLLLLLLLLLLRR')">V</a>
                         <a href="javascript:simulateKeys('LLLLLLLLLL  RRRRRR')">V (on-beat)</a>
                         <span>&nbsp;</span><!--           --  --  --  --  ------  -->
-                        <a href="javascript:simulateKeys('LLLLLLLLLLLLLRR')">4</a>
+                        <a href="javascript:simulateKeys('LLLLLLLLLLLLLRR')">4 (mem)</a>
                         <a href="javascript:simulateKeys('LLLLLLLLLLLLLLRR')"><I>4</I></a>
                         <a href="javascript:simulateKeys('LLLLLLLLLLLLLLLRR')">4</a>
                         <a href="javascript:simulateKeys('LLLLLLLLLLLLLL  RRRRRR')">4 (on-beat)</a>
                         <span>Squeeze/Ultimatic:</span>
                         <!--                              --  --  ------  -->
-                        <a href="javascript:simulateKeys('LLLLLSS')">U</a>
+                        <a href="javascript:simulateKeys('LLLLLSS')">U (mem)</a>
                         <a href="javascript:simulateKeys('LLLLLLSS')"><i>U</i></a>
                         <a href="javascript:simulateKeys('LLLLLLLSS')">U</a>
                         <a href="javascript:simulateKeys('LLLLLLLSSSSSSS')">U (late/long)</a>
                         <span>&nbsp;</span><!--           --  --  --  ------  -->
-                        <a href="javascript:simulateKeys('LLLLLLLLLSS')">V</a>
+                        <a href="javascript:simulateKeys('LLLLLLLLLSS')">V (mem)</a>
                         <a href="javascript:simulateKeys('LLLLLLLLLLSS')"><i>V</i></a>
                         <a href="javascript:simulateKeys('LLLLLLLLLLLSS')">V</a>
                         <a href="javascript:simulateKeys('LLLLLLLLLLLSSSSSSS')">V (late/long)</a>
                         <span>&nbsp;</span><!--           --  --  --  --  ------  -->
-                        <a href="javascript:simulateKeys('LLLLLLLLLLLLLSS')">4</a>
+                        <a href="javascript:simulateKeys('LLLLLLLLLLLLLSS')">4 (mem)</a>
                         <a href="javascript:simulateKeys('LLLLLLLLLLLLLLSS')"><i>4</i></a>
                         <a href="javascript:simulateKeys('LLLLLLLLLLLLLLLSS')">4</a>
                         <a href="javascript:simulateKeys('LLLLLLLLLLLLLLLSSSSSSS')">4 (late/long)</a>
                     </li>
                     <li>
                         <span>Slap:</span><!--            ------  ------  --  -->
-                        <a href="javascript:simulateKeys('RRRRRRRRRLL')">G</a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRLL')"><i>G</i></a>
+                        <a href="javascript:simulateKeys('RRRRRRRRRLL')">G (mem)</a>
+                        <a href="javascript:simulateKeys('RRRRRRRRRRRRLL')"><i>G (mem)</i></a>
                         <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRLL')">G</a>
                         <a href="javascript:simulateKeys('RRRRRRRRRRRRRR  LL')">G (small gap/on-beat)</a>
                         <a href="javascript:simulateKeys('RRRRRRRRRRRRR        LL')">G (big gap)</a>
                         <span>&nbsp;</span><!--           ------  ------  ------  ------  --  -->
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRLL')">9</a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRLL')"><i>9</i></a>
+                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRLL')">9 (mem)</a>
+                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRLL')"><i>9 (mem)</i></a>
                         <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRLL')">9</a>
                         <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR  LL')">9 (small gap/on-beat)</a>
                         <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRR        LL')">9 (big gap)</a>
@@ -732,9 +724,11 @@
                         <!--                              ------  --  ------  -->
                         <a href="javascript:simulateKeys('RRRSSSSSSSSSSSS')">K (Iambic-A)</a>
                         <a href="javascript:simulateKeys('RRRSSSSSSS')">K (Iambic-B)</a>
-                        <a href="javascript:simulateKeys('RRSSSSRRRRRRRRR')">K (Ultimatic)</a>
+                        <a href="javascript:simulateKeys('RRSSSSRRRRRRRRR')">K (Ultimatic, mem)</a>
+                        <a href="javascript:simulateKeys('RRSSSSSSSSRRRRR')">K (Ultimatic)</a>
                         <!--                              ------  --  ------  ------  -->
-                        <a href="javascript:simulateKeys('RRSSSSRRRRRRRRRRRRRRRRR')">Y (All)</a>
+                        <a href="javascript:simulateKeys('RRSSSSRRRRRRRRRRRRRRRRR')">Y (All, mem)</a>
+                        <a href="javascript:simulateKeys('RRSSSSSSSSRRRRRRRRRRRRR')">Y (All)</a>
                     </li>
                 </ul>
             </li>
@@ -750,7 +744,8 @@
                         <!--                              --  --  ------  --  -->
                         <a href="javascript:simulateKeys('LLLLLLSSSSLLLLLLLL')">F</a>
                         <!--                              ------  ------  --  ------  -->
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRSSSSRRRRRRRR')">Q</a>
+                        <a href="javascript:simulateKeys('RRRRRRRRRRRSSSSRRRRRRRR')">Q (mem)</a>
+                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRSSSSRRRRR')">Q</a>
                     </li>
                 </ul>
             </li>
@@ -786,7 +781,8 @@
                         <span>Squeeze:</span><!--         ------  --  ------  --  -->
                         <a href="javascript:simulateKeys('RRSSSSSSSSSSSSSSSSSSSS')">C (Iambic-A)</a>
                         <a href="javascript:simulateKeys('RRSSSSSSSSSSSSS')">C (Iambic-B)</a>
-                        <a href="javascript:simulateKeys('RRSSSSRRRRRRRRSSSS')">C (Ultimatic/All)</a>
+                        <a href="javascript:simulateKeys('RRSSSSRRRRRRRRSSSS')">C (Ultimatic/All, mem)</a>
+                        <a href="javascript:simulateKeys('RRSSSSSSSSRRRRRSSSSSSS')">C (Ultimatic/All)</a>
                         <!--                              ------  --  --  ------  --  -->
                         <a href="javascript:simulateKeys('RRRRRRRLLLLLLLLRRRRSSSSSSS')">/ (Iambic-A)</a>
                         <a href="javascript:simulateKeys('RRRRRRRLLLLLLLLRRRRSSS')">/ (Iambic-B)</a>

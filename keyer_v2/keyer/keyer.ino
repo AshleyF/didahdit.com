@@ -59,6 +59,7 @@ void setup() {
   setSpeed(25);
 }
 
+bool enableMemory = true;
 bool left = false;
 bool leftProtocol = false;
 long lastLeftChange = 0;
@@ -94,7 +95,7 @@ void stopTone() {
 
 bool playMemory() {
   if (memory == None) return false;
-  playTone(memory);
+  if (enableMemory) playTone(memory);
   memory = None;
   return true;
 }
@@ -203,6 +204,12 @@ void protocol() {
       break;
     case 'U':
       setMode(Ultimatic);
+      break;
+    case 'M':
+      enableMemory = true;
+      break;
+    case 'N':
+      enableMemory = false;
       break;
     default:
       if (b > 200) {
