@@ -19,6 +19,8 @@
             const canvasWidth = 1450;
             const canvasHeight = 64;
 
+            const farnsworth = 21; // dits
+
             var connectedPort = null;
             var morse = "  ETIANMSURWDKGOHVF L PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
             var p = 1;
@@ -61,6 +63,7 @@
                 var end = (new Date()).getTime() / 1000 + len;
                 letterBreak = end + (ditlen * 3);
                 wordBreak = end + (ditlen * 7);
+                farnsworthWordBreak = end + (ditlen * farnsworth);
             }
 
             function dit() {
@@ -362,6 +365,7 @@
             var rightDown = false;
             var letterBreak = 0;
             var wordBreak = 0;
+            var farnsworthWordBreak = 0;
             var lastGain = 0;
             var clearNextKeyState = false;
             var clearNextMessage = false;
@@ -412,10 +416,10 @@
                     char = '';
                     p = 1;
                 }
-                if (now - wordBreak > 0 && !message.endsWith(' ')) {
+                if (now - farnsworthWordBreak > 0 && !message.endsWith(' ')) {
                     message += ' ';
                 }
-                if (now - wordBreak > ditlen * 7.0) {
+                if (now - wordBreak > ditlen * 14.0) {
                     clearNextKeyState = true;
                 }
                 if (now - wordBreak > ditlen * 50) {
@@ -581,11 +585,11 @@
                         </ul>
                         <li><a href="javascript:simulateExamples(['LLSSSSSS', 'LLSSSSSSSSSSSSSS', 'LLSSSSSSSSSSSSSSSSSSSSSS', 'LLSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS', 'RRRSSSSSSS', 'RRRSSSSSSSSSSS', 'RRRSSSSSSSSSSSSSSS', 'RRRSSSSSSSSSSSSSSSSSSS'])">Initial switch (squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLSSSSSS')">A</a>, <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSS')">W</a>, <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSSSSSSS')">J</a>, <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS')">1</a>, and <a href="javascript:simulateKeys('RRRSSSSSSS')">N</a>, <a href="javascript:simulateKeys('RRRSSSSSSSSSSS')">D</a>, <a href="javascript:simulateKeys('RRRSSSSSSSSSSSSSSS')">B</a>, <a href="javascript:simulateKeys('RRRSSSSSSSSSSSSSSSSSSS')">6</a></li>
+                            <li><a href="javascript:simulateKeys('LLSSSSSS')">A</a> <a href="javascript:simulateKeys('LSS     ')">A</a>, <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSS')">W</a>, <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSSSSSSS')">J</a>, <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS')">1</a>, and <a href="javascript:simulateKeys('RRRSSSSSSS')">N</a> <a href="javascript:simulateKeys('RRRSSS    ')">N</a>, <a href="javascript:simulateKeys('RRRSSSSSSSSSSS')">D</a>, <a href="javascript:simulateKeys('RRRSSSSSSSSSSSSSSS')">B</a>, <a href="javascript:simulateKeys('RRRSSSSSSSSSSSSSSSSSSS')">6</a></li>
                         </ul>
                         <li><a href="javascript:simulateExamples(['LLLLLLSSSSSS', 'LLLLLLLLLLSSSSSS', 'LLLLLLLLLLLLLLSSSSSS', 'RRRRRRRRRRRRSSSSSS', 'RRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSS'])">Ending switch (squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLLLLLSSSSSS')">U</a>, <a href="javascript:simulateKeys('LLLLLLLLLLSSSSSS')">V</a>, <a href="javascript:simulateKeys('LLLLLLLLLLLLLLSSSSSS')">4</a>, and <a href="javascript:simulateKeys('RRRRRRRRRRRRSSSSSS')">G</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSS')">9</a></li>
+                            <li><a href="javascript:simulateKeys('LLLLLLSSSSSS')">U</a> <a href="javascript:simulateKeys('LLLLLSSS    ')">U</a>, <a href="javascript:simulateKeys('LLLLLLLLLLSSSSSS')">V</a> <a href="javascript:simulateKeys('LLLLLLLLLSSS    ')">V</a>, <a href="javascript:simulateKeys('LLLLLLLLLLLLLLSSSSSS')">4</a> <a href="javascript:simulateKeys('LLLLLLLLLLLLLSSS    ')">4</a>, and <a href="javascript:simulateKeys('RRRRRRRRRRRRSSSSSS')">G</a> <a href="javascript:simulateKeys('RRRRRRRRRRRRSSS   ')">G</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSS')">9</a> <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRSSS   ')">9</a></li>
                         </ul>
                         <li><a href="javascript:simulateExamples(['LLLLLLSSSSSSSSSSSSSSSSSSSSSS', 'LLLLLLLLLLSSSSSSSSSSSSSS', 'RRRRRRRRRRRRSSSSSSSSSS', 'RRRRRRRRRRRRSSSSSSSSSSSSSS', 'RRRRRRRRRRRRRRRRRRRRSSSSSSSSSS'])">Middle switch (squeeze)</a></li>
                         <ul>
@@ -593,11 +597,11 @@
                         </ul>
                         <li><a href="javascript:simulateExamples(['LLSSSSSSLLLLLL', 'LLSSSSSSLLLLLLLLLL', 'RRRSSSSSSSRRRRRR', 'RRRRSSSSSSRRRRRRRRRRRRR'])">Early Interstitial (squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLSSSSSSLLLLLL')">R</a>, <a href="javascript:simulateKeys('LLSSSSSSLLLLLLLLLL')">L</a>, and <a href="javascript:simulateKeys('RRRSSSSSSSRRRRRR')">K</a>, <a href="javascript:simulateKeys('RRRRSSSSSSRRRRRRRRRRRRR')">Y</a></li>
+                            <li><a href="javascript:simulateKeys('LLSSSSSSLLLLLL')">R</a> <a href="javascript:simulateKeys('LSSLLLLLLLLLLL')">R</a>, <a href="javascript:simulateKeys('LLSSSSSSLLLLLLLLLL')">L</a> <a href="javascript:simulateKeys('LSSLLLLLLLLLLLLLLL')">L</a>, and <a href="javascript:simulateKeys('RRRSSSSSSSRRRRRR')">K</a> <a href="javascript:simulateKeys('RRSSSRRRRRRRRRRR')">K</a>, <a href="javascript:simulateKeys('RRRRSSSSSSRRRRRRRRRRRRR')">Y</a> <a href="javascript:simulateKeys('RRSSSRRRRRRRRRRRRRRRRRR')">Y</a></li>
                         </ul>
                         <li><a href="javascript:simulateExamples(['LLLLLLSSSSSSLLLLLL', 'RRRRRRRRRRRRSSSSSSRRRRRR'])">Late interstitial (squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLLLLLSSSSSSLLLLLL')">F</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRSSSSSSRRRRRR')">Q</a></li>
+                            <li><a href="javascript:simulateKeys('LLLLLLSSSSSSLLLLLL')">F</a> <a href="javascript:simulateKeys('LLLLLSSLLLLLLLLLLL')">F</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRSSSSSSRRRRRR')">Q</a> <a href="javascript:simulateKeys('RRRRRRRRRRRSSSRRRRRRRRRR')">Q</a></li>
                         </ul>
                         <li><a href="javascript:simulateExamples(['LLSSSSSSSSSSSSSSLLLLLL', 'RRRRSSSSSSSSSSRRRRRR', 'LLLLLLSSSSSSSSSSSSSSLLLLLLLLLL'])">Long middle interstitial (squeeze)</a></li>
                         <ul>
@@ -605,7 +609,7 @@
                         </ul>
                         <li><a href="javascript:simulateExamples(['RRRRSSSSSSRRRRRRSSSSSS', 'LLSSSSSSLLLLLLSSSSSSLLLLLLSSSSSS', 'RRRRSSSSSSSSSSRRRRRRSSSSSS'])">Alternating (multi-squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('RRRRSSSSSSRRRRRRSSSSSS')">C</a>, <a href="javascript:simulateKeys('LLSSSSSSLLLLLLSSSSSSLLLLLLSSSSSS')">. (period)</a>, <a href="javascript:simulateKeys('RRRRSSSSSSSSSSRRRRRRSSSSSS')">/ (slash)</a></li>
+                            <li><a href="javascript:simulateKeys('RRRRSSSSSSRRRRRRSSSSSS')">C</a> <a href="javascript:simulateKeys('RRRSSSRRRRRRRRRSSSRRRR')">C</a>, <a href="javascript:simulateKeys('LLSSSSSSLLLLLLSSSSSSLLLLLLSSSSSS')">. (period)</a> <a href="javascript:simulateKeys('LLSSSLLLLLLLLSSSLLLLLLLLLSSSLLLL')">. (period)</a>, <a href="javascript:simulateKeys('RRRRSSSSSSSSSSRRRRRRSSSSSS')">/ (slash)</a> <a href="javascript:simulateKeys('RRRRSSSSSSSSSSRRRRRSSSSRRR')">/ (slash)</a></li>
                         </ul>
                     </li>
                 </td>
@@ -685,281 +689,5 @@
                 </td>
             </tr>
         </table>
-        <h2>Initial Switch:</h2>
-                <ul>
-                    <li>
-                        <span>Slap:</span><!--            --  ------  -->
-                        <a href="javascript:simulateKeys('LLRR')">A</a>
-                        <a href="javascript:simulateKeys('LLL RRRR')"><i>A</i></a>
-                        <a href="javascript:simulateKeys('LLL    RRRR')">A (big gap)</a>
-                        <a href="javascript:simulateKeys('LLLRRRRRRRR')">A</a>
-                        <span>&nbsp;</span><!--           --  ------  ------  -->
-                        <a href="javascript:simulateKeys('LL RRRRRRRRRR')">W</a>
-                        <a href="javascript:simulateKeys('LL RRRRRRRRRRRRR')"><I>W</I></a>
-                        <a href="javascript:simulateKeys('LL RRRRRRRRRRRRRRRR')">W</a>
-                        <span>&nbsp;</span><!--           --  ------  ------  ------  -->
-                        <a href="javascript:simulateKeys('LL RRRRRRRRRRRRRRRRRR')">J</a>
-                        <a href="javascript:simulateKeys('LL RRRRRRRRRRRRRRRRRRRRR')"><I>J</I></a>
-                        <a href="javascript:simulateKeys('LL RRRRRRRRRRRRRRRRRRRRRRRR')">J</a>
-                        <span>&nbsp;</span><!--           --  ------  ------  ------  ------  -->
-                        <a href="javascript:simulateKeys('LL RRRRRRRRRRRRRRRRRRRRRRRRRR')">1</a>
-                        <a href="javascript:simulateKeys('LL RRRRRRRRRRRRRRRRRRRRRRRRRRRRR')"><I>1</I></a>
-                        <a href="javascript:simulateKeys('LL RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR')">1</a>
-                        <span>Squeeze/Ultimatic:</span>
-                        <!--                              --  ------  -->
-                        <a href="javascript:simulateKeys('LSS')">A (quick, mem)</a>
-                        <a href="javascript:simulateKeys('LLLSSSSS')"><i>A</i></a>
-                        <a href="javascript:simulateKeys('LLLSSSSSSSS')">A</a>
-                        <span>&nbsp;</span><!--           --  ------  ------  -->
-                        <a href="javascript:simulateKeys('LLSSSSSSSSSSS')">W</a>
-                        <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSS')"><I>W</I></a>
-                        <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSS')">W</a>
-                        <span>&nbsp;</span><!--           --  ------  ------  ------  -->
-                        <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSSSS')">J</a>
-                        <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSSSSSSS')"><I>J</I></a>
-                        <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSSSSSSSSSS')">J</a>
-                        <span>&nbsp;</span><!--           --  ------  ------  ------  ------  -->
-                        <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSSSSSSSSSSSS')">6</a>
-                        <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS')"><I>6</I></a>
-                        <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS')">6</a>
-                    </li>
-                    <li>
-                        <span>Slap:</span><!--            ------  --  -->
-                        <a href="javascript:simulateKeys('RRLL')">N (mem)</a>
-                        <a href="javascript:simulateKeys('RRRLLL')"><I>N (mem)</I></a>
-                        <a href="javascript:simulateKeys('RRRR LLLL')">N (small gap)</a>
-                        <a href="javascript:simulateKeys('RRR          LLL')">N (big gap)</a>
-                        <a href="javascript:simulateKeys('RRRLLLLLLL')">N</a>
-                        <span>&nbsp;</span><!--           ------  --  --  -->
-                        <a href="javascript:simulateKeys('RRR LLLLLLLLL')">D</a>
-                        <a href="javascript:simulateKeys('RRR LLLLLLLLLL')">D</a>
-                        <a href="javascript:simulateKeys('RRR LLLLLLLLLLL')">D</a>
-                        <span>&nbsp;</span><!--           ------  --  --  --  -->
-                        <a href="javascript:simulateKeys('RRR LLLLLLLLLLLLL')">B</a>
-                        <a href="javascript:simulateKeys('RRR LLLLLLLLLLLLLL')">B</a>
-                        <a href="javascript:simulateKeys('RRR LLLLLLLLLLLLLLL')">B</a>
-                        <span>&nbsp;</span><!--           ------  --  --  --  --  -->
-                        <a href="javascript:simulateKeys('RRR LLLLLLLLLLLLLLLLL')">6</a>
-                        <a href="javascript:simulateKeys('RRR LLLLLLLLLLLLLLLLLL')">6</a>
-                        <a href="javascript:simulateKeys('RRR LLLLLLLLLLLLLLLLLLL')">6</a>
-                        <span>Squeeze/Ultimatic:</span>
-                        <!--                              ------  --  -->
-                        <a href="javascript:simulateKeys('RSS')"><I>N (quick, mem)</I></a>
-                        <a href="javascript:simulateKeys('RRRSSS')">N (mem)</a>
-                        <a href="javascript:simulateKeys('RRRSSSSSSSS')">N</a>
-                        <span>&nbsp;</span><!--           ------  --  --  -->
-                        <a href="javascript:simulateKeys('RRSSSSSSSSSSS')">D</a>
-                        <a href="javascript:simulateKeys('RRSSSSSSSSSSSS')"><I>D</I></a>
-                        <a href="javascript:simulateKeys('RRSSSSSSSSSSSSS')">D</a>
-                        <span>&nbsp;</span><!--           ------  --  --  --  -->
-                        <a href="javascript:simulateKeys('RRSSSSSSSSSSSSSSS')">B</a>
-                        <a href="javascript:simulateKeys('RRSSSSSSSSSSSSSSSS')"><I>B</I></a>
-                        <a href="javascript:simulateKeys('RRSSSSSSSSSSSSSSSSS')">B</a>
-                        <span>&nbsp;</span><!--           ------  --  --  --  --  -->
-                        <a href="javascript:simulateKeys('RRSSSSSSSSSSSSSSSSSSS')">6</a>
-                        <a href="javascript:simulateKeys('RRSSSSSSSSSSSSSSSSSSSS')"><I>6</I></a>
-                        <a href="javascript:simulateKeys('RRSSSSSSSSSSSSSSSSSSSSS')">6</a>
-                    </li>
-                </ul>
-            </li>
-            <li>
-                <b>Ending Switch:</b>
-                <ul>
-                    <li>
-                        <span>Slap:</span><!--            --  --  ------  -->
-                        <a href="javascript:simulateKeys('LLLLLRR')"><i>U (mem)</i></a>
-                        <a href="javascript:simulateKeys('LLLLLLRR')"><i>U</i></a>
-                        <a href="javascript:simulateKeys('LLLLLLLRR')">U</a>
-                        <a href="javascript:simulateKeys('LLLLLL  RRRRRR')">U (on-beat)</a>
-                        <a href="javascript:simulateKeys('LLLLLLL       RRRRR')">U (gap)</a>
-                        <span>&nbsp;</span><!--           --  --  --  ------ -->
-                        <a href="javascript:simulateKeys('LLLLLLLLLRR')">V (mem)</a>
-                        <a href="javascript:simulateKeys('LLLLLLLLLLRR')"><I>V</I></a>
-                        <a href="javascript:simulateKeys('LLLLLLLLLLLRR')">V</a>
-                        <a href="javascript:simulateKeys('LLLLLLLLLL  RRRRRR')">V (on-beat)</a>
-                        <span>&nbsp;</span><!--           --  --  --  --  ------  -->
-                        <a href="javascript:simulateKeys('LLLLLLLLLLLLLRR')">4 (mem)</a>
-                        <a href="javascript:simulateKeys('LLLLLLLLLLLLLLRR')"><I>4</I></a>
-                        <a href="javascript:simulateKeys('LLLLLLLLLLLLLLLRR')">4</a>
-                        <a href="javascript:simulateKeys('LLLLLLLLLLLLLL  RRRRRR')">4 (on-beat)</a>
-                        <span>Squeeze/Ultimatic:</span>
-                        <!--                              --  --  ------  -->
-                        <a href="javascript:simulateKeys('LLLLLSS')">U (mem)</a>
-                        <a href="javascript:simulateKeys('LLLLLLSS')"><i>U</i></a>
-                        <a href="javascript:simulateKeys('LLLLLLLSS')">U</a>
-                        <a href="javascript:simulateKeys('LLLLLLLSSSSSSS')">U (late/long)</a>
-                        <span>&nbsp;</span><!--           --  --  --  ------  -->
-                        <a href="javascript:simulateKeys('LLLLLLLLLSS')">V (mem)</a>
-                        <a href="javascript:simulateKeys('LLLLLLLLLLSS')"><i>V</i></a>
-                        <a href="javascript:simulateKeys('LLLLLLLLLLLSS')">V</a>
-                        <a href="javascript:simulateKeys('LLLLLLLLLLLSSSSSSS')">V (late/long)</a>
-                        <span>&nbsp;</span><!--           --  --  --  --  ------  -->
-                        <a href="javascript:simulateKeys('LLLLLLLLLLLLLSS')">4 (mem)</a>
-                        <a href="javascript:simulateKeys('LLLLLLLLLLLLLLSS')"><i>4</i></a>
-                        <a href="javascript:simulateKeys('LLLLLLLLLLLLLLLSS')">4</a>
-                        <a href="javascript:simulateKeys('LLLLLLLLLLLLLLLSSSSSSS')">4 (late/long)</a>
-                    </li>
-                    <li>
-                        <span>Slap:</span><!--            ------  ------  --  -->
-                        <a href="javascript:simulateKeys('RRRRRRRRRLL')">G (mem)</a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRLL')"><i>G (mem)</i></a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRLL')">G</a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRR  LL')">G (small gap/on-beat)</a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRR        LL')">G (big gap)</a>
-                        <span>&nbsp;</span><!--           ------  ------  ------  ------  --  -->
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRLL')">9 (mem)</a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRLL')"><i>9 (mem)</i></a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRLL')">9</a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR  LL')">9 (small gap/on-beat)</a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRR        LL')">9 (big gap)</a>
-                        <span>Squeeze/Ultimatic:</span>
-                        <!--                              ------  ------  --  -->
-                        <a href="javascript:simulateKeys('RRRRRRRRRSS')">G</a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRSS')"><i>G</i></a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRSS')">G</a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRSSSS')">G (late/long)</a>
-                        <span>&nbsp;</span><!--           ------  ------  ------  ------  --  -->
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRSS')">9</a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRSS')"><i>9</i></a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSS')">9</a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSS')">9 (late/long)</a>
-                    </li>
-                </ul>
-            </li>
-            <li>
-                <b>Middle Switch:</b>
-                <ul>
-                    <li>
-                        <span>Slap:</span><!--            ------  ------  --  --  -->
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRLLLLLLLLLL')"><i>Z</i></a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRLLLLLLLLLLLLL')">Z (early switch)</a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRLLLLLLL')">Z (late/on-beat switch)</a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRLLLLLLLLLL')">Z (early release)</a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRLLLLLLLLLLLL')">Z (late release)</a>
-                        <!--                              ------  ------  --  --  --  -->
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRLLLLLLLLLLLLLL')"><i>7</i></a>
-                        <!--                              ------  ------  ------  --  --  -->
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRLLLLLLLLLLL')"><i>8</i></a>
-                        <span>Squeeze/Ultimatic:</span>
-                        <!--                              ------  ------  --  --  -->
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRSSSSSSSSSSS')"><i>Z</i></a>
-                        <!--                              ------  ------  --  --  --  -->
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRSSSSSSSSSSSSSSS')"><i>7</i></a>
-                        <!--                              ------  ------  ------  --  --  -->
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRSSSSSSSSSSS')"><i>8</i></a>
-                    </li>
-                    <li>
-                        <span>Slap:</span><!--            --  --  ------  ------  ------  -->
-                        <a href="javascript:simulateKeys('LLLLLLRRRRRRRRRRRRRRRRRRRRRR')"><i>2</i></a>
-                        <a href="javascript:simulateKeys('LLLLLRRRRRRRRRRRRRRRRRRRRRRR')">2 (early switch)</a>
-                        <a href="javascript:simulateKeys('LLLLLLLRRRRRRRRRRRRRRRRRRRRR')">2 (late/on-beat switch)</a>
-                        <a href="javascript:simulateKeys('LLLLLLRRRRRRRRRRRRRRRRRRR')">2 (early release)</a>
-                        <a href="javascript:simulateKeys('LLLLLLRRRRRRRRRRRRRRRRRRRRRRRRR')">2 (late release)</a>
-                        <!--                              --  --  --  ------  ------  -->
-                        <a href="javascript:simulateKeys('LLLLLLLLLLRRRRRRRRRRRRRR')"><i>3</i></a>
-                        <span>Squeeze/Ultimatic:</span>
-                        <!--                              --  --  ------  ------  ------  -->
-                        <a href="javascript:simulateKeys('LLLLLLSSSSSSSSSSSSSSSSSSSSS')"><i>2</i></a>
-                        <!--                              --  --  --  ------  ------  -->
-                        <a href="javascript:simulateKeys('LLLLLLLLLLSSSSSSSSSSSSS')"><i>3</i></a>
-                    </li>
-                </ul>
-            </li>
-            <li>
-                <b>Early Interstitial:</b>
-                <ul>
-                    <li>
-                        <span>Slap:</span><!--            --  ------  --  -->
-                        <a href="javascript:simulateKeys('LLLRRRRRRRRLLL')">R</a>
-                        <!--                              --  ------  --  --  -->
-                        <a href="javascript:simulateKeys('LLLRRRRRRRRLLLLLLL')">L</a>
-                        <span>Squeeze:</span>
-                        <!--                              --  ------  --  -->
-                        <a href="javascript:simulateKeys('LLSSSSSSSSSSSS')">R (Curtis-A)</a>
-                        <a href="javascript:simulateKeys('LLSSSSS')">R (Curtis-B)</a>
-                        <a href="javascript:simulateKeys('LLSSSSSLLLLLLL')">R (All)</a>
-                        <!--                              --  ------  --  --  -->
-                        <a href="javascript:simulateKeys('LLSSSSSLLLLLLLLLLL')">L (All)</a>
-                    </li>
-                    <li>
-                        <span>Slap:</span><!--            ------  --  ------  -->
-                        <a href="javascript:simulateKeys('RRRRRRRLLLLRRRRRRR')">K</a>
-                        <!--                              ------  --  ------  ------  -->
-                        <a href="javascript:simulateKeys('RRRRRRRLLLLRRRRRRRRRRRRRRR')">Y</a>
-                        <span>Squeeze/Curtis/Ultimatic:</span>
-                        <!--                              ------  --  ------  -->
-                        <a href="javascript:simulateKeys('RRRSSSSSSSSSSSS')">K (Curtis-A)</a>
-                        <a href="javascript:simulateKeys('RRRSSSSSSS')">K (Curtis-B)</a>
-                        <a href="javascript:simulateKeys('RRSSSSRRRRRRRRR')">K (Ultimatic, mem)</a>
-                        <a href="javascript:simulateKeys('RRSSSSSSSSRRRRR')">K (Ultimatic)</a>
-                        <!--                              ------  --  ------  ------  -->
-                        <a href="javascript:simulateKeys('RRSSSSRRRRRRRRRRRRRRRRR')">Y (All, mem)</a>
-                        <a href="javascript:simulateKeys('RRSSSSSSSSRRRRRRRRRRRRR')">Y (All)</a>
-                    </li>
-                </ul>
-            </li>
-            <li>
-                <b>Late Interstitial:</b>
-                <ul>
-                    <li>
-                        <span>Slap:</span><!--            --  --  ------  --  -->
-                        <a href="javascript:simulateKeys('LLLLLLLRRRRRRRRLLL')">F</a>
-                        <!--                              ------  ------  --  ------  -->
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRLLLLRRRRRRR')">Q</a>
-                        <span>Squeeze:</span>
-                        <!--                              --  --  ------  --  -->
-                        <a href="javascript:simulateKeys('LLLLLLSSSSLLLLLLLL')">F</a>
-                        <!--                              ------  ------  --  ------  -->
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRSSSSRRRRRRRR')">Q (mem)</a>
-                        <a href="javascript:simulateKeys('RRRRRRRRRRRRRRSSSSRRRRR')">Q</a>
-                    </li>
-                </ul>
-            </li>
-            <li>
-                <b>Long Middle Interstitial:</b>
-                <ul>
-                    <li>
-                        <span>Slap/Curtis:</span><!--     --  ------  ------  --  -->
-                        <a href="javascript:simulateKeys('LL RRRRRRRRRRRRR LLLLL')">P</a>
-                        <!--                              ------  --  --  ------  -->
-                        <a href="javascript:simulateKeys('RRRRRRRLLLLLLLLRRRRRRR')">X</a>
-                        <!--                              --  --  ------  ------  --  --  -->
-                        <a href="javascript:simulateKeys('LLLLLLLRRRRRRRRRRRRRRRRLLLLLLL')">?</a>
-                        <span>Squeeze/Ultimatic:</span><!--         --  ------  ------  --  -->
-                        <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSLLLLLLL')">P</a>
-                        <!--                              ------  --  --  ------  -->
-                        <a href="javascript:simulateKeys('RRSSSSSSSSSSSSRRRRR')">X</a>
-                        <!--                              --  --  ------  ------  --  --  -->
-                        <a href="javascript:simulateKeys('LLLLLLSSSSSSSSSSSSSLLLLLLLLLLL')">?</a>
-                    </li>
-                </ul>
-            </li>
-            <li>
-                <b>Alternating:</b>
-                <ul>
-                    <li>
-                        <span>Slap:</span><!--            ------  --  ------  --  -->
-                        <a href="javascript:simulateKeys('RRRRRRRLLLLRRRRRRRRLLL')">C</a>
-                        <!--                              ------  --  --  ------  --  -->
-                        <a href="javascript:simulateKeys('RRRRRRRLLLLLLLLRRRRRRRRLLL')">/ (slash)</a>
-                        <!--                              --  ------  --  ------  --  ------  -->
-                        <a href="javascript:simulateKeys('LLLRRRRRRRRLLLLRRRRRRRRLLLLRRRRR')">. (period)</a>
-                        <span>Squeeze:</span><!--         ------  --  ------  --  -->
-                        <a href="javascript:simulateKeys('RRSSSSSSSSSSSSSSSSSSSS')">C (Curtis-A)</a>
-                        <a href="javascript:simulateKeys('RRSSSSSSSSSSSSS')">C (Curtis-B)</a>
-                        <a href="javascript:simulateKeys('RRSSSSRRRRRRRRSSSS')">C (Ultimatic/All, mem)</a>
-                        <a href="javascript:simulateKeys('RRSSSSSSSSRRRRRSSSSSSS')">C (Ultimatic/All)</a>
-                        <!--                              ------  --  --  ------  --  -->
-                        <a href="javascript:simulateKeys('RRRRRRRLLLLLLLLRRRRSSSSSSS')">/ (Curtis-A)</a>
-                        <a href="javascript:simulateKeys('RRRRRRRLLLLLLLLRRRRSSS')">/ (Curtis-B)</a>
-                        <a href="javascript:simulateKeys('RRSSSSSSSSSSSSRRRRRSSSSSSS')">/ (Ultimatic)</a>
-                        <!--                              --  ------  --  ------  --  ------  -->
-                        <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSSSSSSSSSSSSSS')">. (Curtis-A)</a>
-                        <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSSSSSSSSS')">. (Curtis-B)</a>
-                        <a href="javascript:simulateKeys('LLSSSSSLLLLLLLSSSSSLLLLLLLSSSSS')">. (Ultimatic)</a>
-                    </li>
-                </ul>
-            </li>
-        </ul>
     </body>
 </html>
