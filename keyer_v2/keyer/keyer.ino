@@ -7,8 +7,8 @@ const int PADDLE_RIGHT = 9;
 const int RADIO = 10;
 
 enum Mode {
-  IambicA,
-  IambicB,
+  CurtisA,
+  CurtisB,
   Ultimatic,
 } mode = Ultimatic;
 
@@ -50,7 +50,7 @@ void setMode(Mode m) {
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   pinMode(PADDLE_LEFT, INPUT);
   digitalWrite(PADDLE_LEFT, HIGH);
   pinMode(PADDLE_RIGHT, INPUT);
@@ -152,7 +152,7 @@ void leftRightPaddle(bool current, DitDah currentDitDah, bool other, State oppos
   if (now > quietUntil) {
     if (!playMemory()) {
       playTone(currentDitDah);
-      if (mode == IambicB) lastSqueeze = false;
+      if (mode == CurtisB) lastSqueeze = false;
     }
   }
 }
@@ -170,10 +170,10 @@ void squeezePaddle(DitDah currentDitDah) {
     state = Waiting;
     return;
   }
-  if (mode == IambicB) lastSqueeze = true;
+  if (mode == CurtisB) lastSqueeze = true;
   if (now > quietUntil) {
     if (toneUntil == 0) playMemory();
-    if (mode == IambicA || mode == IambicB) {
+    if (mode == CurtisA || mode == CurtisB) {
       playTone(oppositeLast);
     } else if (mode == Ultimatic) {
       playTone(currentDitDah);
@@ -197,10 +197,10 @@ void protocol() {
       quietUntil = now + WORD;
       break;
     case 'A':
-      setMode(IambicA);
+      setMode(CurtisA);
       break;
     case 'B':
-      setMode(IambicB);
+      setMode(CurtisB);
       break;
     case 'U':
       setMode(Ultimatic);
@@ -232,7 +232,7 @@ void waiting() {
       state = Protocol;
       return;
     }
-    if (mode == IambicB && lastSqueeze) {
+    if (mode == CurtisB && lastSqueeze) {
       lastSqueeze = false;
       playTone(oppositeLast);
     }
