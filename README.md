@@ -22,6 +22,7 @@ For the moment, here are some idea and nice sites and apps out there:
 - [Slow Speed [Con]test](http://www.k1usn.com/sst).
 - [Contest Calendar](http://contestcalendar.com).
 - [Parks on the Air](http://pota.app).
+- [QSO Simulator](https://seiuchy.macache.com/).
 
 ## Apps
 
