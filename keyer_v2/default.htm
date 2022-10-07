@@ -164,18 +164,18 @@
 
             function load() {
                 testQsoLoop();
-                if (!('serial' in navigator)) {
-                    // The Web Serial API is supported.
-                    alert('SERIAL UNAVAILABLE');
+                if ('serial' in navigator) {
+                    navigator.serial.addEventListener('connect', (e) => {
+                        // Connect to `e.target` or add it to a list of available ports.
+                        //alert('Connected: ' + JSON.stringify(e));
+                    });
+                    navigator.serial.addEventListener('disconnect', (e) => {
+                        // Remove `e.target` from the list of available ports.
+                        //alert('Disconnected: ' + JSON.stringify(e));
+                    });
+                } else {
+                    alert('SERIAL UNAVAILABLE'); // The Web Serial API is supported.
                 }
-                navigator.serial.addEventListener('connect', (e) => {
-                    // Connect to `e.target` or add it to a list of available ports.
-                    //alert('Connected: ' + JSON.stringify(e));
-                });
-                navigator.serial.addEventListener('disconnect', (e) => {
-                    // Remove `e.target` from the list of available ports.
-                    //alert('Disconnected: ' + JSON.stringify(e));
-                });
                 document.getElementById('message').addEventListener('keypress', (e) => {
                     if (e.charCode == 13 && connectedPort != null) {
                         sendMessage();
