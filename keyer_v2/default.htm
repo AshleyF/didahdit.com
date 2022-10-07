@@ -15,17 +15,18 @@
             td { background-color: black; }
         </style>
         <script>
-            const defaultSpeed = 25;
+            const defaultSpeed = 20;
+            const defaultFarnsworth = 21; // dits
             const canvasWidth = 1450;
             const canvasHeight = 64;
 
-            const farnsworth = 21; // dits
+            var farnsworth = defaultFarnsworth; // dits
 
             var connectedPort = null;
             var morse = "  ETIANMSURWDKGOHVF L PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
             var p = 1;
-            var message = "&nbsp;";
-            var sending = "";
+            var message = '&nbsp;';
+            var sending = '';
             var char = '';
 
             var audioStarted = false;
@@ -46,6 +47,7 @@
 
             var mode;
             var memory;
+            var tone;
             var speed;
             var ditlen;
             var delay = 0.03;
@@ -63,7 +65,7 @@
                 var end = (new Date()).getTime() / 1000 + len;
                 letterBreak = end + (ditlen * 3);
                 wordBreak = end + (ditlen * 7);
-                farnsworthWordBreak = end + (ditlen * farnsworth);
+                farnsworthWordBreak = wordBreak + (ditlen * farnsworth);
             }
 
             function dit() {
@@ -79,47 +81,48 @@
             }
 
             function load() {
-                if (!("serial" in navigator)) {
+                testQsoLoop();
+                if (!('serial' in navigator)) {
                     // The Web Serial API is supported.
-                    alert("SERIAL UNAVAILABLE");
+                    alert('SERIAL UNAVAILABLE');
                 }
                 navigator.serial.addEventListener('connect', (e) => {
                     // Connect to `e.target` or add it to a list of available ports.
-                    //alert("Connected: " + JSON.stringify(e));
+                    //alert('Connected: ' + JSON.stringify(e));
                 });
                 navigator.serial.addEventListener('disconnect', (e) => {
                     // Remove `e.target` from the list of available ports.
-                    //alert("Disconnected: " + JSON.stringify(e));
+                    //alert('Disconnected: ' + JSON.stringify(e));
                 });
-                document.getElementById("message").addEventListener('keypress', (e) => {
+                document.getElementById('message').addEventListener('keypress', (e) => {
                     if (e.charCode == 13 && connectedPort != null) {
                         sendMessage();
-                        e.target.value = "";
+                        e.target.value = '';
                         e.preventDefault();
                     }
                 });
                 document.body.addEventListener('keydown', (e) => {
-                    if (!e.repeat && e.srcElement.id != "message") {
+                    if (!e.repeat && e.srcElement.id != 'message') {
                         switch (e.code) {
-                            case "Comma":
+                            case 'Comma':
                                 setKeys(true, rightDown);
                                 break;
-                            case "Period":
+                            case 'Period':
                                 setKeys(leftDown, true);
                                 break;
-                            case "Escape":
+                            case 'Escape':
                                 reset();
                                 break;
                         }
                     }
                 });
                 document.body.addEventListener('keyup', (e) => {
-                    if (e.srcElement.id != "message") {
+                    if (e.srcElement.id != 'message') {
                         switch (e.code) {
-                            case "Comma":
+                            case 'Comma':
                                 setKeys(false, rightDown);
                                 break;
-                            case "Period":
+                            case 'Period':
                                 setKeys(leftDown, false);
                                 break;
                         }
@@ -127,8 +130,10 @@
                 });
                 reset();
                 setSpeed(defaultSpeed);
+                setFarnsworth(defaultFarnsworth);
                 setMode('U');
                 setMemory(true);
+                setTone(false);
                 read();
                 drawKeyAndToneState();
             }
@@ -142,25 +147,28 @@
                     port.open({ baudRate: 115200 }).then(() => {
                         connectedPort = port;
                         const writer = connectedPort.writable.getWriter();
-                        writer.write(new Uint8Array([getSpeedByte(speed), getModeByte(mode), getMemoryByte(memory)])).then(() => {
+                        writer.write(new Uint8Array([getSpeedByte(speed), getModeByte(mode), getMemoryByte(memory), getToneByte(tone), getKeyboardByte(false)])).then(() => {
                             writer.releaseLock();
+                            displayMode();
                         });
                     }).catch(e => {
-                        alert("ERROR OPENING: " + e);
+                        alert('ERROR OPENING: ' + e);
                     });
                     //navigator.serial.getPorts().then((ports) => {
                     //    // Initialize the list of available ports with `ports` on page load.
-                    //    alert("Ports: " + JSON.stringify(ports));
+                    //    alert('Ports: ' + JSON.stringify(ports));
                     //});
                 }).catch((e) => {
                     // The user didn't select a port.
-                    alert("ERROR NO PORT CHOSEN: " + JSON.stringify(e));
+                    alert('ERROR NO PORT CHOSEN: ' + JSON.stringify(e));
                 });
             }
             
             function disconnect() {
                 if (connectedPort != null) {
                     connectedPort.close();
+                    connectedPort = null;
+                    displayMode();
                     // TODO: reader busy/locked https://stackoverflow.com/questions/65748344/how-can-i-interrupt-a-reader-when-it-hangs-need-a-timeout-on-reader-read
                 }
             }
@@ -175,8 +183,8 @@
             }
 
             function displayMode() {
-                var modeName = mode == 'U' ? "Ultimatic" : mode == 'A' ? "Curtis-A" : mode == 'B' ? "Curtis-B" : "Unknown";
-                document.getElementById('mode').innerText = modeName + " (" + speed + " WPM, " + (memory ? "with" : "no") + " memory)";
+                var modeName = mode == 'U' ? 'Ultimatic' : mode == 'A' ? 'Curtis-A' : mode == 'B' ? 'Curtis-B' : 'Unknown';
+                document.getElementById('mode').innerText = modeName + ' (' + speed + ' WPM + ' + farnsworth + ' dits, memory ' + (memory ? 'on' : 'off') + ' memory, tone ' + (tone ? 'on' : 'off') + ', ' + (connectedPort ? 'connected' : 'disconnected') + ', QSO: ' + qso.stage + ')';
             }
 
             function getModeByte(m) {
@@ -197,13 +205,31 @@
             }
 
             function getMemoryByte(mem) {
-                return mem ? 77 : 78;
+                return 77 + (mem ? 0 : 32); // M/m
+            }
+
+            function getToneByte(t) {
+                return 84 + (t ? 0 : 32); // T/t
+            }
+
+            function getKeyboardByte(k) {
+                return 75 + (k ? 0 : 32); // K/k
             }
 
             function setMemory(mem) {
                 memory = mem;
                 sendByte(getMemoryByte(memory));
                 displayMode();
+            }
+
+            function setTone(t) {
+                tone = t;
+                sendByte(getToneByte(t));
+                displayMode();
+            }
+
+            function setKeyboard(k) {
+                sendByte(getKeyboardByte(k));
             }
 
             function getSpeedByte(wpm) {
@@ -217,13 +243,24 @@
                 displayMode();
             }
 
+            function setFarnsworth(dits) {
+                farnsworth = dits;
+                displayMode();
+            }
+
             function setKeys(left, right) {
                 leftDown = left;
                 rightDown = right;
                 sendByte((left ? 0x2 : 0) | (right ? 0x1 : 0));
+                markManualSend();
             }
 
-            function send(message) {
+            function markManualSend() {
+                qso.lastManualSend = (new Date()).getTime();
+            }
+
+            function send(message, manual = true) {
+                if (manual) markManualSend();
                 if (connectedPort != null) {
                     sending += message.toUpperCase() + ' ';
                     updateDisplay();
@@ -233,6 +270,9 @@
                     for (var i in message) {
                         var m = message[i];
                         if (m == ' ') { // word break
+                            for (var i = 0; i < farnsworth / 3; i++) {
+                                data.push(32); // extra letter-break
+                            }
                             data.push(47);
                         } else {
                             if (m == '<') prosign = true;
@@ -249,7 +289,12 @@
                             }
                             data = data.concat(word.reverse());
                             word = [];
-                            if (!prosign) data.push(32); // letter-break
+                            if (!prosign) {
+                                for (var i = 0; i < farnsworth / 3; i++) {
+                                    data.push(32); // letter-break
+                                }
+                                data.push(32); // letter-break
+                            }
                         }
                     }
                     data.push(47); // final word break
@@ -262,34 +307,162 @@
 
             function sendMessage() {
                 if (connectedPort != null) {
-                    send(document.getElementById("message").value);
+                    send(document.getElementById('message').value);
+                }
+            }
+
+            var initQso = {
+                kind: 'disabled',
+                stage: 'idle',
+                stageChangeTime: 0,
+                yourCall: null,
+                theirCall: null,
+                send: null,
+                lastManualSend: 0,
+                lastSendingTime: 0,
+            };
+
+            var qso = Object.assign({}, initQso);
+
+            function qsoLoop(msg, time, qso) {
+                function randomCallsign() {
+                    return 'KTR4CEY';
+                }
+                var foo = (qso.lastManualSend - qso.stageChangeTime);
+                var manualSentSinceStage = (qso.lastManualSend - qso.stageChangeTime) > 0;
+                var timeSinceLastManualSend = (time - qso.lastManualSend);
+                var sendAndPauseSinceStage = manualSentSinceStage && timeSinceLastManualSend > 3000;
+                switch (qso.kind) {
+                    case 'pota-activator':
+                        switch (qso.stage) {
+                            case 'idle':
+                                var call = /CQ DE ([^\ ]+).* K ?$/g.exec(msg);
+                                if (call) {
+                                    qso.stage = 'started';
+                                    qso.yourCall = call[1];
+                                    qso.theirCall = randomCallsign();
+                                    qso.send = qso.yourCall + ' DE ' + qso.theirCall + ' <AR>';
+                                }
+                                break;
+                            case 'started':
+                                var bye = /E ?E ?$/g.exec(msg);
+                                if (bye) {
+                                    qso.stage = 'idle';
+                                    qso.send = 'EE';
+                                }
+                                break;
+                        }
+                        break;
+                    case 'pota-hunter':
+                        switch (qso.stage) {
+                            case 'idle':
+                                qso.theirCall = randomCallsign();
+                                qso.send = 'CQ POTA DE ' + qso.theirCall + ' K';
+                                qso.stage = 'started';
+                                break;
+                            case 'started':
+                                if (sendAndPauseSinceStage) {
+                                    var call = /([A-Z][^\ ]+) ?$/g.exec(msg);
+                                    if (call) {
+                                        qso.yourCall = call[1];
+                                        qso.send = qso.yourCall + ' GM UR 599 5NN <BK>';
+                                        qso.stage = 'contact'
+                                    }
+                                }
+                                break;
+                            case 'contact':
+                                if (sendAndPauseSinceStage) {
+                                    qso.send = '<BK> TU ES 73 DE ' + qso.theirCall + ' E E';
+                                    qso.stage = 'bye'
+                                }
+                                break;
+                            case 'bye':
+                                if (sendAndPauseSinceStage) {
+                                    var ditdit = /E ?E ?$/g.exec(msg);
+                                    if (ditdit) qso.stage = 'idle'
+                                }
+                                break;
+                        }
+                        break;
+                }
+                return qso;
+            }
+
+            function testQsoLoop() {
+                function testCQ(cq, qso) {
+                    var out = qsoLoop(cq, 0, q);
+                    if (out.send != 'KK7HXU DE KTR4CEY <AR>') console.log('Unexpected CQ reply');
+                    if (out.stage != 'started') console.log('Unexpected CQ stage');
+                }
+                var q = Object.assign({}, qso);
+                q.kind = 'pota-activator';
+                testCQ('CQ DE KK7HXU K');
+                testCQ('CQ POTA DE KK7HXU K');
+                testCQ('CQ CQ CQ DE KK7HXU KK7HXU K');
+                testCQ('CQ CQ CQ POTA DE KK7HXU KK7HXU K');
+
+                var q = Object.assign({}, qso);
+                q.kind = 'pota-hunter';
+                var out = qsoLoop('', 0, q);
+                if (out.send != 'CQ POTA DE KTR4CEY K') console.log('Unexpected CQ');
+                if (out.stage != 'started') console.log('Unexpected CQ stage');
+                out = qsoLoop('KK7HXU', 0, q); // but not enough time
+                if (out.stage != 'started') console.log('Unexpected CQ stage');
+                q.stageChangeTime = 1000;
+                q.lastManualSend = 1001;
+                out = qsoLoop('KK7HXU', 4002, q); // but not enough time
+                if (out.stage != 'contact') console.log('Unexpected CQ stage');
+                if (out.send != 'KK7HXU GM UR 599 5NN <BK>') console.log('Unexpected contact reply')
+            }
+
+            var lastStage = '';
+            function simulateQso(msg) {
+                if (sending.length == 0 || sending == ' ') {
+                    qso = qsoLoop(msg, (new Date()).getTime(), qso);
+                    if (lastStage != qso.stage && !qso.send) {
+                        lastStage = qso.stage;
+                        qso.stageChangeTime = (new Date()).getTime() + 1000; // give time for loopback
+                    }
+                    if (qso.send) {
+                        var captureSend = qso.send;
+                        clearNextMessage = true;
+                        displayMode();
+                        send(captureSend, false);
+                        qso.send = null;
+                    }
                 }
             }
 
             function updateDisplay() {
                 function escape(str) {
-                    return str.replace('<', "&lt;").replace('>', "&gt;");
+                    return str.replace('<', '&lt;').replace('>', '&gt;');
                 }
-                document.getElementById('copy').innerHTML = escape(message) + escape(char) + "<span style='color:#555'>" + escape(sending) + "</span>";
+                document.getElementById('copy').innerHTML = escape(message) + escape(char) + "<span style='border-left: 1px solid #777'>&nbsp;</span><span style='color:#555'>" + escape(sending) + "</span>";
             }
 
             function reset() {
-                message = "&nbsp;";
-                sending = "";
+                message = '&nbsp;';
+                sending = '';
                 p = 1;
                 char = '';
                 updateDisplay();
-                var canvas = document.getElementById("canvas");
-                var ctx = canvas.getContext("2d");
-                ctx.fillStyle = "#000";
+                var canvas = document.getElementById('canvas');
+                var ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#000';
                 ctx.fillRect(0, 0, canvasWidth, canvasHeight);
                 cursor = 20;
             }
 
             var canvasVisible = true;
-            function toggle() {
+            function toggleCode() {
                 document.getElementById('canvas').style.display = canvasVisible ? 'none' : '';
                 canvasVisible = !canvasVisible;
+            }
+
+            var decodeVisible = true;
+            function toggleDecode() {
+                document.getElementById('copy').style.display = decodeVisible ? 'none' : '';
+                decodeVisible = !decodeVisible;
             }
 
             function updateCharacter() {
@@ -301,32 +474,35 @@
                         // TODO
                         break;
                     case 21:
-                        setProsign("AA");
+                        setProsign('AA');
                         break;
                     case 34:
-                        setProsign("VE");
+                        setProsign('VE');
                         break;
                     case 37:
-                        setProsign("INT");
+                        setProsign('INT');
                         break;
                     case 42:
-                        setProsign("AR");
+                        setProsign('AR');
                         break;
                     case 53:
-                        setProsign("CT");
+                        setProsign('CT');
                         break;
                     case 69:
-                        setProsign("SK");
+                        setProsign('SK');
                         break;
                     case 103:
-                        setProsign("NJ");
+                        setProsign('NJ');
+                        break;
+                    case 197:
+                        setProsign('BK');
                         break;
                     case 568:
-                        setProsign("SOS");
+                        setProsign('SOS');
                         break;
                     case 256: // correction (clear)
                         // TODO
-                        message = "&nbsp;";
+                        message = '&nbsp;';
                         char = '';
                         break;
                     default:
@@ -374,50 +550,52 @@
                 const ribbon = canvasHeight / 8;
                 var now = (new Date()).getTime() / 1000;
                 if (now < wordBreak) {
-                    var canvas = document.getElementById("canvas");
-                    var ctx = canvas.getContext("2d");
+                    var canvas = document.getElementById('canvas');
+                    var ctx = canvas.getContext('2d');
                     if (clearNextKeyState) {
-                        ctx.fillStyle = "#000";
+                        ctx.fillStyle = '#000';
                         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
                         cursor = 20;
                         clearNextKeyState = false;
                     }
                     if (clearNextMessage) {
-                        message = "&nbsp;";
+                        message = '&nbsp;';
                         updateDisplay();
                         clearNextMessage = false;
                     }
                     var currentGain = gain.gain.value;
                     if ((lastGain < 0.5 && currentGain > 0.5) || (lastGain > 0.5 && currentGain < 0.5)) {
-                        ctx.fillStyle = "#555"; // mark tone boundaries
+                        ctx.fillStyle = '#555'; // mark tone boundaries
                         lastGain = currentGain;
                     } else {
-                        ctx.fillStyle = "#000"; // erase cursor
+                        ctx.fillStyle = '#000'; // erase cursor
                     }
                     ctx.fillRect(cursor, 0, 1, canvasHeight);
                     if (rightDown) {
-                        ctx.fillStyle = "#00F";
+                        ctx.fillStyle = '#00F';
                         ctx.fillRect(cursor, ribbon, 1, ribbon);
                     }
                     if (leftDown) {
-                        ctx.fillStyle = "#F00";
+                        ctx.fillStyle = '#F00';
                         ctx.fillRect(cursor, ribbon * 3, 1, ribbon);
                     }
                    if (currentGain > 0.5) {
-                        ctx.fillStyle = "#fff";
+                        ctx.fillStyle = '#fff';
                         ctx.fillRect(cursor, ribbon * 5, 1, ribbon * 2);
                     }
                     cursor = ++cursor % canvasWidth;
-                    ctx.fillStyle = "#0F0";
+                    ctx.fillStyle = '#0F0';
                     ctx.fillRect(cursor, 0, 1, canvasHeight);
                 }
                 if (now - letterBreak > 0) {
                     message += char;
+                    simulateQso(message);
                     char = '';
                     p = 1;
                 }
                 if (now - farnsworthWordBreak > 0 && !message.endsWith(' ')) {
                     message += ' ';
+                    updateDisplay();
                 }
                 if (now - wordBreak > ditlen * 14.0) {
                     clearNextKeyState = true;
@@ -439,6 +617,7 @@
                             if (v < 4) {
                                 leftDown = (v & 0x2) != 0;
                                 rightDown = (v & 0x1) != 0;
+                                markManualSend();
                             } else {
                                 copy(v);
                             }
@@ -493,7 +672,12 @@
         <button id="disconnect" onclick="disconnect()">Disconnect</button>
         <button id="send" onclick="sendMessage()">Send</button>
         <button id="reset" onclick="reset()">Clear</button>
-        <button id="toggle" onclick="toggle()">Toggle</button>
+        <button id="toggleCode" onclick="toggleCode()">Toggle Code</button>
+        <button id="toggleDecode" onclick="toggleDecode()">Toggle Decode</button>
+        <span>&nbsp;</span>
+        <button id="qsoActivator" onclick="qso.kind = 'pota-activator'">Activator</button>
+        <button id="qsoHunter" onclick="qso.kind = 'pota-hunter'">Hunter</button>
+        <button id="qsoDisable" onclick="qso.kind = 'disabled'; qso = Object.assign({}, initQso);">Disable QSO Sim</button>
         <hr />
         <button id="iambicA" onclick="setMode('A')">Curtis-A</button>
         <button id="iambicB" onclick="setMode('B')">Curtis-B</button>
@@ -501,6 +685,9 @@
         <span>&nbsp;</span>
         <button id="enableMemory" onclick="setMemory(true)">Enable Memory</button>
         <button id="disableMemory" onclick="setMemory(false)">Disable Memory</button>
+        <span>&nbsp;</span>
+        <button id="enableTone" onclick="setTone(true)">Enable Tone</button>
+        <button id="disableTone" onclick="setTone(false)">Disable Tone</button>
         <hr />
         <button id="speed5" onclick="setSpeed(5)">5 WPM</button>
         <button id="speed10" onclick="setSpeed(10)">10 WPM</button>
@@ -514,6 +701,12 @@
         <button id="speed30" onclick="setSpeed(30)">30 WPM</button>
         <button id="speed40" onclick="setSpeed(40)">40 WPM</button>
         <button id="speed50" onclick="setSpeed(50)">50 WPM</button>
+        <span>&nbsp;</span>
+        <button id="farnsworth" onclick="setFarnsworth(0)">0 dits</button>
+        <button id="farnsworth" onclick="setFarnsworth(7)">7 dits</button>
+        <button id="farnsworth" onclick="setFarnsworth(14)">14 dits</button>
+        <button id="farnsworth" onclick="setFarnsworth(21)">21 dits</button>
+        <button id="farnsworth" onclick="setFarnsworth(28)">28 dits</button>
         <hr />
         <a href="javascript:send('CQ')">CQ</a>
         <a href="javascript:send('QRL?')">QRL?</a>
