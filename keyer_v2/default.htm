@@ -21,6 +21,7 @@
             const canvasHeight = 64;
 
             var farnsworth = defaultFarnsworth; // dits
+            var trainingSpeechPause = 2;
 
             var connectedPort = null;
             var morse = "  ETIANMSURWDKGOHVF L PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
@@ -32,6 +33,77 @@
             var audioStarted = false;
             var audioCtx;
             var gain;
+
+            function say(utterance, delay) {
+                var utter = '';
+                for (var i in utterance) {
+                    var c = utterance[i];
+                    if (c == c.toUpperCase()) {
+                        var spell = {
+                            'A': 'ay',
+                            'B': 'bee',
+                            'C': 'cee',
+                            'D': 'dee',
+                            'E': 'ee',
+                            'F': 'ef',
+                            'G': 'gee',
+                            'H': 'aych',
+                            'I': 'eye',
+                            'J': 'jay',
+                            'K': 'kay',
+                            'L': 'el',
+                            'M': 'em',
+                            'N': 'in',
+                            'O': 'oh',
+                            'P': 'pee',
+                            'Q': 'cue',
+                            'R': 'ar',
+                            'S': 'ess',
+                            'T': 'tee',
+                            'U': 'you',
+                            'V': 'vee',
+                            'W': 'double you',
+                            'X': 'ex',
+                            'Y': 'wye',
+                            'Z': 'zee',
+                            '?': 'question mark',
+                            '.': 'full stop',
+                            ',': 'comma',
+                            ':': 'colon',
+                            '-': 'dash',
+                            ';': 'semicolon',
+                            '!': 'exclamation point',
+                            '/': 'slash',
+                            "'": 'apostrophe',
+                            '"': 'quotation mark',
+                            '_': 'underscore',
+                            '=': 'double dash',
+                            '&': 'ampersand',
+                            '$': 'dollar sign',
+                            '(': 'left parenthesis',
+                            ')': 'right parenthesis',
+                            '+': 'plus',
+                            '@': 'at sign',
+                            '<': ' ', // nothing
+                            '>': 'prosign',
+                        }[c];
+                        utter += ' ' + (spell || c) + ' ';
+                    } else {
+                        utter += c;
+                    }
+                }
+                if ('speechSynthesis' in window) {
+                    window.setTimeout(function() {
+                        window.speechSynthesis.speak(
+                            new SpeechSynthesisUtterance(utter)
+                        )
+                    }, delay * 1000);
+                }
+            }
+
+            function sayMessage() {
+                say(document.getElementById('message').value, 0);
+            }
 
             function startAudio() {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -62,6 +134,13 @@
                 t += len;
                 gain.gain.setTargetAtTime(0, t, ramp);
                 t += ditlen;
+            }
+
+            function silence(len) {
+                t += len;
+            }
+            
+            function updateBreaks(len) {
                 var end = (new Date()).getTime() / 1000 + len;
                 letterBreak = end + (ditlen * 3);
                 wordBreak = end + (ditlen * 7);
@@ -72,12 +151,15 @@
                 p *= 2;
                 updateCharacter();
                 playTone(ditlen)
+                updateBreaks(ditlen);
             }
 
             function dah() {
                 p = p * 2 + 1;
                 updateCharacter();
-                playTone(3 * ditlen);
+                var len = 3 * ditlen;
+                playTone(len);
+                updateBreaks(len);
             }
 
             function load() {
@@ -259,13 +341,55 @@
                 qso.lastManualSend = (new Date()).getTime();
             }
 
+            function train(message) {
+                document.getElementById('message').value = message; // TODO: display phrases w/o |
+                var prosign = false;
+                var words = message.split('|');
+                if (!audioStarted) startAudio();
+                var startTime = audioCtx.currentTime;
+                for (var w in words) {
+                    var word = words[w];
+                    for (var i in word) {
+                        var c = word[i];
+                        if (c == ' ') { // word break
+                            silence(ditlen * 7 + (ditlen * farnsworth));
+                        } else {
+                            if (c == '<') prosign = true;
+                            if (c == '>') prosign = false;
+                            var j = morse.indexOf(c.toUpperCase());
+                            var letter = [];
+                            while (j > 1) {
+                                if (j % 2 == 0) {
+                                    letter.push(true);
+                                    j /= 2;
+                                } else {
+                                    letter.push(false);
+                                    j = (j - 1) / 2;
+                                }
+                            }
+                            letter.reverse();
+                            for (var j in letter) {
+                                playTone(letter[j] ? ditlen : ditlen * 3);
+                                silence(ditlen);
+                            }
+                            if (!prosign) {
+                                silence(ditlen * 3 + (ditlen * farnsworth));
+                            }
+                        }
+                    }
+                    say(word, t - startTime + trainingSpeechPause);
+                    silence(trainingSpeechPause * 2);
+                }
+                silence(ditlen * 7); // final word break
+            }
+
             function send(message, manual = true) {
-                if (manual) markManualSend();
+                if (manual) markManualSend(); // vs. QSO auto-reply
                 if (connectedPort != null) {
                     sending += message.toUpperCase() + ' ';
                     updateDisplay();
                     var data = [];
-                    var word = [];
+                    var letter = [];
                     var prosign = false;
                     for (var i in message) {
                         var m = message[i];
@@ -280,15 +404,15 @@
                             var j = morse.indexOf(m.toUpperCase());
                             while (j > 1) {
                                 if (j % 2 == 0) {
-                                    word.push(46); // dit
+                                    letter.push(46); // dit
                                     j /= 2;
                                 } else {
-                                    word.push(45); // dah
+                                    letter.push(45); // dah
                                     j = (j - 1) / 2;
                                 }
                             }
-                            data = data.concat(word.reverse());
-                            word = [];
+                            data = data.concat(letter.reverse());
+                            letter = [];
                             if (!prosign) {
                                 for (var i = 0; i < farnsworth / 3; i++) {
                                     data.push(32); // letter-break
@@ -309,6 +433,10 @@
                 if (connectedPort != null) {
                     send(document.getElementById('message').value);
                 }
+            }
+
+            function sendTraining() {
+                train(document.getElementById('message').value);
             }
 
             var initQso = {
@@ -671,6 +799,8 @@
         <button id="connect" onclick="connect()">Connect</button>
         <button id="disconnect" onclick="disconnect()">Disconnect</button>
         <button id="send" onclick="sendMessage()">Send</button>
+        <button id="say" onclick="sayMessage()">Say</button>
+        <button id="train" onclick="sendTraining()">Train</button>
         <button id="reset" onclick="reset()">Clear</button>
         <button id="toggleCode" onclick="toggleCode()">Toggle Code</button>
         <button id="toggleDecode" onclick="toggleDecode()">Toggle Decode</button>
@@ -701,7 +831,7 @@
         <button id="speed30" onclick="setSpeed(30)">30 WPM</button>
         <button id="speed40" onclick="setSpeed(40)">40 WPM</button>
         <button id="speed50" onclick="setSpeed(50)">50 WPM</button>
-        <span>&nbsp;</span>
+        <br />
         <button id="farnsworth" onclick="setFarnsworth(0)">0 dits</button>
         <button id="farnsworth" onclick="setFarnsworth(7)">7 dits</button>
         <button id="farnsworth" onclick="setFarnsworth(14)">14 dits</button>
@@ -724,6 +854,9 @@
         <a href="javascript:send('KK7HXU')">KK7HXU</a>
         <a href="javascript:send('ASHLEY')">ASHLEY</a>
         <hr />
+        <a href="javascript:train('T T T T T|E E E E E|A A A A A|N N N N N|tea|tee|eat|ate|at|tat|teen|neat|ten|net|tan|eat at ten|ate at ten|at tee')">CWOps1</a>
+        <a href="javascript:train('T T T T T|E E E E E|A A A A A|N N N N N|O O O O O|I I I I I|S S S S S|1 1 1 1 1|4 4 4 4 4|ten|ton|tin|tie|toe|no|not|note|it|at|one|neat|net|nit|toes|stone|tease|noise|one neat note|no noise|tie it|1 ton stone')">CWOps2</a>
+        <a href="javascript:train('N1AS|N4ON|S41T|NO1S|AI1E|IT4O|EA1ON|ES4IT')">CWOps2 (calls)</a>
         <table>
             <tr>
                 <th>Single Lever</th>
