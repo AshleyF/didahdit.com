@@ -2,87 +2,114 @@
     <head>
         <title>Learn Morse Code</title>
         <style>
-        body {
-            background-color: black;
-            font-family: sans-serif;
-            color: pink;
-            margin: 0;
-            padding: 0 }
-        body.dark {
-            color: white;
-        }
-        a.dark { color: #eee; }
+            body {
+                background-color: black;
+                font-family: sans-serif;
+                color: pink;
+                margin: 0;
+                padding: 0 }
+            body.dark {
+                color: white;
+            }
+            a.dark { color: #eee; }
         </style>
         <script>
-          var canvas;
+            var canvas;
 
-          var ui = { x: 100, y: 100 };
+            var ui = {
+                x: 100,
+                y: 100,
+                screen: 'unchanged',
+            };
 
-          function resizeCanvas() {
-              canvas.width = document.body.clientWidth;
-              canvas.height = document.body.clientHeight;
-          }
+            function resizeCanvas() {
+                canvas.width = document.body.clientWidth;
+                canvas.height = document.body.clientHeight;
+            }
 
-          function redraw() {
-              var ratio = window.devicePixelRatio;
+            function redraw() {
+                var ratio = window.devicePixelRatio;
 
-              var ctx = canvas.getContext('2d');
-              ctx.fillStyle = '#f00';
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
-              ctx.fillStyle = '#000';
-              ctx.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
-              ctx.fillStyle = '#f00';
+                var ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#f00';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#000';
+                ctx.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
+                ctx.fillStyle = '#f00';
 
-              var txt = 'Hotdog';
-              ctx.textAlign = 'center';
-              ctx.font = 'bold 100px sans-serif';
-              var size = ctx.measureText(txt);
-              var ascent = size.fontBoundingBoxAscent;
-              var descent = size.fontBoundingBoxDescent;
-              var left = size.actualBoundingBoxLeft;
-              var right = size.actualBoundingBoxRight;
-              var width = left + right;
-              var height = ascent + descent;
+                var txt = 'Hotdog';
+                ctx.textAlign = 'center';
+                ctx.font = 'bold 100px sans-serif';
+                var size = ctx.measureText(txt);
+                var ascent = size.fontBoundingBoxAscent;
+                var descent = size.fontBoundingBoxDescent;
+                var left = size.actualBoundingBoxLeft;
+                var right = size.actualBoundingBoxRight;
+                var width = left + right;
+                var height = ascent + descent;
 
-              var scaleWidth = canvas.width / width;
-              var scaleHeight = canvas.height / height;
+                var scaleWidth = canvas.width / width;
+                var scaleHeight = canvas.height / height;
 
-              var scale = Math.min(scaleWidth, scaleHeight);
-              scale /= ratio;
+                var scale = Math.min(scaleWidth, scaleHeight);
+                scale /= ratio;
 
-              ctx.font = 'bold ' + (scale * 100) + 'px sans-serif';
-              ctx.fillText('Hey World', canvas.width / 2, canvas.height / 2 + ascent * scale / ratio);
-              
-              ctx.beginPath();
-              ctx.arc(ui.x, ui.y, 50 / ratio, 0, 2 * Math.PI, false);
-              ctx.fill();
-          }
+                ctx.font = 'bold ' + (scale * 100) + 'px sans-serif';
+                ctx.fillText('Hey World', canvas.width / 2, canvas.height / 2 + ascent * scale / ratio);
+                
+                ctx.beginPath();
+                ctx.arc(ui.x, ui.y, 50 / ratio, 0, 2 * Math.PI, false);
+                ctx.fill();
 
-          function fullScreen() {
-              var doc = document.documentElement;
-              (doc.requestFullScreen || doc.webkitRequestFullScreen || doc.mozRequestFullScreen).call(doc);
-          }
+                if (ui.screen != 'unchanged') {
+                    fullScreen(ui.screen == 'full');
+                    ui.screen = 'unchanged';
+                }
+            }
 
-          function touch(x, y) {
-              ui.x = x;
-              ui.y = y;
-              redraw();
-              fullScreen();
-          }
+            function fullScreen(full) {
+                if (full) {
+                    var doc = document.documentElement;
+                    doc.requestFullScreen(doc);
+                } else {
+                    document.cancelFullScreen();
+                }
+            }
 
-          window.onload = function() {
-              canvas = document.getElementById('canvas');
-              canvas.onmousedown = function(e) { e.preventDefault(); touch(e.x, e.y); }
-              canvas.ontouchstart = function(e) { e.preventDefault(); touch(e.touches[0].clientX, e.touches[0].clientY); }
+            function touch(x, y) {
+                ui.x = x;
+                ui.y = y;
+                if (ui.y < 100) ui.screen = 'full';
+                if (ui.y > canvas.height - 100) ui.screen = 'regular';
+                redraw();
+            }
 
-              resizeCanvas();
-              redraw();
-          }
+            window.onload = function() {
+                canvas = document.getElementById('canvas');
+                canvas.onmousedown = function(e) { e.preventDefault(); touch(e.x, e.y); }
+                canvas.ontouchstart = function(e) { e.preventDefault(); touch(e.touches[0].clientX, e.touches[0].clientY); }
 
-          window.onresize = function() {
-              resizeCanvas();
-              redraw();
-          }
+                var doc = document.documentElement;
+                doc.requestFullScreen =
+                    doc.requestFullScreen ||
+                    doc.webkitRequestFullScreen ||
+                    doc.mozRequestFullScreen ||
+                    doc.msRequestFullscreen ||
+                    function() { return false; };
+                document.cancelFullScreen =
+                    document.cancelFullScreen ||
+                    document.webkitCancelFullScreen ||
+                    document.mozCancelFullScreen ||
+                    function() { return false; };
+
+                resizeCanvas();
+                redraw();
+            }
+
+            window.onresize = function() {
+                resizeCanvas();
+                redraw();
+            }
         </script>
     </head>
     <body class="dark">
