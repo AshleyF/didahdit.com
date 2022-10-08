@@ -24,25 +24,54 @@
           }
 
           function redraw() {
+              var ratio = window.devicePixelRatio;
+
               var ctx = canvas.getContext('2d');
               ctx.fillStyle = '#f00';
               ctx.fillRect(0, 0, canvas.width, canvas.height);
               ctx.fillStyle = '#000';
               ctx.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
               ctx.fillStyle = '#f00';
+
+              var txt = 'Hotdog';
+              ctx.textAlign = 'center';
+              ctx.font = 'bold 100px sans-serif';
+              var size = ctx.measureText(txt);
+              var ascent = size.fontBoundingBoxAscent;
+              var descent = size.fontBoundingBoxDescent;
+              var left = size.actualBoundingBoxLeft;
+              var right = size.actualBoundingBoxRight;
+              var width = left + right;
+              var height = ascent + descent;
+
+              var scaleWidth = canvas.width / width;
+              var scaleHeight = canvas.height / height;
+
+              var scale = Math.min(scaleWidth, scaleHeight);
+              scale /= ratio;
+
+              ctx.font = 'bold ' + (scale * 100) + 'px sans-serif';
+              ctx.fillText('Hey World', canvas.width / 2, canvas.height / 2 + ascent * scale / ratio);
+              
               ctx.beginPath();
-              ctx.arc(ui.x, ui.y, 50, 0, 2 * Math.PI, false);
+              ctx.arc(ui.x, ui.y, 50 / ratio, 0, 2 * Math.PI, false);
               ctx.fill();
+          }
+
+          function fullScreen() {
+              var doc = document.documentElement;
+              (doc.requestFullScreen || doc.webkitRequestFullScreen || doc.mozRequestFullScreen).call(doc);
           }
 
           function touch(x, y) {
               ui.x = x;
               ui.y = y;
               redraw();
+              fullScreen();
           }
 
           window.onload = function() {
-              canvas = document.getElementById("canvas");
+              canvas = document.getElementById('canvas');
               canvas.onmousedown = function(e) { e.preventDefault(); touch(e.x, e.y); }
               canvas.ontouchstart = function(e) { e.preventDefault(); touch(e.touches[0].clientX, e.touches[0].clientY); }
 
