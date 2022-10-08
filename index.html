@@ -1,18 +1,7 @@
 <html>
     <head>
         <title>Learn Morse Code</title>
-        <style>
-            body {
-                background-color: black;
-                font-family: sans-serif;
-                color: pink;
-                margin: 0;
-                padding: 0 }
-            body.dark {
-                color: white;
-            }
-            a.dark { color: #eee; }
-        </style>
+        <style>body { margin: 0; padding: 0; }</style>
         <script>
             var canvas;
 
@@ -28,14 +17,18 @@
             }
 
             function redraw() {
+                var backgroundColor = ui.darkMode ? '#111' : '#eee'; // black/white
+                var borderColor = '#fd0'; // yellow
+                var mainTextColor = '#f43'; // red
+                var ballColor = '#f81'; // orange
+
                 var ratio = window.devicePixelRatio;
 
                 var ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#f00';
+                ctx.fillStyle = borderColor;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#000';
+                ctx.fillStyle = backgroundColor;
                 ctx.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
-                ctx.fillStyle = '#f00';
 
                 var txt = 'Hotdog';
                 ctx.textAlign = 'center';
@@ -55,8 +48,10 @@
                 scale /= ratio;
 
                 ctx.font = 'bold ' + (scale * 100) + 'px sans-serif';
+                ctx.fillStyle = mainTextColor;
                 ctx.fillText('Hey World', canvas.width / 2, canvas.height / 2 + ascent * scale / ratio);
                 
+                ctx.fillStyle = ballColor;
                 ctx.beginPath();
                 ctx.arc(ui.x, ui.y, 50 / ratio, 0, 2 * Math.PI, false);
                 ctx.fill();
@@ -64,6 +59,7 @@
                 if (ui.screen != 'unchanged') {
                     fullScreen(ui.screen == 'full');
                     ui.screen = 'unchanged';
+                    ui.darkMode = true;
                 }
             }
 
@@ -80,7 +76,8 @@
                 ui.x = x;
                 ui.y = y;
                 if (ui.y < 100) ui.screen = 'full';
-                if (ui.y > canvas.height - 100) ui.screen = 'regular';
+                else if (ui.y > canvas.height - 100) ui.screen = 'regular';
+                else if (ui.x < 100) ui.darkMode = !ui.darkMode;
                 redraw();
             }
 
