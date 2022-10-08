@@ -18,7 +18,6 @@
 
             function redraw() {
                 var backgroundColor = ui.darkMode ? '#111' : '#eee'; // black/white
-                var borderColor = '#fd0'; // yellow
                 var mainTextColor = '#f43'; // red
                 var ballColor = '#f81'; // orange
 
@@ -29,29 +28,25 @@
                     const sampleSize = 100;
                     setFont(sampleSize);
                     var size = ctx.measureText(txt);
-                    var ascent = size.fontBoundingBoxAscent;
-                    var descent = size.fontBoundingBoxDescent;
                     var scale = Math.min(
                         width / (size.actualBoundingBoxLeft + size.actualBoundingBoxRight),
-                        height / (ascent + descent));
+                        height / (size.fontBoundingBoxAscent + size.fontBoundingBoxDescent));
                     setFont(scale * sampleSize);
-                    return { ascent: ascent, descent: descent };
                 }
 
                 document.body.style.backgroundColor = backgroundColor;
 
                 var ratio = window.devicePixelRatio;
 
-                ctx.fillStyle = borderColor;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = backgroundColor;
                 ctx.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
 
-                var txt = 'Hotdog!';
+                var txt = 'Tracey';
                 ctx.textAlign = 'center';
-                var metrics = setFontSizeToFit(txt, canvas.width, canvas.height, 'bold');
+                ctx.textBaseline = 'middle';
+                setFontSizeToFit(txt, canvas.width * 0.9, canvas.height * 0.9, 'bold');
                 ctx.fillStyle = mainTextColor;
-                ctx.fillText(txt, canvas.width / 2, canvas.height / 2 + metrics.ascent * ratio / 2);
+                ctx.fillText(txt, canvas.width / 2, canvas.height / 2);
                 
                 ctx.fillStyle = ballColor;
                 ctx.beginPath();
