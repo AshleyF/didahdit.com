@@ -13,8 +13,8 @@
             };
 
             function resizeCanvas() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
+                canvas.width = document.body.clientWidth;
+                canvas.height = document.body.clientHeight;
             }
 
             function redraw() {
@@ -22,6 +22,8 @@
                 var borderColor = '#fd0'; // yellow
                 var mainTextColor = '#f43'; // red
                 var ballColor = '#f81'; // orange
+
+                document.body.style.backgroundColor = backgroundColor;
 
                 var ratio = window.devicePixelRatio;
 
@@ -45,15 +47,15 @@
                 var scaleWidth = canvas.width / width;
                 var scaleHeight = canvas.height / height;
 
-                var scale = Math.min(scaleWidth, scaleHeight) / ratio;
+                var scale = Math.min(scaleWidth, scaleHeight);
 
                 ctx.font = 'bold ' + (scale * 100) + 'px sans-serif';
                 ctx.fillStyle = mainTextColor;
-                ctx.fillText('Hey World', canvas.width / 2, canvas.height / 2 + (ascent / ratio) * scale);
+                ctx.fillText(txt, canvas.width / 2, canvas.height / 2 + ascent * ratio / 2);
                 
                 ctx.fillStyle = ballColor;
                 ctx.beginPath();
-                ctx.arc(ui.x, ui.y, 50, 0, 2 * Math.PI, false);
+                ctx.arc(ui.x, ui.y, 50 * ratio, 0, 2 * Math.PI, false);
                 ctx.fill();
 
                 if (ui.screen != 'unchanged') {
