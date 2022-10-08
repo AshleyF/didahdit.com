@@ -1,140 +1,63 @@
 <html>
-  <head>
-    <title>Morse Code</title>
-    <script>
-    var context = new (window.AudioContext || window.webkitAudioContext)();
-    var oscillator = context.createOscillator();
-    oscillator.frequency.value = 750;
-    var gain = context.createGain();
-    gain.gain.value = 0;
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-    //oscillator.start(0);
+    <head>
+        <title>Learn Morse Code</title>
+        <style>
+        body {
+            background-color: black;
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0 }
+        body.dark {
+            color: white;
+        }
+        a.dark { color: #eee; }
+        </style>
+        <script>
+          var canvas;
 
-    var rate = 20; // WPM
-    var ditlen = 1.2 / rate;
-    var delay = 0.03;
-    var ramp = 0.001;
+          var ui = { x: 100, y: 100 };
 
-    function toneStart() {
-      gain.gain.setTargetAtTime(1, context.currentTime + delay, ramp);
-    }
+          function resizeCanvas() {
+              canvas.width = document.body.clientWidth;
+              canvas.height = document.body.clientHeight;
+          }
 
-    function toneStop() {
-      gain.gain.setTargetAtTime(0, context.currentTime + delay, ramp);
-    }
+          function redraw() {
+              var ctx = canvas.getContext('2d');
+              ctx.fillStyle = '#f00';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.fillStyle = '#000';
+              ctx.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
+              ctx.fillStyle = '#f00';
+              ctx.beginPath();
+              ctx.arc(ui.x, ui.y, 50, 0, 2 * Math.PI, false);
+              ctx.fill();
+          }
 
-    function dit(t) {
-      gain.gain.setTargetAtTime(1, t, ramp);
-      gain.gain.setTargetAtTime(0, t + ditlen, ramp);
-      return t + 2 * ditlen;
-    }
+          function touch(x, y) {
+              ui.x = x;
+              ui.y = y;
+              redraw();
+          }
 
-    function dah(t) {
-      gain.gain.setTargetAtTime(1, t, ramp);
-      gain.gain.setTargetAtTime(0, t + 3 * ditlen, ramp);
-      return t + 4 * ditlen;
-    }
+          window.onload = function() {
+              canvas = document.getElementById("canvas");
+              canvas.onmousedown = function(e) { e.preventDefault(); touch(e.x, e.y); }
+              canvas.ontouchstart = function(e) { e.preventDefault(); touch(e.touches[0].clientX, e.touches[0].clientY); }
 
-    function character(t) {
-      return t + 2 * ditlen;
-    }
+              resizeCanvas();
+              redraw();
+          }
 
-    function word(t) {
-      return t + 6 * ditlen;
-    }
-
-    function test() {
-      var t = context.currentTime;
-      t = word(t);
-      t = dit(t);
-      t = dah(t);
-      t = character(t);
-      t = dit(t);
-      t = dit(t);
-      t = dit(t);
-      t = character(t);
-      t = dit(t);
-      t = dit(t);
-      t = dit(t);
-      t = dit(t);
-      t = character(t);
-      t = dit(t);
-      t = dah(t);
-      t = dit(t);
-      t = dit(t);
-      t = character(t);
-      t = dit(t);
-      t = character(t);
-      t = dah(t);
-      t = dit(t);
-      t = dah(t);
-      t = dah(t);
-      t = word(t);
-
-      t = dit(t);
-      t = dah(t);
-      t = dit(t);
-      t = dit(t);
-      t = character(t);
-      t = dah(t);
-      t = dah(t);
-      t = dah(t);
-      t = character(t);
-      t = dit(t);
-      t = dit(t);
-      t = dit(t);
-      t = dah(t);
-      t = character(t);
-      t = dit(t);
-      t = character(t);
-      t = dit(t);
-      t = dit(t);
-      t = dit(t);
-      t = word(t);
-
-      t = dah(t);
-      t = character(t);
-      t = dit(t);
-      t = dah(t);
-      t = dit(t);
-      t = character(t);
-      t = dit(t);
-      t = dah(t);
-      t = character(t);
-      t = dah(t);
-      t = dit(t);
-      t = dah(t);
-      t = dit(t);
-      t = character(t);
-      t = dit(t);
-      t = character(t);
-      t = dah(t);
-      t = dit(t);
-      t = dah(t);
-      t = dah(t);
-      t = character(t);
-    }
-
-    document.addEventListener('keydown', (event) => {
-      if (event.key == ' ') toneStart();
-    });
-
-    document.addEventListener('keyup', (event) => {
-      if (event.key == ' ') toneStop();
-    });
-
-    window.addEventListener('load', (event) => {
-      document.getElementById('ios').addEventListener('click', function() {
-        alert('Starting audio on iOS');
-        oscillator.start(0);
-      }, false);
-    });
-    </script>
-  </head>
-  <body>
-    <button id="ios">iOS</button>
-    <button onclick="test()">Test</button>
-  </body>
+          window.onresize = function() {
+              resizeCanvas();
+              redraw();
+          }
+        </script>
+    </head>
+    <body class="dark">
+        <canvas id="canvas"></canvas>
+    </body>
+</html>
 
 
