@@ -18,19 +18,21 @@
 
             function redraw() {
                 var backgroundColor = ui.darkMode ? '#111' : '#eee'; // black/white
+                var foregroundColor = ui.darkMode ? '#eee' : '#111'; // white/black
                 var mainTextColor = '#f43'; // red
                 var ballColor = '#f81'; // orange
 
                 var ctx = canvas.getContext('2d');
 
-                function setFontSizeToFit(txt, width, height, weight) {
+                function setFontSizeToFit(txt, width, height, weight, actual) {
                     function setFont(size) { ctx.font = weight + ' ' + size + 'px sans-serif'; }
                     const sampleSize = 100;
                     setFont(sampleSize);
                     var size = ctx.measureText(txt);
                     var scale = Math.min(
                         width / (size.actualBoundingBoxLeft + size.actualBoundingBoxRight),
-                        height / (size.fontBoundingBoxAscent + size.fontBoundingBoxDescent));
+                        height / (actual ? size.actualBoundingBoxAscent + size.actualBoundingBoxDescent :
+                                           size.fontBoundingBoxAscent + size.fontBoundingBoxDescent));
                     setFont(scale * sampleSize);
                 }
 
@@ -39,12 +41,14 @@
                 var ratio = window.devicePixelRatio;
 
                 ctx.fillStyle = backgroundColor;
-                ctx.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                var padding = Math.max(canvas.width, canvas.height) * 0.1;
 
                 var txt = 'Tracey';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                setFontSizeToFit(txt, canvas.width * 0.9, canvas.height * 0.9, 'bold');
+                setFontSizeToFit(txt, canvas.width - 2 * padding, canvas.height - 2 * padding, 'bold', false);
                 ctx.fillStyle = mainTextColor;
                 ctx.fillText(txt, canvas.width / 2, canvas.height / 2);
                 
@@ -52,12 +56,22 @@
                 ctx.beginPath();
                 ctx.arc(ui.x, ui.y, 50 * ratio, 0, 2 * Math.PI, false);
                 ctx.fill();
+
+                var buttonSize = padding;
+                var modeText = ui.darkMode ? '☼' : '☽';
+                setFontSizeToFit(modeText, buttonSize, 'normal', true);
+                ctx.fillStyle = foregroundColor;
+                ctx.fillText(modeText, padding + buttonSize / 2, canvas.height - padding - buttonSize / 2);
+                //ctx.strokeStyle = foregroundColor;
+                //ctx.beginPath();
+                //ctx.rect(padding + buttonSize, canvas.height - buttonSize - padding, buttonSize, buttonSize);
+                //ctx.stroke();
             }
 
             function touch(x, y) {
                 ui.x = x;
                 ui.y = y;
-                if (ui.y < 100) ui.darkMode = !ui.darkMode;
+                if (ui.x < 200 && ui.y > canvas.height - 200) ui.darkMode = !ui.darkMode;
                 redraw();
             }
 
