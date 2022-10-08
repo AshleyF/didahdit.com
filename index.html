@@ -9,11 +9,12 @@
                 x: 100,
                 y: 100,
                 screen: 'unchanged',
+                darkMode: true,
             };
 
             function resizeCanvas() {
-                canvas.width = document.body.clientWidth;
-                canvas.height = document.body.clientHeight;
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
             }
 
             function redraw() {
@@ -44,16 +45,15 @@
                 var scaleWidth = canvas.width / width;
                 var scaleHeight = canvas.height / height;
 
-                var scale = Math.min(scaleWidth, scaleHeight);
-                scale /= ratio;
+                var scale = Math.min(scaleWidth, scaleHeight) / ratio;
 
                 ctx.font = 'bold ' + (scale * 100) + 'px sans-serif';
                 ctx.fillStyle = mainTextColor;
-                ctx.fillText('Hey World', canvas.width / 2, canvas.height / 2 + ascent * scale / ratio);
+                ctx.fillText('Hey World', canvas.width / 2, canvas.height / 2 + (ascent / ratio) * scale);
                 
                 ctx.fillStyle = ballColor;
                 ctx.beginPath();
-                ctx.arc(ui.x, ui.y, 50 / ratio, 0, 2 * Math.PI, false);
+                ctx.arc(ui.x, ui.y, 50, 0, 2 * Math.PI, false);
                 ctx.fill();
 
                 if (ui.screen != 'unchanged') {
