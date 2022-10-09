@@ -5,11 +5,11 @@
         <script>
             var lessons = [
                 { name: 'E T A N — 1a',
-                  phrases: ['E E E E E', 'T T T T T', 'A A A A A', 'N N N N N'] },
+                  phrases: ['E', 'T', 'A', 'N', 'E E E E E', 'T T T T T', 'A A A A A', 'N N N N N'] },
                 { name: 'E T A N — 1b',
                   phrases: ['tea', 'tee', 'eat', 'ate', 'at', 'tat', 'teen', 'neat', 'ten', 'net', 'tan', 'eat at ten', 'ate at ten', 'at tee'] },
                 { name: 'O I S 1 4 — 2a',
-                  phrases: ['O O O O O', 'I I I I I', 'S S S S S', '1 1 1 1 1', '4 4 4 4 4', 'T T T T T', 'E E E E E', 'A A A A A', 'N N N N N'] },
+                  phrases: ['O', 'I', 'S', '1', '4', 'O O O O O', 'I I I I I', 'S S S S S', '1 1 1 1 1', '4 4 4 4 4', 'T T T T T', 'E E E E E', 'A A A A A', 'N N N N N'] },
                 { name: 'O I S 1 4 — 2b',
                   phrases: ['ten', 'ton', 'tin', 'tie', 'toe', 'no', 'not', 'note', 'it', 'at', 'one', 'neat', 'net', 'nit', 'toes', 'stone', 'tease', 'noise', 'one neat note', 'no noise', 'tie it', '1 ton stone'] },
                 { name: 'O I S 1 4 — 2c',
@@ -22,6 +22,162 @@
                 playing: false,
                 buttons: [],
             };
+
+            var audioCtx;
+            var audioStarted = false;
+            function startAudio() {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                var oscillator = audioCtx.createOscillator();
+                oscillator.frequency.value = 750;
+                gain = audioCtx.createGain();
+                gain.gain.value = 0;
+                oscillator.connect(gain);
+                gain.connect(audioCtx.destination);
+                oscillator.start(0);
+                audioStarted = true;
+            }
+
+            var t = 0;
+            function playTone(len) {
+                const ramp = 0.01;
+                if (!audioStarted) startAudio();
+                var c = audioCtx.currentTime;
+                t = c > t ? c : t;
+                gain.gain.setTargetAtTime(1, t, ramp);
+                t += len;
+                gain.gain.setTargetAtTime(0, t, ramp);
+                t += ditlen;
+            }
+
+            function silence(len) {
+                t += len;
+            }
+
+            var ditlen;
+            function setSpeed(wpm) {
+                ditlen = 1.2 / wpm;
+            }
+
+            var farnsworth;
+            function setFarnsworth(dits) {
+                farnsworth = dits;
+            }
+
+            function say(utterance, delay) {
+                var utter = '';
+                for (var i in utterance) {
+                    var c = utterance[i];
+                    if (c == c.toUpperCase()) {
+                        var spell = {
+                            'A': 'ay',
+                            'B': 'bee',
+                            'C': 'cee',
+                            'D': 'dee',
+                            'E': 'ee',
+                            'F': 'ef',
+                            'G': 'gee',
+                            'H': 'aych',
+                            'I': 'eye',
+                            'J': 'jay',
+                            'K': 'kay',
+                            'L': 'el',
+                            'M': 'em',
+                            'N': 'in',
+                            'O': 'oh',
+                            'P': 'pee',
+                            'Q': 'cue',
+                            'R': 'ar',
+                            'S': 'ess',
+                            'T': 'tee',
+                            'U': 'you',
+                            'V': 'vee',
+                            'W': 'double you',
+                            'X': 'ex',
+                            'Y': 'wye',
+                            'Z': 'zee',
+                            '?': 'question mark',
+                            '.': 'full stop',
+                            ',': 'comma',
+                            ':': 'colon',
+                            '-': 'dash',
+                            ';': 'semicolon',
+                            '!': 'exclamation point',
+                            '/': 'slash',
+                            "'": 'apostrophe',
+                            '"': 'quotation mark',
+                            '_': 'underscore',
+                            '=': 'double dash',
+                            '&': 'ampersand',
+                            '$': 'dollar sign',
+                            '(': 'left parenthesis',
+                            ')': 'right parenthesis',
+                            '+': 'plus',
+                            '@': 'at sign',
+                            '<': ' ', // nothing
+                            '>': 'prosign',
+                        }[c];
+                        utter += ' ' + (spell || c) + ' ';
+                    } else {
+                        utter += c;
+                    }
+                }
+                if ('speechSynthesis' in window) {
+                    window.setTimeout(function() {
+                        window.speechSynthesis.speak(
+                            new SpeechSynthesisUtterance(utter)
+                        )
+                    }, delay * 1000);
+                }
+            }
+
+            var morse = "  ETIANMSURWDKGOHVF L PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
+            function playPhrase(speakAndAdvance) {
+                var phrase = lessons[getLesson()].phrases[getPhrase()];
+                var prosign = false;
+                if (!audioStarted) startAudio();
+                var startTime = audioCtx.currentTime;
+                for (var i in phrase) {
+                    var c = phrase[i];
+                    if (c == ' ') { // word break
+                        silence(ditlen * 7 + (ditlen * farnsworth));
+                    } else {
+                        if (c == '<') prosign = true;
+                        if (c == '>') prosign = false;
+                        var j = morse.indexOf(c.toUpperCase());
+                        var letter = [];
+                        while (j > 1) {
+                            if (j % 2 == 0) {
+                                letter.push(true);
+                                j /= 2;
+                            } else {
+                                letter.push(false);
+                                j = (j - 1) / 2;
+                            }
+                        }
+                        letter.reverse();
+                        for (var j in letter) {
+                            playTone(letter[j] ? ditlen : ditlen * 3);
+                            silence(ditlen);
+                        }
+                        if (!prosign) {
+                            silence(ditlen * 3 + (ditlen * farnsworth));
+                        }
+                    }
+                }
+                const trainingSpeechPause = 2; // TODO: settings
+                if (speakAndAdvance) {
+                    say(phrase, t - startTime + trainingSpeechPause);
+                    silence(trainingSpeechPause * 2);
+                }
+                silence(ditlen * 7); // final word break
+                window.setTimeout(function () {
+                    if (ui.playing) {
+                        nextPhrase();
+                        redraw();
+                        playPhrase();
+                    }
+                 }, t - startTime);
+            }
 
             function getIntSetting(name) {
                 return parseInt(window.localStorage.getItem(name) || '0');
@@ -188,16 +344,34 @@
                     'normal',
                     false,
                     false);
+                var phraseX = padding;
+                var phraseY = buttonHeight + padding * 2;
+                var phraseWidth = w - padding * 2;
+                var phraseHeight = h - padding * 4 - buttonHeight - buttonHeight * largeButton;
                 drawFittedText(
                     lessons[getLesson()].phrases[getPhrase()], 
                     phraseTextColor,
-                    padding,
-                    buttonHeight + padding * 2,
-                    w - padding * 2,
-                    h - padding * 4 - buttonHeight - buttonHeight * largeButton,
+                    phraseX,
+                    phraseY,
+                    phraseWidth,
+                    phraseHeight,
                     'bold',
                     false,
                     true);
+                ui.buttons.push({
+                    name: 'phrase',
+                    left: phraseX - padding,
+                    top: phraseY - padding,
+                    right: phraseWidth + padding,
+                    bottom: phraseHeight + padding })
+            }
+
+            function nextPhrase() {
+                var phrase = getPhrase();
+                setPhrase(
+                    phrase > 0 ?
+                    phrase - 1 :
+                    lessons[phrase].phrases.length - 1);
             }
 
             function touch(x, y) {
@@ -210,8 +384,12 @@
                             case 'mode':
                                 setDarkMode(!getDarkMode());
                                 break;
+                            case 'phrase':
+                                playPhrase(false);
+                                break;
                             case 'playPause':
                                 ui.playing = !ui.playing;
+                                if (ui.playing) playPhrase(true);
                                 break;
                             case 'prevLesson':
                                 var lesson = getLesson();
@@ -224,11 +402,7 @@
                                 setPhrase(0);
                                 break;
                             case 'prevPhrase':
-                                var phrase = getPhrase();
-                                setPhrase(
-                                    phrase > 0 ?
-                                    phrase - 1 :
-                                    lessons[phrase].phrases.length - 1);
+                                nextPhrase();
                                 break;
                             case 'nextPhrase':
                                 setPhrase((getPhrase() + 1) % lessons[getLesson()].phrases.length);
@@ -244,9 +418,11 @@
                 var ratio = window.devicePixelRatio;
                 canvas = document.getElementById('canvas');
                 canvas.onmousedown = function(e) { e.preventDefault(); touch(e.x * ratio, e.y * ratio); }
-                canvas.ontouchstart = function(e) { e.preventDefault(); touch(e.touches[0].clientX * ratio, e.touches[0].clientY * ratio); }
+                // canvas.ontouchstart = function(e) { e.preventDefault(); touch(e.touches[0].clientX * ratio, e.touches[0].clientY * ratio); }
                 resizeCanvas();
                 redraw();
+                setSpeed(25); // TODO: settings
+                setFarnsworth(21); // TODO: settings
             }
 
             window.onresize = function() {
