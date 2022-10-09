@@ -50,6 +50,7 @@
                 const lessonTextColor = '#07d'; // blue
                 var backgroundColor = ui.darkMode ? '#111' : '#eee'; // black/white
                 var foregroundColor = ui.darkMode ? '#eee' : '#111'; // white/black
+                var mainButtonColor = foregroundColor;
                 var subduedButtonColor = ui.darkMode ? '#ccc' : '#333'; // gray
 
                 var ctx = canvas.getContext('2d');
@@ -80,8 +81,8 @@
                 var padding = 40 * ratio;
 
                 var buttons = [];
-                function drawButton(name, label, x, y, width, height) {
-                    ctx.strokeStyle = foregroundColor;
+                function drawButton(name, label, color, x, y, width, height) {
+                    ctx.fillStyle = color;
                     drawFittedText(label, x, y, width, height, 'normal', true, true);
                     var p = padding / 2;
                     buttons.push({
@@ -95,16 +96,14 @@
                 const numButtons = 5;
                 const largeButton = 1.5;
                 var buttonWidth = (w - (numButtons + 1) * padding) / (numButtons + largeButton - 1);
-                var buttonHeight = Math.min(80 * ratio, buttonWidth);
+                var buttonHeight = Math.min(buttonWidth, canvas.width / 10, canvas.height / 10);
 
-                ctx.fillStyle = subduedButtonColor;
-                drawButton('mode', ui.darkMode ? '☼' : '☽', w - padding - buttonHeight, padding, buttonHeight, buttonHeight);
-                drawButton('prevLesson', '⇤', padding * 1 + buttonWidth * 0, h - padding - buttonHeight, buttonWidth, buttonHeight);
-                drawButton('prevPhrase', '⟲', padding * 2 + buttonWidth * 1, h - padding - buttonHeight, buttonWidth, buttonHeight);
-                drawButton('nextPhrase', '⟳', padding * 4 + buttonWidth * 2 + buttonWidth * largeButton, h - padding - buttonHeight, buttonWidth, buttonHeight);
-                drawButton('nextLesson', '⇥', padding * 5 + buttonWidth * 3 + buttonWidth * largeButton, h - padding - buttonHeight, buttonWidth, buttonHeight);
-                ctx.fillStyle = foregroundColor;
-                drawButton('playPause', ui.playing ? 'II' : '▶', padding * 3 + buttonWidth * 2, h - padding - buttonHeight * largeButton, buttonWidth * largeButton, buttonHeight * largeButton);
+                drawButton('mode', ui.darkMode ? '☼' : '☽', subduedButtonColor, w - padding - buttonHeight, padding, buttonHeight, buttonHeight);
+                drawButton('prevLesson', '⇤', subduedButtonColor, padding * 1 + buttonWidth * 0, h - padding - buttonHeight, buttonWidth, buttonHeight);
+                drawButton('prevPhrase', '⟲', subduedButtonColor, padding * 2 + buttonWidth * 1, h - padding - buttonHeight, buttonWidth, buttonHeight);
+                drawButton('nextPhrase', '⟳', subduedButtonColor, padding * 4 + buttonWidth * 2 + buttonWidth * largeButton, h - padding - buttonHeight, buttonWidth, buttonHeight);
+                drawButton('nextLesson', '⇥', subduedButtonColor, padding * 5 + buttonWidth * 3 + buttonWidth * largeButton, h - padding - buttonHeight, buttonWidth, buttonHeight);
+                drawButton('playPause', ui.playing ? 'II' : '▶▸▶', foregroundColor, padding * 3 + buttonWidth * 2, h - padding - buttonHeight * largeButton, buttonWidth * largeButton, buttonHeight * largeButton);
                 ui.buttons = buttons;
 
                 ctx.fillStyle = lessonTextColor;
