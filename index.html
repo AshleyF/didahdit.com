@@ -2,6 +2,7 @@
     <head>
         <title>Learn Morse Code</title>
         <style>body { margin: 0; padding: 0; }</style>
+        <!-- meta name="viewport" width="device-width" content="target-densitydpi=device-dpi" /-->
         <script>
             var canvas;
 
@@ -9,11 +10,20 @@
                 x: 100,
                 y: 100,
                 darkMode: true,
+                playing: false,
             };
 
             function resizeCanvas() {
-                canvas.width = document.body.clientWidth;
-                canvas.height = document.body.clientHeight;
+                //canvas.width = document.body.clientWidth;
+                //canvas.height = document.body.clientHeight;
+
+                var ratio = window.devicePixelRatio;
+                var w = document.body.clientWidth;
+                var h = document.body.clientHeight;
+                canvas.width = w * ratio;
+                canvas.height = h * ratio;
+                canvas.style.width = w + 'px';
+                canvas.style.height = h + 'px';
             }
 
             function redraw() {
@@ -23,49 +33,60 @@
                 var ballColor = '#f81'; // orange
 
                 var ctx = canvas.getContext('2d');
+                ctx.scale(1, 1);
+                var ratio = window.devicePixelRatio;
+                var w = canvas.width;
+                var h = canvas.height;
 
-                function setFontSizeToFit(txt, width, height, weight, actual) {
+                ctx.fillStyle = backgroundColor;
+                ctx.fillRect(0, 0, w, h);
+                document.body.style.backgroundColor = backgroundColor;
+
+                function drawFittedText(txt, x, y, width, height, weight, actual) {
                     function setFont(size) { ctx.font = weight + ' ' + size + 'px sans-serif'; }
                     const sampleSize = 100;
                     setFont(sampleSize);
                     var size = ctx.measureText(txt);
-                    var scale = Math.min(
-                        width / (size.actualBoundingBoxLeft + size.actualBoundingBoxRight),
-                        height / (actual ? size.actualBoundingBoxAscent + size.actualBoundingBoxDescent :
-                                           size.fontBoundingBoxAscent + size.fontBoundingBoxDescent));
+                    var ascent = actual ? size.actualBoundingBoxAscent : size.fontBoundingBoxAscent;
+                    var descent = actual ? size.actualBoundingBoxDescent : size.fontBoundingBoxDescent;
+                    var textHeight = ascent + descent;
+                    var textWidth = size.actualBoundingBoxLeft + size.actualBoundingBoxRight;
+                    var scale = Math.min(width / textWidth, height / textHeight);
                     setFont(scale * sampleSize);
+                    ctx.textAlign = 'center';
+                    ctx.fillText(txt, x + width / 2, y + ascent * scale + (height - textHeight * scale) / 2);
                 }
 
-                document.body.style.backgroundColor = backgroundColor;
+                function drawButton(label, x, y, width, height) {
+                    ctx.strokeStyle = foregroundColor;
+                    drawFittedText(label, x, y, buttonSize, buttonSize, 'normal', true);
+                }
 
-                var ratio = window.devicePixelRatio;
+                var padding = 50 * ratio;
+                const numButtons = 5;
+                var buttonSize = (w - (numButtons + 1) * padding) / numButtons;
 
-                ctx.fillStyle = backgroundColor;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                var padding = Math.max(canvas.width, canvas.height) * 0.1;
+                ctx.fillStyle = foregroundColor;
+                drawButton(ui.darkMode ? '☼' : '☽', w - padding - buttonSize, padding, buttonSize, buttonSize);
+                drawButton('⇤', padding * 1 + buttonSize * 0, h - padding - buttonSize, buttonSize, buttonSize);
+                drawButton('⟲', padding * 2 + buttonSize * 1, h - padding - buttonSize, buttonSize, buttonSize);
+                drawButton(ui.playing ? 'II' : '▶', padding * 3 + buttonSize * 2, h - padding - buttonSize, buttonSize, buttonSize);
+                drawButton('⟳', padding * 4 + buttonSize * 3, h - padding - buttonSize, buttonSize, buttonSize);
+                drawButton('⇥', padding * 5 + buttonSize * 4, h - padding - buttonSize, buttonSize, buttonSize);
 
                 var txt = 'Tracey';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                setFontSizeToFit(txt, canvas.width - 2 * padding, canvas.height - 2 * padding, 'bold', false);
                 ctx.fillStyle = mainTextColor;
-                ctx.fillText(txt, canvas.width / 2, canvas.height / 2);
+                drawFittedText(txt, padding, padding, w - padding * 2, h - padding * 2, 'bold', false);
                 
                 ctx.fillStyle = ballColor;
                 ctx.beginPath();
-                ctx.arc(ui.x, ui.y, 50 * ratio, 0, 2 * Math.PI, false);
+                ctx.arc(ui.x, ui.y, 50, 0, 2 * Math.PI, false);
                 ctx.fill();
 
-                var buttonSize = padding;
-                var modeText = ui.darkMode ? '☼' : '☽';
-                setFontSizeToFit(modeText, buttonSize, 'normal', true);
-                ctx.fillStyle = foregroundColor;
-                ctx.fillText(modeText, padding + buttonSize / 2, canvas.height - padding - buttonSize / 2);
-                //ctx.strokeStyle = foregroundColor;
-                //ctx.beginPath();
-                //ctx.rect(padding + buttonSize, canvas.height - buttonSize - padding, buttonSize, buttonSize);
-                //ctx.stroke();
+                //drawFittedText(modeText, buttonSize, 'normal', true);
+                //ctx.fillStyle = foregroundColor;
+                //ctx.fillText(modeText, padding + buttonSize / 2, canvas.height - padding - buttonSize / 2);
             }
 
             function touch(x, y) {
@@ -76,10 +97,10 @@
             }
 
             window.onload = function() {
+                var ratio = window.devicePixelRatio;
                 canvas = document.getElementById('canvas');
-                canvas.onmousedown = function(e) { e.preventDefault(); touch(e.x, e.y); }
-                canvas.ontouchstart = function(e) { e.preventDefault(); touch(e.touches[0].clientX, e.touches[0].clientY); }
-
+                canvas.onmousedown = function(e) { e.preventDefault(); touch(e.x * ratio, e.y * ratio); }
+                canvas.ontouchstart = function(e) { e.preventDefault(); touch(e.touches[0].clientX * ratio, e.touches[0].clientY * ratio); }
                 resizeCanvas();
                 redraw();
             }
