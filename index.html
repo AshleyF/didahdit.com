@@ -4,13 +4,32 @@
         <style>body { margin: 0; padding: 0; }</style>
         <!-- meta name="viewport" width="device-width" content="target-densitydpi=device-dpi" /-->
         <script>
+            var lessons = [
+                { name: 'Lesson 1a - E T A N',
+                  description: 'Letters E T A N',
+                  phrases: ['E E E E E', 'T T T T T', 'A A A A A', 'N N N N N'] },
+                { name: 'Lesson 1b - E T A N',
+                  description: 'Practice words',
+                  phrases: ['tea', 'tee', 'eat', 'ate', 'at', 'tat', 'teen', 'neat', 'ten', 'net', 'tan', 'eat at ten', 'ate at ten', 'at tee'] },
+                { name: 'Lesson 2a - O I S 1 4',
+                  description: 'New O I S 1 4',
+                  phrases: ['T T T T T', 'E E E E E', 'A A A A A', 'N N N N N', 'O O O O O', 'I I I I I', 'S S S S S', '1 1 1 1 1', '4 4 4 4 4'] },
+                { name: 'Lesson 2b - O I S 1 4',
+                  description: 'Practice words',
+                  phrases: ['ten', 'ton', 'tin', 'tie', 'toe', 'no', 'not', 'note', 'it', 'at', 'one', 'neat', 'net', 'nit', 'toes', 'stone', 'tease', 'noise', 'one neat note', 'no noise', 'tie it', '1 ton stone'] },
+                { name: 'Lesson 2c - O I S 1 4',
+                  description: 'Practice callsigns',
+                  phrases: ['N1AS', 'N4ON', 'S41T', 'NO1S', 'AI1E', 'IT4O', 'EA1ON', 'ES4IT'] },
+            ];
+
             var canvas;
 
             var ui = {
-                x: 100,
-                y: 100,
                 darkMode: true,
                 playing: false,
+                lesson: -1,
+                phrase: -1,
+                buttons: [],
             };
 
             function resizeCanvas() {
@@ -27,10 +46,11 @@
             }
 
             function redraw() {
+                const mainTextColor = '#f43'; // red
+                const lessonTextColor = '#07d'; // blue
                 var backgroundColor = ui.darkMode ? '#111' : '#eee'; // black/white
                 var foregroundColor = ui.darkMode ? '#eee' : '#111'; // white/black
-                var mainTextColor = '#f43'; // red
-                var ballColor = '#f81'; // orange
+                var subduedButtonColor = ui.darkMode ? '#ccc' : '#333'; // gray
 
                 var ctx = canvas.getContext('2d');
                 ctx.scale(1, 1);
@@ -42,7 +62,7 @@
                 ctx.fillRect(0, 0, w, h);
                 document.body.style.backgroundColor = backgroundColor;
 
-                function drawFittedText(txt, x, y, width, height, weight, actual) {
+                function drawFittedText(txt, x, y, width, height, weight, actual, centered) {
                     function setFont(size) { ctx.font = weight + ' ' + size + 'px sans-serif'; }
                     const sampleSize = 100;
                     setFont(sampleSize);
@@ -53,46 +73,104 @@
                     var textWidth = size.actualBoundingBoxLeft + size.actualBoundingBoxRight;
                     var scale = Math.min(width / textWidth, height / textHeight);
                     setFont(scale * sampleSize);
-                    ctx.textAlign = 'center';
-                    ctx.fillText(txt, x + width / 2, y + ascent * scale + (height - textHeight * scale) / 2);
+                    ctx.textAlign = centered ? 'center' : 'left';
+                    ctx.fillText(txt, x + (centered ? width / 2 : 0), y + ascent * scale + (height - textHeight * scale) / 2);
                 }
 
-                function drawButton(label, x, y, width, height) {
+                var padding = 40 * ratio;
+
+                var buttons = [];
+                function drawButton(name, label, x, y, width, height) {
                     ctx.strokeStyle = foregroundColor;
-                    drawFittedText(label, x, y, buttonSize, buttonSize, 'normal', true);
+                    drawFittedText(label, x, y, width, height, 'normal', true, true);
+                    var p = padding / 2;
+                    buttons.push({
+                        name: name,
+                        left: x - p,
+                        top: y - p,
+                        right: x + width + p,
+                        bottom: y + height + p })
                 }
 
-                var padding = 50 * ratio;
                 const numButtons = 5;
-                var buttonSize = (w - (numButtons + 1) * padding) / numButtons;
+                const largeButton = 1.5;
+                var buttonWidth = (w - (numButtons + 1) * padding) / (numButtons + largeButton - 1);
+                var buttonHeight = Math.min(80 * ratio, buttonWidth);
 
-
+                ctx.fillStyle = subduedButtonColor;
+                drawButton('mode', ui.darkMode ? '☼' : '☽', w - padding - buttonHeight, padding, buttonHeight, buttonHeight);
+                drawButton('prevLesson', '⇤', padding * 1 + buttonWidth * 0, h - padding - buttonHeight, buttonWidth, buttonHeight);
+                drawButton('prevPhrase', '⟲', padding * 2 + buttonWidth * 1, h - padding - buttonHeight, buttonWidth, buttonHeight);
+                drawButton('nextPhrase', '⟳', padding * 4 + buttonWidth * 2 + buttonWidth * largeButton, h - padding - buttonHeight, buttonWidth, buttonHeight);
+                drawButton('nextLesson', '⇥', padding * 5 + buttonWidth * 3 + buttonWidth * largeButton, h - padding - buttonHeight, buttonWidth, buttonHeight);
                 ctx.fillStyle = foregroundColor;
-                drawButton(ui.darkMode ? '☼' : '☽', w - padding - buttonSize, padding, buttonSize, buttonSize);
-                drawButton('⇤', padding * 1 + buttonSize * 0, h - padding - buttonSize, buttonSize, buttonSize);
-                drawButton('⟲', padding * 2 + buttonSize * 1, h - padding - buttonSize, buttonSize, buttonSize);
-                drawButton(ui.playing ? 'II' : '▶', padding * 3 + buttonSize * 2, h - padding - buttonSize, buttonSize, buttonSize);
-                drawButton('⟳', padding * 4 + buttonSize * 3, h - padding - buttonSize, buttonSize, buttonSize);
-                drawButton('⇥', padding * 5 + buttonSize * 4, h - padding - buttonSize, buttonSize, buttonSize);
+                drawButton('playPause', ui.playing ? 'II' : '▶', padding * 3 + buttonWidth * 2, h - padding - buttonHeight * largeButton, buttonWidth * largeButton, buttonHeight * largeButton);
+                ui.buttons = buttons;
 
-                var txt = 'Tracey';
+                ctx.fillStyle = lessonTextColor;
+                drawFittedText(lessons[ui.lesson].name, padding, padding, w - padding * 3 - buttonHeight, buttonHeight, 'normal', false, false);
                 ctx.fillStyle = mainTextColor;
-                drawFittedText(txt, padding, padding, w - padding * 2, h - padding * 2, 'bold', false);
-                
-                ctx.fillStyle = ballColor;
-                ctx.beginPath();
-                ctx.arc(ui.x, ui.y, 50, 0, 2 * Math.PI, false);
-                ctx.fill();
+                drawFittedText(lessons[ui.lesson].phrases[ui.phrase], padding, buttonHeight + padding * 2, w - padding * 2, h - padding * 4 - buttonHeight - buttonHeight * largeButton, 'bold', false, true);
+            }
 
-                //drawFittedText(modeText, buttonSize, 'normal', true);
-                //ctx.fillStyle = foregroundColor;
-                //ctx.fillText(modeText, padding + buttonSize / 2, canvas.height - padding - buttonSize / 2);
+            function prevLesson() {
+                var ret = ui.lesson > 0;
+                if (ret) ui.lesson--;
+                return ret;
+            }
+
+            function nextLesson() {
+                var ret = ui.lesson < lessons.length - 1;
+                if (ret) ui.lesson++
+                return ret;
+            }
+
+            function prevPhrase() {
+                if (ui.phrase > 0) {
+                    ui.phrase--;
+                } else if (prevLesson()) {
+                    ui.phrase = lessons[ui.lesson].phrases.length - 1;
+                }
+            }
+
+            function nextPhrase() {
+                if (ui.phrase < lessons[ui.lesson].phrases.length - 1) {
+                    ui.phrase++;
+                } else if (nextLesson()) {
+                    ui.phrase = 0;
+                }
             }
 
             function touch(x, y) {
                 ui.x = x;
                 ui.y = y;
-                if (ui.x < 200 && ui.y > canvas.height - 200) ui.darkMode = !ui.darkMode;
+                for (var b in ui.buttons) {
+                    var button = ui.buttons[b];
+                    if (x >= button.left && x <= button.right && y >= button.top && y <= button.bottom) {
+                        switch (button.name) {
+                            case 'mode':
+                                ui.darkMode = !ui.darkMode;
+                                break;
+                            case 'playPause':
+                                ui.playing = !ui.playing;
+                                break;
+                            case 'prevLesson':
+                                prevLesson();
+                                ui.phrase = 0;
+                                break;
+                            case 'nextLesson':
+                                nextLesson();
+                                ui.phrase = 0;
+                                break;
+                            case 'prevPhrase':
+                                prevPhrase();
+                                break;
+                            case 'nextPhrase':
+                                nextPhrase();
+                                break;
+                        }
+                    }
+                }
                 redraw();
             }
 
@@ -101,6 +179,8 @@
                 canvas = document.getElementById('canvas');
                 canvas.onmousedown = function(e) { e.preventDefault(); touch(e.x * ratio, e.y * ratio); }
                 canvas.ontouchstart = function(e) { e.preventDefault(); touch(e.touches[0].clientX * ratio, e.touches[0].clientY * ratio); }
+                nextLesson();
+                nextPhrase();
                 resizeCanvas();
                 redraw();
             }
