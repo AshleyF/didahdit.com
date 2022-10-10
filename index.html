@@ -4,29 +4,58 @@
         <style>body { margin: 0; padding: 0; }</style>
         <script>
             var lessons = [
-                { name: 'E T A N — 1a',
-                  phrases: ['E', 'T', 'A', 'N', 'E E E E E', 'T T T T T', 'A A A A A', 'N N N N N'] },
-                { name: 'E T A N — 1b',
-                  phrases: ['tea', 'tee', 'eat', 'ate', 'at', 'tat', 'teen', 'neat', 'ten', 'net', 'tan', 'eat at ten', 'ate at ten', 'at tee'] },
-                { name: 'O I S 1 4 — 2a',
-                  phrases: ['O', 'I', 'S', '1', '4', 'O O O O O', 'I I I I I', 'S S S S S', '1 1 1 1 1', '4 4 4 4 4', 'T T T T T', 'E E E E E', 'A A A A A', 'N N N N N'] },
-                { name: 'O I S 1 4 — 2b',
-                  phrases: ['ten', 'ton', 'tin', 'tie', 'toe', 'no', 'not', 'note', 'it', 'at', 'one', 'neat', 'net', 'nit', 'toes', 'stone', 'tease', 'noise', 'one neat note', 'no noise', 'tie it', '1 ton stone'] },
-                { name: 'O I S 1 4 — 2c',
+                { name: 'E T A N — 1a Characters',
+                  phrases: ['E', 'T', 'A', 'N', 'E E E', 'T T T', 'A A A', 'N N N'] },
+                { name: 'E T A N — 1b Words',
+                  phrases: ['tea', 'tee', 'eat', 'ate', 'at', 'tat', 'teen', 'neat', 'ten', 'net', 'tan'] },
+                { name: 'E T A N — 1c Sentences',
+                  phrases: ['eat at ten', 'ate at ten', 'at tee'] },
+                { name: 'O I S 1 4 — 2a Characters',
+                  phrases: ['O', 'I', 'S', '1', '4', 'O O O', 'I I I', 'S S S', '1 1 1', '4 4 4', 'T T T', 'E E E', 'A A A', 'N N N'] },
+                { name: 'O I S 1 4 — 2b Words',
+                  phrases: ['ten', 'ton', 'tin', 'tie', 'toe', 'no', 'not', 'note', 'it', 'at', 'one', 'neat', 'net', 'nit', 'toes', 'stone', 'tease', 'noise'] },
+                { name: 'O I S 1 4 — 2c Sentences',
+                  phrases: ['one neat note', 'no noise', 'tie it', '1 ton stone'] },
+                { name: 'O I S 1 4 — 2d Calls',
                   phrases: ['N1AS', 'N4ON', 'S41T', 'NO1S', 'AI1E', 'IT4O', 'EA1ON', 'ES4IT'] },
+                { name: 'R H D L 2 5 — 3a Characters',
+                  phrases: ['R', 'H', 'D', 'L', '2', '5', 'R R R', 'H H H', 'D D D', 'L L L', '2 2 2', '5 5 5', 'O O O', 'I I I', 'S S S'] },
+                { name: 'R H D L 2 5 — 3b Words',
+                  phrases: ['all', 'tell', 'tall', 'deal', 'the', 'their', 'doll', 'dell', 'hall', 'hill', 'hole', 'load', 'lead ', 'late', 'later', 'seal', 'sell', 'sole', 'she', 'shed', 'her', 'hear', '142', '451', '1425'] },
+                { name: 'R H D L 2 5 — 3b Sentences',
+                  phrases: ['a tall hill', 'she is here', 'he is late', '4 sheds', '12 hills'] },
+                { name: 'R H D L 2 5 — 3c Calls',
+                  phrases: ['DL1AT', 'HH5H', 'HS1TD', 'ND2T', 'NA4T'] },
+                { name: 'U C - 4a Characters',
+                  phrases: ['U U U', 'C C C', 'R R R', 'H H H', 'D D D', 'L L L', '1 1 1', '4 4 4'] },
+                { name: 'U C - 4b Words',
+                  phrases: ['chat', 'chair', 'chin', 'chart', 'ouch', 'couch', 'touch', 'such', 'teach', 'reach', 'sun', 'son', 'hold', 'told', 'sail', 'rail', 'tail', 'nail', 'oil', 'soil', 'toil', 'coil', 'rain', 'cause', 'sauce', 'toss', 'toll', 'tall', 'tell', 'cell', 'call', '4241', '1452'] },
+                { name: 'U C - 4c Sentences',
+                  phrases: ['in the cell', 'that hurts', 'at the hall', 'hole in 1', 'sail on sailor', 'tell all', 'hold on'] },
+                { name: 'U C - 4d Calls',
+                  phrases: ['NC5A', 'NA2T', 'CU1LL', 'CO5NO', 'NU4R', 'CT1AC', 'CE1NI'] },
+                { name: 'M W 3 6 ? - 5a Characters',
+                  phrases: ['M', 'W', '3', '6', '?', 'M M M', 'W W W', '3 3 3', '6 6 6', '? ? ?', 'U U U', 'C C C', '2 2 2', '5 5 5'] },
+                { name: 'M W 3 6 ? - 5b Words',
+                  phrases: ['wait', 'wall', 'well', 'will', 'mall', 'mill', 'chum', 'mow', 'much', 'such', 'water', 'wet', 'what', 'dew', 'date', 'atom', 'tow', 'tower', 'were', 'where', 'was', 'wish', 'wash', 'mat', 'matt', 'mel', 'him', 'her', 'his', 'hw?'] },
+                { name: 'M W 3 6 ? - 5c Sentences',
+                  phrases: ['well water', 'how is it?', 'is this it?', 'this is it', 'this is it', '1432 hill street', '1 and 4 is 5'] },
+                { name: 'M W 3 6 ? - 5d Calls',
+                  phrases: ['W3AA', 'N3AM', 'DM5RA', 'W6AM', 'N2AT', 'RW5L', 'ON4UN', '335', '1432', '6122'] },
             ];
 
             var canvas;
 
             var ui = {
                 playing: false,
+                hide: false,
                 buttons: [],
             };
 
             var audioCtx;
             var audioStarted = false;
             function startAudio() {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                audioCtx = new (AudioContext || webkitAudioContext)();
                 var oscillator = audioCtx.createOscillator();
                 oscillator.frequency.value = 750;
                 gain = audioCtx.createGain();
@@ -63,7 +92,7 @@
                 farnsworth = dits;
             }
 
-            function say(utterance, delay) {
+            function say(utterance) {
                 var utter = '';
                 for (var i in utterance) {
                     var c = utterance[i];
@@ -122,65 +151,93 @@
                     }
                 }
                 if ('speechSynthesis' in window) {
-                    window.setTimeout(function() {
-                        window.speechSynthesis.speak(
-                            new SpeechSynthesisUtterance(utter)
-                        )
-                    }, delay * 1000);
+                    speechSynthesis.speak(new SpeechSynthesisUtterance(utter));
                 }
             }
 
             var morse = "  ETIANMSURWDKGOHVF L PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
-            function playPhrase(speakAndAdvance) {
-                var phrase = lessons[getLesson()].phrases[getPhrase()];
+            var playContinuation = function() {};
+            var playContinuationTimeoutId = null;
+
+            function stopPhrase() {
+                playContinuation = function() {};
+                if (playContinuationTimeoutId) {
+                    clearTimeout(playContinuationTimeoutId);
+                    if (ui.hide) {
+                        ui.hide = false;
+                        redraw();
+                    }
+                }
+            }
+
+            function getCurrentPhrase() {
+                return lessons[getLesson()].phrases[getPhrase()]
+            }
+
+            function playPhrase(phrase, speakAndAdvance) {
+                if (speakAndAdvance && !ui.hide) {
+                    ui.hide = true;
+                    redraw();
+                }
                 var prosign = false;
                 if (!audioStarted) startAudio();
                 var startTime = audioCtx.currentTime;
-                for (var i in phrase) {
-                    var c = phrase[i];
-                    if (c == ' ') { // word break
-                        silence(ditlen * 7 + (ditlen * farnsworth));
-                    } else {
-                        if (c == '<') prosign = true;
-                        if (c == '>') prosign = false;
-                        var j = morse.indexOf(c.toUpperCase());
-                        var letter = [];
-                        while (j > 1) {
-                            if (j % 2 == 0) {
-                                letter.push(true);
-                                j /= 2;
-                            } else {
-                                letter.push(false);
-                                j = (j - 1) / 2;
+                var c = phrase[0];
+                if (c == ' ') { // word break
+                    silence(ditlen * 7 + (ditlen * farnsworth));
+                } else {
+                    if (c == '<') prosign = true;
+                    if (c == '>') prosign = false;
+                    var j = morse.indexOf(c.toUpperCase());
+                    var letter = [];
+                    while (j > 1) {
+                        if (j % 2 == 0) {
+                            letter.push(true);
+                            j /= 2;
+                        } else {
+                            letter.push(false);
+                            j = (j - 1) / 2;
+                        }
+                    }
+                    letter.reverse();
+                    for (var j in letter) {
+                        playTone(letter[j] ? ditlen : ditlen * 3);
+                        silence(ditlen);
+                    }
+                    if (!prosign) {
+                        silence(ditlen * 3 + (ditlen * farnsworth));
+                    }
+                }
+                if (phrase.length > 1) {
+                    var continuePhrase = phrase.substring(1);
+                    playContinuationTimeoutId = setTimeout(
+                        function() { playPhrase(continuePhrase, speakAndAdvance); },
+                        (t - startTime) * 1000);
+                } else {
+                    const trainingSpeechPause = 2; // TODO: settings
+                    if (speakAndAdvance) {
+                        playContinuationTimeoutId = setTimeout(
+                            function () {
+                                ui.hide = false;
+                                redraw();
+                                say(getCurrentPhrase());
+                            },
+                            (t - startTime + trainingSpeechPause) * 1000);
+                    }
+                    setTimeout(
+                        function () {
+                            if (ui.playing) {
+                                nextPhrase();
+                                redraw();
+                                playPhrase(getCurrentPhrase(), speakAndAdvance);
                             }
-                        }
-                        letter.reverse();
-                        for (var j in letter) {
-                            playTone(letter[j] ? ditlen : ditlen * 3);
-                            silence(ditlen);
-                        }
-                        if (!prosign) {
-                            silence(ditlen * 3 + (ditlen * farnsworth));
-                        }
-                    }
+                        },
+                        (t - startTime + trainingSpeechPause * 2) * 1000);
                 }
-                const trainingSpeechPause = 2; // TODO: settings
-                if (speakAndAdvance) {
-                    say(phrase, t - startTime + trainingSpeechPause);
-                    silence(trainingSpeechPause * 2);
-                }
-                silence(ditlen * 7); // final word break
-                window.setTimeout(function () {
-                    if (ui.playing) {
-                        nextPhrase();
-                        redraw();
-                        playPhrase();
-                    }
-                 }, t - startTime);
             }
 
             function getIntSetting(name) {
-                return parseInt(window.localStorage.getItem(name) || '0');
+                return parseInt(localStorage.getItem(name) || '0');
             }
 
             function getLesson() {
@@ -188,7 +245,7 @@
             }
 
             function setLesson(num) {
-                window.localStorage.setItem('lesson', num);
+                localStorage.setItem('lesson', num);
             }
 
             function getPhrase() {
@@ -196,22 +253,22 @@
             }
 
             function setPhrase(num) {
-                window.localStorage.setItem('phrase', num);
+                localStorage.setItem('phrase', num);
             }
 
             function getDarkMode() {
-                return (window.localStorage.getItem('mode') || 'dark') == 'dark';
+                return (localStorage.getItem('mode') || 'dark') == 'dark';
             }
 
             function setDarkMode(dark) {
-                window.localStorage.setItem('mode', dark ? 'dark' : 'light');
+                localStorage.setItem('mode', dark ? 'dark' : 'light');
             }
 
             function resizeCanvas() {
                 //canvas.width = document.body.clientWidth;
                 //canvas.height = document.body.clientHeight;
 
-                var ratio = window.devicePixelRatio;
+                var ratio = devicePixelRatio;
                 var w = document.body.clientWidth;
                 var h = document.body.clientHeight;
                 canvas.width = w * ratio;
@@ -234,7 +291,7 @@
 
                 var ctx = canvas.getContext('2d');
                 ctx.scale(1, 1);
-                var ratio = window.devicePixelRatio;
+                var ratio = devicePixelRatio;
                 var w = canvas.width;
                 var h = canvas.height;
 
@@ -349,8 +406,8 @@
                 var phraseWidth = w - padding * 2;
                 var phraseHeight = h - padding * 4 - buttonHeight - buttonHeight * largeButton;
                 drawFittedText(
-                    lessons[getLesson()].phrases[getPhrase()], 
-                    phraseTextColor,
+                    ui.hide ? '?' : lessons[getLesson()].phrases[getPhrase()], 
+                    ui.hide ? disabledButtonColor : phraseTextColor,
                     phraseX,
                     phraseY,
                     phraseWidth,
@@ -367,11 +424,7 @@
             }
 
             function nextPhrase() {
-                var phrase = getPhrase();
-                setPhrase(
-                    phrase > 0 ?
-                    phrase - 1 :
-                    lessons[phrase].phrases.length - 1);
+                setPhrase((getPhrase() + 1) % lessons[getLesson()].phrases.length);
             }
 
             function touch(x, y) {
@@ -385,27 +438,39 @@
                                 setDarkMode(!getDarkMode());
                                 break;
                             case 'phrase':
-                                playPhrase(false);
+                                stopPhrase();
+                                ui.playing = false;
+                                playPhrase(getCurrentPhrase(), false);
                                 break;
                             case 'playPause':
+                                stopPhrase();
                                 ui.playing = !ui.playing;
-                                if (ui.playing) playPhrase(true);
+                                if (ui.playing) playPhrase(getCurrentPhrase(), true);
                                 break;
                             case 'prevLesson':
+                                stopPhrase();
+                                ui.playing = false;
                                 var lesson = getLesson();
                                 if (lesson > 0) setLesson(lesson - 1);
                                 setPhrase(0);
                                 break;
                             case 'nextLesson':
+                                stopPhrase();
+                                ui.playing = false;
                                 var lesson = getLesson();
                                 if (lesson < lessons.length - 1) setLesson(lesson + 1);
                                 setPhrase(0);
                                 break;
                             case 'prevPhrase':
-                                nextPhrase();
+                                stopPhrase();
+                                ui.playing = false;
+                                var phrase = getPhrase();
+                                setPhrase(phrase > 0 ? phrase - 1 : lessons[phrase].phrases.length - 1);
                                 break;
                             case 'nextPhrase':
-                                setPhrase((getPhrase() + 1) % lessons[getLesson()].phrases.length);
+                                stopPhrase();
+                                ui.playing = false;
+                                nextPhrase();
                                 break;
                         }
                     }
@@ -413,9 +478,9 @@
                 redraw();
             }
 
-            window.onload = function() {
-                if (window.location.search == '?clear-settings') window.localStorage.clear();
-                var ratio = window.devicePixelRatio;
+            onload = function() {
+                if (location.search == '?clear-settings') localStorage.clear();
+                var ratio = devicePixelRatio;
                 canvas = document.getElementById('canvas');
                 canvas.onmousedown = function(e) { e.preventDefault(); touch(e.x * ratio, e.y * ratio); }
                 // canvas.ontouchstart = function(e) { e.preventDefault(); touch(e.touches[0].clientX * ratio, e.touches[0].clientY * ratio); }
@@ -425,7 +490,7 @@
                 setFarnsworth(21); // TODO: settings
             }
 
-            window.onresize = function() {
+            onresize = function() {
                 resizeCanvas();
                 redraw();
             }
