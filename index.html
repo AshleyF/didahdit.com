@@ -480,6 +480,8 @@
                                 setDarkMode(!getDarkMode());
                                 break;
                             case 'phrase':
+                                say("Testing");
+                                setTimeout(function () { say("Delay worked"); }, 5000);
                                 stopPhrase();
                                 ui.playing = false;
                                 playPhrase(getCurrentPhrase(), false, false);
