@@ -233,16 +233,18 @@
                     } else {
                         if (c == '<') prosign = true;
                         if (c == '>') prosign = false;
+                        var letter = '';
                         var j = morse.indexOf(c.toUpperCase());
                         while (j > 1) {
                             if (j % 2 == 0) {
-                                code += '.';
+                                letter = '.' + letter;
                                 j /= 2;
                             } else {
-                                code += '-';
+                                letter = '-' + letter;
                                 j = (j - 1) / 2;
                             }
                         }
+                        code += letter;
                         if (!prosign) {
                             code += ' ';
                         }
@@ -540,12 +542,18 @@
                             case 'phrase':
                                 stopPhrase();
                                 ui.playing = false;
+                                say('');
+                                playDing();
                                 playPhrase(getCurrentPhrase(), false);
                                 break;
                             case 'playPause':
                                 stopPhrase();
                                 ui.playing = !ui.playing;
-                                if (ui.playing) playPhrase(getCurrentPhrase(), true);
+                                if (ui.playing) {
+                                    say('');
+                                    playDing();
+                                    playPhrase(getCurrentPhrase(), true);
+                                }
                                 break;
                             case 'prevLesson':
                                 stopPhrase();
