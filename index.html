@@ -313,8 +313,6 @@
                 playCode(code);
                 const trainingSpeechPause = 2000; // TODO: settings
                 if (speakAndAdvance) {
-                    playDing();
-                    say('WTF?');
                     var delay = codeMilliseconds(code) + ditlen * 7 * 1000;
                     continuationTimeout1 = setTimeout(function () { if (ui.playing) playDing(); }, delay);
                     continuationTimeout2 = setTimeout(
