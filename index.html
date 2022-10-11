@@ -109,14 +109,15 @@
                 audioStarted = true;
             }
 
+            var t = 0;
             function stopAudio() {
                 if (audioStarted) {
                     audioCtx.close();
+                    t = 0;
                     audioStarted = false;
                 }
             }
 
-            var t = 0;
             function playTone(len) {
                 const ramp = 0.01;
                 if (!audioStarted) startAudio();
@@ -147,32 +148,42 @@
                     var c = utterance[i];
                     if (c == c.toUpperCase()) {
                         var spell = {
-                            'A': 'ay',
-                            'B': 'bee',
-                            'C': 'cee',
-                            'D': 'dee',
-                            'E': 'ee',
-                            'F': 'ef',
-                            'G': 'gee',
-                            'H': 'aych',
-                            'I': 'eye',
-                            'J': 'jay',
-                            'K': 'kay',
-                            'L': 'el',
-                            'M': 'em',
-                            'N': 'in',
-                            'O': 'oh',
-                            'P': 'pee',
-                            'Q': 'cue',
-                            'R': 'ar',
-                            'S': 'ess',
-                            'T': 'tee',
-                            'U': 'you',
-                            'V': 'vee',
-                            'W': 'double you',
-                            'X': 'ex',
-                            'Y': 'wye',
-                            'Z': 'zee',
+                            'A': 'alfa',
+                            'B': 'bravo',
+                            'C': 'charlie',
+                            'D': 'delta',
+                            'E': 'echo',
+                            'F': 'foxtrot',
+                            'G': 'golf',
+                            'H': 'hotel',
+                            'I': 'india',
+                            'J': 'juliet',
+                            'K': 'kilo',
+                            'L': 'lima',
+                            'M': 'mike',
+                            'N': 'november',
+                            'O': 'oscar',
+                            'P': 'papa',
+                            'Q': 'quebec',
+                            'R': 'romeo',
+                            'S': 'sierra',
+                            'T': 'tango',
+                            'U': 'uniform',
+                            'V': 'victor',
+                            'W': 'whiskey',
+                            'X': 'x-ray',
+                            'Y': 'yanky',
+                            'Z': 'zulu',
+                            '1': 'one',
+                            '2': 'two',
+                            '3': 'three',
+                            '4': 'four',
+                            '5': 'five',
+                            '6': 'six',
+                            '7': 'seven',
+                            '8': 'eight',
+                            '9': 'niner',
+                            '0': 'zero',
                             '?': 'question mark',
                             '.': 'full stop',
                             ',': 'comma',
