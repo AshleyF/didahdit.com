@@ -95,6 +95,8 @@
             var audioCtx;
             var audioStarted = false;
             function startAudio() {
+                say('');
+                (new Audio('silent.wav')).play();
                 audioCtx = new (AudioContext || webkitAudioContext)();
                 var oscillator = audioCtx.createOscillator();
                 oscillator.frequency.value = 750;
@@ -137,7 +139,7 @@
                     var c = utterance[i];
                     if (c == c.toUpperCase()) {
                         var spell = {
-                            'A': 'ay',
+                            'A': 'ey',
                             'B': 'bee',
                             'C': 'cee',
                             'D': 'dee',
@@ -542,18 +544,12 @@
                             case 'phrase':
                                 stopPhrase();
                                 ui.playing = false;
-                                say('');
-                                playDing();
                                 playPhrase(getCurrentPhrase(), false);
                                 break;
                             case 'playPause':
                                 stopPhrase();
                                 ui.playing = !ui.playing;
-                                if (ui.playing) {
-                                    say('');
-                                    playDing();
-                                    playPhrase(getCurrentPhrase(), true);
-                                }
+                                if (ui.playing) playPhrase(getCurrentPhrase(), true);
                                 break;
                             case 'prevLesson':
                                 stopPhrase();
