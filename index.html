@@ -93,6 +93,7 @@
             };
 
             var audioCtx;
+            var gain;
             var audioStarted = false;
             function startAudio() {
                 say('');
@@ -106,6 +107,13 @@
                 gain.connect(audioCtx.destination);
                 oscillator.start(0);
                 audioStarted = true;
+            }
+
+            function stopAudio() {
+                if (audioStarted) {
+                    audioCtx.close();
+                    audioStarted = false;
+                }
             }
 
             var t = 0;
@@ -311,7 +319,7 @@
                 }
                 var code = encodePhrase(phrase);
                 playCode(code);
-                const trainingSpeechPause = 2000; // TODO: settings
+                const trainingSpeechPause = 3000; // TODO: settings
                 if (speakAndAdvance) {
                     var delay = codeMilliseconds(code) + ditlen * 7 * 1000;
                     continuationTimeout1 = setTimeout(
@@ -589,7 +597,6 @@
                 var ratio = devicePixelRatio;
                 canvas = document.getElementById('canvas');
                 canvas.onmousedown = function(e) { e.preventDefault(); touch(e.x * ratio, e.y * ratio); }
-                // canvas.ontouchstart = function(e) { e.preventDefault(); touch(e.touches[0].clientX * ratio, e.touches[0].clientY * ratio); }
                 resizeCanvas();
                 redraw();
                 setSpeed(20); // TODO: settings
@@ -597,6 +604,7 @@
                 document.onvisibilitychange = function(e) {
                     if (document.hidden) {
                         stopPhrase();
+                        stopAudio();
                         ui.playing = false;
                         redraw();
                     }
