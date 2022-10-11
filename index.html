@@ -202,16 +202,20 @@
 
             var morse = "  ETIANMSURWDKGOHVF L PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
             var playContinuation = function() {};
-            var playContinuationTimeoutId = null;
+            var continuationTimeout0 = null;
+            var continuationTimeout1 = null;
+            var continuationTimeout2 = null;
+            var continuationTimeout3 = null;
 
             function stopPhrase() {
                 playContinuation = function() {};
-                if (playContinuationTimeoutId) {
-                    clearTimeout(playContinuationTimeoutId);
-                    if (ui.hide) {
-                        ui.hide = false;
-                        redraw();
-                    }
+                if (continuationTimeout0) clearTimeout(continuationTimeout0);
+                if (continuationTimeout1) clearTimeout(continuationTimeout1);
+                if (continuationTimeout2) clearTimeout(continuationTimeout2);
+                if (continuationTimeout3) clearTimeout(continuationTimeout3);
+                if (ui.hide) {
+                    ui.hide = false;
+                    redraw();
                 }
             }
 
@@ -252,7 +256,7 @@
                 function continuation(j) {
                     if (code.length > j) {
                         var continueCode = code.substring(j);
-                        playContinuationTimeoutId = setTimeout(
+                        continuationTimeout0 = setTimeout(
                             function() { playCode(continueCode); },
                             (t - startTime) * 1000);
                     }
@@ -311,19 +315,17 @@
                 const trainingSpeechPause = 2000; // TODO: settings
                 if (speakAndAdvance) {
                     var delay = codeMilliseconds(code);
-                    playContinuationTimeoutId = setTimeout(
+                    continuationTimeout1 = setTimeout(function () { if (ui.playing)  playDing(); }, delay);
+                    continuationTimeout2 = setTimeout(
                         function () {
-                            playDing();
-                            playContinuationTimeoutId = setTimeout(
-                                function () {
-                                    ui.hide = false;
-                                    redraw();
-                                    say(getCurrentPhrase());
-                                },
-                                trainingSpeechPause);
+                            if (ui.playing) {
+                                ui.hide = false;
+                                redraw();
+                                say(getCurrentPhrase());
+                            }
                         },
-                        delay);
-                    setTimeout(
+                        delay + trainingSpeechPause);
+                    continuationTimeout3 = setTimeout(
                         function () {
                             if (ui.playing) {
                                 nextPhrase();
@@ -598,4 +600,10 @@
     <body class="dark">
         <canvas id="canvas"></canvas>
     </body>
+    <!--
+        TODO:
+        - Hilight characters upon main tap
+        - Tap/hold to speed advance
+        - Settings dialog
+    -->
 </html>
