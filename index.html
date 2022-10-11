@@ -139,7 +139,7 @@
                     var c = utterance[i];
                     if (c == c.toUpperCase()) {
                         var spell = {
-                            'A': 'ey',
+                            'A': 'ay',
                             'B': 'bee',
                             'C': 'cee',
                             'D': 'dee',
@@ -205,15 +205,11 @@
             var playContinuation = function() {};
             var continuationTimeout0 = null;
             var continuationTimeout1 = null;
-            var continuationTimeout2 = null;
-            var continuationTimeout3 = null;
 
             function stopPhrase() {
                 playContinuation = function() {};
                 if (continuationTimeout0) clearTimeout(continuationTimeout0);
                 if (continuationTimeout1) clearTimeout(continuationTimeout1);
-                if (continuationTimeout2) clearTimeout(continuationTimeout2);
-                if (continuationTimeout3) clearTimeout(continuationTimeout3);
                 if (ui.hide) {
                     ui.hide = false;
                     redraw();
@@ -318,25 +314,31 @@
                 const trainingSpeechPause = 2000; // TODO: settings
                 if (speakAndAdvance) {
                     var delay = codeMilliseconds(code) + ditlen * 7 * 1000;
-                    continuationTimeout1 = setTimeout(function () { if (ui.playing) playDing(); }, delay);
-                    continuationTimeout2 = setTimeout(
+                    continuationTimeout1 = setTimeout(
                         function () {
                             if (ui.playing) {
-                                ui.hide = false;
-                                redraw();
-                                say(getCurrentPhrase());
+                                playDing();
+                                continuationTimeout1 = setTimeout(
+                                    function () {
+                                        if (ui.playing) {
+                                            ui.hide = false;
+                                            redraw();
+                                            say(getCurrentPhrase());
+                                            continuationTimeout1 = setTimeout(
+                                                function () {
+                                                    if (ui.playing) {
+                                                        nextPhrase();
+                                                        redraw();
+                                                        playPhrase(getCurrentPhrase(), speakAndAdvance, false);
+                                                    }
+                                                },
+                                                trainingSpeechPause);
+                                        }
+                                    },
+                                    trainingSpeechPause);
                             }
                         },
-                        delay + trainingSpeechPause);
-                    continuationTimeout3 = setTimeout(
-                        function () {
-                            if (ui.playing) {
-                                nextPhrase();
-                                redraw();
-                                playPhrase(getCurrentPhrase(), speakAndAdvance, false);
-                            }
-                        },
-                        delay + (trainingSpeechPause * 2));
+                        delay);
                 }
             }
 
@@ -592,6 +594,13 @@
                 redraw();
                 setSpeed(20); // TODO: settings
                 setFarnsworth(8); // TODO: settings
+                document.onvisibilitychange = function(e) {
+                    if (document.hidden) {
+                        stopPhrase();
+                        ui.playing = false;
+                        redraw();
+                    }
+                };
             }
 
             onresize = function() {
