@@ -122,11 +122,10 @@
             var tone;
             var speed;
             var ditlen;
-            var delay = 0.03;
-            var ramp = 0.01;
 
             var t = 0;
             function playTone(len) {
+                const ramp = 0.01;
                 if (!audioStarted) startAudio();
                 var c = audioCtx.currentTime;
                 t = c > t ? c : t;
