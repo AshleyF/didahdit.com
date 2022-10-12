@@ -326,8 +326,8 @@
                 var code = encodePhrase(phrase);
                 playCode(code);
                 const trainingSpeechPause = 3000; // TODO: settings
+                var delay = codeMilliseconds(code) + ditlen * 7 * 1000;
                 if (speakAndAdvance) {
-                    var delay = codeMilliseconds(code) + ditlen * 7 * 1000;
                     continuationTimeout1 = setTimeout(
                         function () {
                             if (ui.playing) {
@@ -353,6 +353,16 @@
                             }
                         },
                         delay);
+                } else {
+                    continuationTimeout1 = setTimeout(
+                        function () {
+                            if (ui.playing) {
+                                ui.playing = false;
+                                redraw();
+                            }
+                        },
+                        delay);
+
                 }
             }
 
@@ -833,7 +843,7 @@
                                     return;
                                 case 'phrase':
                                     stopPhrase();
-                                    ui.playing = false;
+                                    ui.playing = true;
                                     playPhrase(getCurrentPhrase(), false);
                                     redraw();
                                     return;
@@ -906,7 +916,5 @@
         TODO:
         - Hilight characters upon main tap
         - Tap/hold to speed advance
-        - Stop button for phrase tap
-        - Advance lessons while playing
     -->
 </html>
