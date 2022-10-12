@@ -92,17 +92,20 @@
                 hide: false,
                 buttons: [],
                 dialog: { left: 0, right: 0, top: 0, bottom: 0 },
+                speed: 20,
+                delay: 8,
             };
 
             var audioCtx;
             var gain;
+            var oscillator;
             var audioStarted = false;
             function startAudio() {
                 say('');
                 (new Audio('silent.wav')).play();
                 audioCtx = new (AudioContext || webkitAudioContext)();
-                var oscillator = audioCtx.createOscillator();
-                oscillator.frequency.value = 750;
+                oscillator = audioCtx.createOscillator();
+                oscillator.frequency.value = getPitch();
                 gain = audioCtx.createGain();
                 gain.gain.value = 0;
                 oscillator.connect(gain);
@@ -132,16 +135,6 @@
 
             function silence(len) {
                 t += len;
-            }
-
-            var ditlen;
-            function setSpeed(wpm) {
-                ditlen = 1.2 / wpm;
-            }
-
-            var farnsworth;
-            function setFarnsworth(factor) {
-                farnsworth = factor;
             }
 
             function say(utterance) {
@@ -363,12 +356,12 @@
                 }
             }
 
-            function getIntSetting(name) {
-                return parseInt(localStorage.getItem(name) || '0');
+            function getIntSetting(name, dflt) {
+                return parseInt(localStorage.getItem(name) || dflt);
             }
 
             function getLesson() {
-                return getIntSetting('lesson');
+                return getIntSetting('lesson', 0);
             }
 
             function setLesson(num) {
@@ -376,7 +369,7 @@
             }
 
             function getPhrase() {
-                return getIntSetting('phrase');
+                return getIntSetting('phrase', 0);
             }
 
             function setPhrase(num) {
@@ -389,6 +382,35 @@
 
             function setDarkMode(dark) {
                 localStorage.setItem('mode', dark ? 'dark' : 'light');
+            }
+
+            var ditlen;
+            function setSpeed(wpm) {
+                localStorage.setItem('speed', wpm);
+                ditlen = 1.2 / wpm;
+            }
+
+            function getSpeed() {
+                return getIntSetting('speed', 20);
+            }
+
+            var farnsworth;
+            function setDelay(factor) {
+                localStorage.setItem('delay', factor);
+                farnsworth = factor;
+            }
+
+            function getDelay() {
+                return getIntSetting('delay', 7);
+            }
+
+            function setPitch(hz) { // TODO
+                localStorage.setItem('pitch', hz);
+                if (audioStarted) oscillator.frequency.value = hz;
+            }
+
+            function getPitch() { // TODO
+                return getIntSetting('pitch', 650);
             }
 
             function resizeCanvas() {
@@ -417,6 +439,7 @@
                 var subduedButtonColor = darkMode ? '#ccc' : '#333'; // gray
                 var disabledButtonColor = darkMode ? '#333' : '#ccc'; // gray
                 var dialogBackgroundColor = darkMode ? '#222' : '#ddd';
+                var dialogAttributionColor = darkMode ? '#444' : '#bbb';
 
                 var ctx = canvas.getContext('2d');
                 ctx.scale(1, 1);
@@ -569,10 +592,11 @@
                 if (ui.settings) {
                     ctx.fillStyle = dimColor;
                     ctx.fillRect(0, 0, w, h);
+                    const attributionHeight = padding;
                     var left = padding * (w > h ? 4 : 1);
                     var right = w - padding * (w > h ? 4 : 1);
                     var top = padding * (h > w ? 4 : 1);
-                    var bottom = top + buttonSize * 4 + padding * 5;
+                    var bottom = top + buttonSize * 4 + padding * 6 + attributionHeight;
                     ui.dialog = {
                         left: left,
                         right: right,
@@ -581,7 +605,17 @@
                     };
                     fillRoundedRect(left, top, right, bottom, padding, dialogBackgroundColor);
                     drawFittedText(
-                        "Light/Dark:",
+                        'Feedback to Ashley 73 de KK7HXU',
+                        dialogAttributionColor,
+                        left + padding,
+                        bottom - padding - attributionHeight,
+                        right - left - padding * 2,
+                        attributionHeight,
+                        'normal',
+                        false,
+                        true);
+                    drawFittedText(
+                        'Light/Dark:',
                         subduedButtonColor,
                         left + padding,
                         top + padding,
@@ -590,19 +624,19 @@
                         'normal',
                         false,
                         false);
-                    controlLeft = right - padding - buttonSize * 2.5;
+                    controlLeft = right - padding - buttonSize * 3;
                     const switchThinFactor = 1.3;
                     fillRoundedRect(
-                        controlLeft + padding * switchThinFactor - padding,
+                        controlLeft + padding * switchThinFactor,
                         top + padding * switchThinFactor,
-                        right - padding * switchThinFactor,
+                        right - padding * switchThinFactor - padding,
                         top + padding / switchThinFactor + buttonSize,
                         buttonSize / switchThinFactor / 2,
                         subduedButtonColor);
                     var dark = getDarkMode();
                     ctx.beginPath();
                     ctx.arc(
-                        (dark ? right - padding - buttonSize : controlLeft) + buttonSize / 2,
+                        (dark ? right - padding * 2 - buttonSize : controlLeft + padding) + buttonSize / 2,
                         top + padding + buttonSize / 2,
                         buttonSize / 2,
                         0,
@@ -614,51 +648,83 @@
                     ctx.strokeStyle = subduedButtonColor;
                     ctx.stroke();
                     var margin = padding / 2;
-                    drawButton(
-                        'mode',
+                    drawFittedText(
                         dark ? '☽' : '☼',
                         subduedButtonColor,
-                        (dark ? right - padding - buttonSize : controlLeft) + margin,
+                        (dark ? right - padding * 2 - buttonSize : controlLeft + padding) + margin,
                         top + padding + margin,
                         buttonSize - margin * 2,
-                        buttonSize - margin * 2);
-                    buttons.pop();
+                        buttonSize - margin * 2,
+                        'normal',
+                        true,
+                        true);
                     buttons.push({
                         name: 'mode',
                         left: controlLeft,
                         top: top,
                         right: right,
                         bottom: top + buttonSize + padding / 2 })
-                    drawFittedText(
-                        "Speed:",
-                        subduedButtonColor,
-                        left + padding,
-                        top + padding * 2 + buttonSize,
-                        right - padding - buttonSize * 3,
-                        buttonSize,
-                        'normal',
-                        false,
-                        false);
-                    drawFittedText(
-                        "Delay:",
-                        subduedButtonColor,
-                        left + padding,
-                        top + padding * 3 + buttonSize * 2,
-                        right - padding - buttonSize * 3,
-                        buttonSize,
-                        'normal',
-                        false,
-                        false);
-                    drawFittedText(
-                        "Pitch:",
-                        subduedButtonColor,
-                        left + padding,
-                        top + padding * 4 + buttonSize * 3,
-                        right - padding - buttonSize * 3,
-                        buttonSize,
-                        'normal',
-                        false,
-                        false);
+                    function drawUpDownControl(label, name, val, min, max, row) {
+                        drawFittedText(
+                            label,
+                            subduedButtonColor,
+                            left + padding,
+                            row,
+                            right - padding - buttonSize * 3,
+                            buttonSize,
+                            'normal',
+                            false,
+                            false);
+                        const arrowScale = 0.5;
+                        drawFittedText(
+                            '❰',
+                            val <= min ? disabledButtonColor : subduedButtonColor,
+                            controlLeft,
+                            row + (buttonSize * arrowScale / 2),
+                            buttonSize * arrowScale,
+                            buttonSize * arrowScale,
+                            'normal',
+                            true,
+                            true);
+                        if (val > min) {
+                            buttons.push({
+                                name: name + 'Down',
+                                left: controlLeft,
+                                top: row,
+                                right: controlLeft + buttonSize,
+                                bottom: row + buttonSize
+                            });
+                        }
+                        drawButton(
+                            name,
+                            val,
+                            subduedButtonColor,
+                            controlLeft + buttonSize,
+                            row,
+                            buttonSize,
+                            buttonSize)
+                        drawFittedText(
+                            '❱',
+                            val >= max ? disabledButtonColor : subduedButtonColor,
+                            controlLeft + buttonSize * 2 + buttonSize * arrowScale,
+                            row + (buttonSize * arrowScale / 2),
+                            buttonSize * arrowScale,
+                            buttonSize * arrowScale,
+                            'normal',
+                            true,
+                            true);
+                        if (val < max) {
+                            buttons.push({
+                                name: name + 'Up',
+                                left: controlLeft + buttonSize * 2,
+                                top: row,
+                                right: controlLeft + buttonSize * 4,
+                                bottom: row + buttonSize });
+                        }
+                    }
+                    drawUpDownControl('Speed', 'speed', getSpeed(), 5, 30, top + padding * 2 + buttonSize);
+                    drawUpDownControl('Delay', 'delay', getDelay(), 1, 15, top + padding * 3 + buttonSize * 2);
+                    drawUpDownControl('Pitch', 'pitch', getPitch(), 100, 900, top + padding * 4 + buttonSize * 3);
                     ui.buttons = buttons;
                 }
             }
@@ -673,13 +739,62 @@
                         ui.settings = false;
                     } else {
                     }
-                    for (var b in ui.buttons) {
+                    for (var b = 0; b < ui.buttons.length; b++) {
                         var button = ui.buttons[b];
                         if (x >= button.left && x <= button.right && y >= button.top && y <= button.bottom) {
                             switch (button.name) {
                                 case 'mode':
                                     setDarkMode(!getDarkMode());
-                                    break;
+                                    redraw();
+                                    return;
+                                case 'speed':
+                                    stopPhrase();
+                                    playPhrase('r', false);
+                                    return;
+                                case 'speedUp':
+                                    stopPhrase();
+                                    setSpeed(getSpeed() + 1);
+                                    redraw();
+                                    playPhrase('r', false);
+                                    return;
+                                case 'speedDown':
+                                    stopPhrase();
+                                    setSpeed(getSpeed() - 1);
+                                    redraw();
+                                    playPhrase('r', false);
+                                    return;
+                                case 'delay':
+                                    stopPhrase();
+                                    playPhrase('ee', false);
+                                    return;
+                                case 'delayUp':
+                                    stopPhrase();
+                                    setDelay(getDelay() + 1);
+                                    redraw();
+                                    playPhrase('ee', false);
+                                    return;
+                                case 'delayDown':
+                                    stopPhrase();
+                                    setDelay(getDelay() - 1);
+                                    redraw();
+                                    playPhrase('ee', false);
+                                    return;
+                                case 'pitch':
+                                    stopPhrase();
+                                    playPhrase('v', false);
+                                    return;
+                                case 'pitchUp':
+                                    stopPhrase();
+                                    setPitch(getPitch() + 10);
+                                    redraw();
+                                    playPhrase('v', false);
+                                    return;
+                                case 'pitchDown':
+                                    stopPhrase();
+                                    setPitch(getPitch() - 10);
+                                    redraw();
+                                    playPhrase('v', false);
+                                    return;
                             }
                         }
                     }
@@ -691,47 +806,53 @@
                                 case 'settings':
                                     stopPhrase();
                                     ui.settings = true;
-                                    break;
+                                    redraw();
+                                    return;
                                 case 'phrase':
                                     stopPhrase();
                                     ui.playing = false;
                                     playPhrase(getCurrentPhrase(), false);
-                                    break;
+                                    redraw();
+                                    return;
                                 case 'playPause':
                                     stopPhrase();
                                     ui.playing = !ui.playing;
                                     if (ui.playing) playPhrase(getCurrentPhrase(), true);
-                                    break;
+                                    redraw();
+                                    return;
                                 case 'prevLesson':
                                     stopPhrase();
                                     ui.playing = false;
                                     var lesson = getLesson();
                                     if (lesson > 0) setLesson(lesson - 1);
                                     setPhrase(0);
-                                    break;
+                                    redraw();
+                                    return;
                                 case 'nextLesson':
                                     stopPhrase();
                                     ui.playing = false;
                                     var lesson = getLesson();
                                     if (lesson < lessons.length - 1) setLesson(lesson + 1);
                                     setPhrase(0);
-                                    break;
+                                    redraw();
+                                    return;
                                 case 'prevPhrase':
                                     stopPhrase();
                                     ui.playing = false;
                                     var phrase = getPhrase();
                                     setPhrase(phrase > 0 ? phrase - 1 : lessons[getLesson()].phrases.length - 1);
-                                    break;
+                                    redraw();
+                                    return;
                                 case 'nextPhrase':
                                     stopPhrase();
                                     ui.playing = false;
                                     nextPhrase();
-                                    break;
+                                    redraw();
+                                    return;
                             }
                         }
                     }
                 }
-                redraw();
             }
 
             onload = function() {
@@ -742,8 +863,8 @@
 
                 resizeCanvas();
                 redraw();
-                setSpeed(20); // TODO: settings
-                setFarnsworth(8); // TODO: settings
+                setSpeed(getSpeed());
+                setDelay(getDelay());
                 document.onvisibilitychange = function(e) {
                     if (document.hidden) {
                         stopPhrase();
@@ -765,9 +886,9 @@
     </body>
     <!--
         TODO:
-        - Settings dialog
         - Hilight characters upon main tap
         - Tap/hold to speed advance
         - Stop button for phrase tap
+        - Advance lessons while playing
     -->
 </html>
