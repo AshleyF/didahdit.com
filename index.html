@@ -87,6 +87,7 @@
             var canvas;
 
             var ui = {
+                settings: false,
                 playing: false,
                 hide: false,
                 buttons: [],
@@ -459,93 +460,103 @@
                 var buttonWidth = (w - (numButtons + 1) * padding) / (numButtons + largeButton - 1);
                 var buttonHeight = Math.min(buttonWidth, canvas.width / 10, canvas.height / 10);
 
-                drawButton(
-                    'mode',
-                    getDarkMode() ? '☰☼' : '☽',
-                    subduedButtonColor,
-                    w - padding - buttonHeight,
-                    padding, buttonHeight, buttonHeight);
-                drawButton(
-                    'prevLesson',
-                    '⇤',
-                    getLesson() > 0 ? subduedButtonColor : disabledButtonColor,
-                    padding * 1 + buttonWidth * 0,
-                    h - padding - buttonHeight,
-                    buttonWidth, buttonHeight);
-                drawButton(
-                    'prevPhrase',
-                    '⟲',
-                    subduedButtonColor,
-                    padding * 2 + buttonWidth * 1,
-                    h - padding - buttonHeight,
-                    buttonWidth,
-                    buttonHeight);
-                drawButton(
-                    'nextPhrase',
-                    '⟳',
-                    subduedButtonColor,
-                    padding * 4 + buttonWidth * 2 + buttonWidth * largeButton,
-                    h - padding - buttonHeight,
-                    buttonWidth,
-                    buttonHeight);
-                drawButton(
-                    'nextLesson',
-                    '⇥',
-                    getLesson() < lessons.length - 1 ? subduedButtonColor : disabledButtonColor,
-                    padding * 5 + buttonWidth * 3 + buttonWidth * largeButton,
-                    h - padding - buttonHeight,
-                    buttonWidth,
-                    buttonHeight);
-                drawButton(
-                    'playPause',
-                     ui.playing ? 'II' : '▶▸',
-                     foregroundColor,
-                     padding * 3 + buttonWidth * 2,
-                     h - padding - buttonHeight * largeButton,
-                     buttonWidth * largeButton,
-                     buttonHeight * largeButton);
-                ui.buttons = buttons;
+                if (ui.settings) {
+                    drawButton(
+                        'mode',
+                        getDarkMode() ? '☰☼' : '⚙☽',
+                        subduedButtonColor,
+                        w - padding - buttonHeight,
+                        padding, buttonHeight, buttonHeight);
+                    ui.buttons = buttons;
+                } else {
+                    drawButton(
+                        'settings',
+                        '☰',
+                        subduedButtonColor,
+                        w - padding - buttonHeight,
+                        padding, buttonHeight, buttonHeight);
+                    drawButton(
+                        'prevLesson',
+                        '⇤',
+                        getLesson() > 0 ? subduedButtonColor : disabledButtonColor,
+                        padding * 1 + buttonWidth * 0,
+                        h - padding - buttonHeight,
+                        buttonWidth, buttonHeight);
+                    drawButton(
+                        'prevPhrase',
+                        '⟲',
+                        subduedButtonColor,
+                        padding * 2 + buttonWidth * 1,
+                        h - padding - buttonHeight,
+                        buttonWidth,
+                        buttonHeight);
+                    drawButton(
+                        'nextPhrase',
+                        '⟳',
+                        subduedButtonColor,
+                        padding * 4 + buttonWidth * 2 + buttonWidth * largeButton,
+                        h - padding - buttonHeight,
+                        buttonWidth,
+                        buttonHeight);
+                    drawButton(
+                        'nextLesson',
+                        '⇥',
+                        getLesson() < lessons.length - 1 ? subduedButtonColor : disabledButtonColor,
+                        padding * 5 + buttonWidth * 3 + buttonWidth * largeButton,
+                        h - padding - buttonHeight,
+                        buttonWidth,
+                        buttonHeight);
+                    drawButton(
+                        'playPause',
+                        ui.playing ? 'II' : '▸',
+                        foregroundColor,
+                        padding * 3 + buttonWidth * 2,
+                        h - padding - buttonHeight * largeButton,
+                        buttonWidth * largeButton,
+                        buttonHeight * largeButton);
+                    ui.buttons = buttons;
 
-                drawFittedText(
-                    lessons[getLesson()].name,
-                    lessonTextColor,
-                    padding,
-                    padding,
-                    w - padding * 6 - buttonHeight * 2,
-                    buttonHeight,
-                    'normal',
-                    false,
-                    false);
-                drawFittedText(
-                    getPhrase() + 1,
-                    phraseNumTextColor,
-                    w - padding * 3 - buttonHeight * 2,
-                    padding,
-                    buttonHeight,
-                    buttonHeight,
-                    'normal',
-                    false,
-                    false);
-                var phraseX = padding;
-                var phraseY = buttonHeight + padding * 2;
-                var phraseWidth = w - padding * 2;
-                var phraseHeight = h - padding * 4 - buttonHeight - buttonHeight * largeButton;
-                drawFittedText(
-                    ui.hide ? '?' : lessons[getLesson()].phrases[getPhrase()], 
-                    ui.hide ? disabledButtonColor : phraseTextColor,
-                    phraseX,
-                    phraseY,
-                    phraseWidth,
-                    phraseHeight,
-                    'bold',
-                    false,
-                    true);
-                ui.buttons.push({
-                    name: 'phrase',
-                    left: phraseX - padding,
-                    top: phraseY - padding,
-                    right: phraseWidth + padding,
-                    bottom: phraseHeight + padding })
+                    drawFittedText(
+                        lessons[getLesson()].name,
+                        lessonTextColor,
+                        padding,
+                        padding,
+                        w - padding * 6 - buttonHeight * 2,
+                        buttonHeight,
+                        'normal',
+                        false,
+                        false);
+                    drawFittedText(
+                        getPhrase() + 1,
+                        phraseNumTextColor,
+                        w - padding * 3 - buttonHeight * 2,
+                        padding,
+                        buttonHeight,
+                        buttonHeight,
+                        'normal',
+                        false,
+                        false);
+                    var phraseX = padding;
+                    var phraseY = buttonHeight + padding * 2;
+                    var phraseWidth = w - padding * 2;
+                    var phraseHeight = h - padding * 4 - buttonHeight - buttonHeight * largeButton;
+                    drawFittedText(
+                        ui.hide ? '?' : lessons[getLesson()].phrases[getPhrase()], 
+                        ui.hide ? disabledButtonColor : phraseTextColor,
+                        phraseX,
+                        phraseY,
+                        phraseWidth,
+                        phraseHeight,
+                        'bold',
+                        false,
+                        true);
+                    ui.buttons.push({
+                        name: 'phrase',
+                        left: phraseX - padding,
+                        top: phraseY - padding,
+                        right: phraseWidth + padding,
+                        bottom: phraseHeight + padding })
+                }
             }
 
             function nextPhrase() {
@@ -559,6 +570,9 @@
                     var button = ui.buttons[b];
                     if (x >= button.left && x <= button.right && y >= button.top && y <= button.bottom) {
                         switch (button.name) {
+                            case 'settings':
+                                ui.settings = true;
+                                break;
                             case 'mode':
                                 setDarkMode(!getDarkMode());
                                 break;
@@ -607,7 +621,8 @@
                 if (location.search == '?clear-settings') localStorage.clear();
                 var ratio = devicePixelRatio;
                 canvas = document.getElementById('canvas');
-                canvas.onmousedown = function(e) { e.preventDefault(); touch(e.x * ratio, e.y * ratio); }
+                canvas.onmousedown = function(e) { e.preventDefault(); touch(e.x * ratio, e.y * ratio); };
+
                 resizeCanvas();
                 redraw();
                 setSpeed(20); // TODO: settings
