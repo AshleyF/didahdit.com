@@ -4,8 +4,6 @@
         <style>body { margin: 0; padding: 0; }</style>
         <script>
             var lessons = [
-                { name: 'Test',
-                  phrases: ['A B C D K L M 0'] },
                 { name: '1a Characters E T A N',
                   phrases: ['E', 'T', 'A', 'N', 'E E E', 'T T T', 'A A A', 'N N N'] },
                 { name: '1b Words E T A N',
@@ -843,6 +841,7 @@
                             switch (button.name) {
                                 case 'settings':
                                     stopPhrase();
+                                    ui.playing = false;
                                     ui.settings = true;
                                     redraw();
                                     return;
