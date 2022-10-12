@@ -4,6 +4,8 @@
         <style>body { margin: 0; padding: 0; }</style>
         <script>
             var lessons = [
+                { name: 'Test',
+                  phrases: ['A B C D K L M 0'] },
                 { name: '1a Characters E T A N',
                   phrases: ['E', 'T', 'A', 'N', 'E E E', 'T T T', 'A A A', 'N N N'] },
                 { name: '1b Words E T A N',
@@ -153,8 +155,8 @@
                             'H': 'hotel',
                             'I': 'india',
                             'J': 'juliet',
-                            'K': 'kilo',
-                            'L': 'lima',
+                            'K': 'key-low', // kilo
+                            'L': 'leema', // lima
                             'M': 'mike',
                             'N': 'november',
                             'O': 'oscar',
@@ -325,7 +327,8 @@
                 }
                 var code = encodePhrase(phrase);
                 playCode(code);
-                const trainingSpeechPause = 3000; // TODO: settings
+                const trainingSpeechPause = 2000;
+                const trainingSpeechCharacterPause = 100;
                 var delay = codeMilliseconds(code) + ditlen * 7 * 1000;
                 if (speakAndAdvance) {
                     continuationTimeout1 = setTimeout(
@@ -337,7 +340,8 @@
                                         if (ui.playing) {
                                             ui.hide = false;
                                             redraw();
-                                            say(getCurrentPhrase());
+                                            var phrase = getCurrentPhrase();
+                                            say(phrase);
                                             continuationTimeout1 = setTimeout(
                                                 function () {
                                                     if (ui.playing) {
@@ -346,7 +350,7 @@
                                                         playPhrase(getCurrentPhrase(), speakAndAdvance, false);
                                                     }
                                                 },
-                                                trainingSpeechPause);
+                                                trainingSpeechPause + phrase.length * trainingSpeechCharacterPause);
                                         }
                                     },
                                     trainingSpeechPause);
@@ -917,5 +921,12 @@
         TODO:
         - Hilight characters upon main tap
         - Tap/hold to speed advance
+        - Synthesized 'ding'
+        - Random playback?
+        - Quick lesson picker?
+        - Course picker?
+
+        BUGS:
+        - Speech length is only estimated
     -->
 </html>
