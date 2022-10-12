@@ -770,6 +770,7 @@
                 if (ui.settings) {
                     if (x < ui.dialog.left || x > ui.dialog.right || y < ui.dialog.top || y > ui.dialog.bottom) {
                         ui.settings = false;
+                        redraw();
                     } else {
                     }
                     for (var b = 0; b < ui.buttons.length; b++) {
