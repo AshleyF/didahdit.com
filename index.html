@@ -1,7 +1,7 @@
 <html>
     <head>
         <title>Learn Morse Code</title>
-        <style>body { margin: 0; padding: 0; height: 100vh; width: 100vw; }</style>
+        <style>body { margin: 0; padding: 0; }</style>
         <script>
             var lessons = [
                 { name: '1a Characters E T A N',
@@ -432,8 +432,10 @@
 
             function resizeCanvas() {
                 var ratio = devicePixelRatio;
-                var w = document.body.clientWidth;
-                var h = document.body.clientHeight;
+                var w = window.innerWidth;
+                var h = window.innerHeight;
+                //var w = document.body.clientWidth;
+                //var h = document.body.clientHeight;
                 canvas.width = w * ratio;
                 canvas.height = h * ratio;
                 canvas.style.width = w + 'px';
