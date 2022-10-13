@@ -93,7 +93,7 @@
                 buttons: [],
                 dialog: { left: 0, right: 0, top: 0, bottom: 0 },
                 speed: 20,
-                delay: 8,
+                farnsworth: 5,
             };
 
             var audioCtx;
@@ -287,11 +287,11 @@
                             silence(ditlen);
                             break;
                         case ' ':
-                            silence(ditlen * 3 * farnsworth);
+                            silence(fditlen * 3);
                             continuation(i + 1);
                             return;
                         case '/':
-                            silence(ditlen * 7 * farnsworth);
+                            silence(fditlen * 7);
                             continuation(i + 1);
                             return;
                     }
@@ -310,10 +310,10 @@
                                 s += ditlen * 4;
                                 break;
                             case ' ':
-                                s += ditlen * 3 * farnsworth;
+                                s += fditlen * 3;
                                 break;
                             case '/':
-                                s += ditlen * 7 * farnsworth;
+                                s += fditlen * 7;
                                 break;
                         }
                     }
@@ -327,7 +327,7 @@
                 playCode(code);
                 const trainingSpeechPause = 2000;
                 const trainingSpeechCharacterPause = 100;
-                var delay = codeMilliseconds(code) + ditlen * 7 * farnsworth * 1000;
+                var delay = codeMilliseconds(code) + fditlen * 7 * 1000;
                 if (speakAndAdvance) {
                     continuationTimeout1 = setTimeout(
                         function () {
@@ -397,23 +397,28 @@
             }
 
             var ditlen;
+            var fditlen;
+            function computeSpeedVariables(wpm, farnsworth) {
+                ditlen = 1.2 / wpm;
+                fditlen = (60 / farnsworth - 31 * ditlen) / 19;
+            }
+
             function setSpeed(wpm) {
                 localStorage.setItem('speed', wpm);
-                ditlen = 1.2 / wpm;
+                computeSpeedVariables(wpm, getFarnsworth());
             }
 
             function getSpeed() {
-                return getIntSetting('speed', 20);
+                return getIntSetting('speed', 25);
             }
 
-            var farnsworth;
-            function setDelay(factor) {
-                localStorage.setItem('delay', factor);
-                farnsworth = factor;
+            function setFarnsworth(farnsworthWpm) {
+                localStorage.setItem('farnsworth', farnsworthWpm);
+                computeSpeedVariables(getSpeed(), farnsworthWpm);
             }
 
-            function getDelay() {
-                return getIntSetting('delay', 7);
+            function getFarnsworth() {
+                return getIntSetting('farnsworth', 5);
             }
 
             function setPitch(hz) { // TODO
@@ -734,8 +739,8 @@
                                 bottom: row + buttonSize });
                         }
                     }
-                    drawUpDownControl('Speed', 'speed', getSpeed(), 5, 30, top + padding * 2 + buttonSize);
-                    drawUpDownControl('Delay', 'delay', getDelay(), 1, 15, top + padding * 3 + buttonSize * 2);
+                    drawUpDownControl('Speed', 'speed', getSpeed(), 5, 50, top + padding * 2 + buttonSize);
+                    drawUpDownControl('Farnsworth', 'farnsworth', getFarnsworth(), 1, 50, top + padding * 3 + buttonSize * 2);
                     drawUpDownControl('Pitch', 'pitch', getPitch(), 100, 900, top + padding * 4 + buttonSize * 3);
                     ui.buttons = buttons;
                 }
@@ -791,29 +796,29 @@
                                     stopPhrase();
                                     setSpeed(getSpeed() + 1);
                                     redraw();
-                                    playPhrase('r', false);
+                                    playPhrase('vv', false);
                                     return;
                                 case 'speedDown':
                                     stopPhrase();
                                     setSpeed(getSpeed() - 1);
                                     redraw();
-                                    playPhrase('r', false);
+                                    playPhrase('vv', false);
                                     return;
-                                case 'delay':
+                                case 'farnsworth':
                                     stopPhrase();
-                                    playPhrase('ee', false);
+                                    playPhrase('vv', false);
                                     return;
-                                case 'delayUp':
+                                case 'farnsworthUp':
                                     stopPhrase();
-                                    setDelay(getDelay() + 1);
+                                    setFarnsworth(getFarnsworth() + 1);
                                     redraw();
-                                    playPhrase('ee', false);
+                                    playPhrase('vv', false);
                                     return;
-                                case 'delayDown':
+                                case 'farnsworthDown':
                                     stopPhrase();
-                                    setDelay(getDelay() - 1);
+                                    setFarnsworth(getFarnsworth() - 1);
                                     redraw();
-                                    playPhrase('ee', false);
+                                    playPhrase('vv', false);
                                     return;
                                 case 'pitch':
                                     stopPhrase();
@@ -896,7 +901,7 @@
                 resizeCanvas();
                 redraw();
                 setSpeed(getSpeed());
-                setDelay(getDelay());
+                setFarnsworth(getFarnsworth());
                 document.onvisibilitychange = function(e) {
                     if (document.hidden) {
                         stopPhrase();
