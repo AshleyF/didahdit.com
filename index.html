@@ -1,7 +1,7 @@
 <html>
     <head>
         <title>Learn Morse Code</title>
-        <style>body { margin: 0; padding: 0; }</style>
+        <style>body { margin: 0; padding: 0; height: 100vh; width: 100vw; }</style>
         <script>
             var lessons = [
                 { name: '1a Characters E T A N',
@@ -326,7 +326,7 @@
                 var code = encodePhrase(phrase);
                 playCode(code);
                 const trainingSpeechPause = 2000;
-                const trainingSpeechCharacterPause = 100;
+                const trainingSpeechCharacterPause = 110;
                 var delay = codeMilliseconds(code) + fditlen * 7 * 1000;
                 if (speakAndAdvance) {
                     continuationTimeout1 = setTimeout(
@@ -431,9 +431,6 @@
             }
 
             function resizeCanvas() {
-                //canvas.width = document.body.clientWidth;
-                //canvas.height = document.body.clientHeight;
-
                 var ratio = devicePixelRatio;
                 var w = document.body.clientWidth;
                 var h = document.body.clientHeight;
@@ -460,7 +457,6 @@
 
                 var ctx = canvas.getContext('2d');
                 ctx.scale(1, 1);
-                var ratio = devicePixelRatio;
                 var w = canvas.width;
                 var h = canvas.height;
 
@@ -500,7 +496,7 @@
                     ctx.fill();
                 }
 
-                var padding = 40 * ratio;
+                var padding = Math.min(canvas.width / 24, canvas.height / 24);
 
                 var buttons = [];
                 function drawButton(name, label, color, x, y, width, height) {
@@ -517,7 +513,7 @@
                 const numButtons = 5;
                 const largeButton = 1.5;
                 var buttonWidth = (w - (numButtons + 1) * padding) / (numButtons + largeButton - 1);
-                var buttonSize = Math.min(buttonWidth, canvas.width / 10, canvas.height / 10);
+                var buttonSize = Math.min(buttonWidth, canvas.width / 12, canvas.height / 12);
 
                 drawButton(
                     'settings',
@@ -642,7 +638,7 @@
                         false,
                         false);
                     controlLeft = right - padding - buttonSize * 3;
-                    const switchThinFactor = 1.3;
+                    const switchThinFactor = 1.1;
                     fillRoundedRect(
                         controlLeft + padding * switchThinFactor,
                         top + padding * switchThinFactor,
@@ -664,7 +660,7 @@
                     ctx.lineWidth = padding / 10;
                     ctx.strokeStyle = subduedButtonColor;
                     ctx.stroke();
-                    var margin = padding / 2;
+                    var margin = buttonSize / 4;
                     drawFittedText(
                         dark ? '☽' : '☼',
                         subduedButtonColor,
