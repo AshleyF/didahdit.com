@@ -1087,7 +1087,6 @@
                     var lessonNum = localStorage.getItem('lesson');
                     var phraseNum = localStorage.getItem('phrase');
                     if (lessonNum && phraseNum) {
-                        alert('migrate');
                         localStorage.setItem('content', 'CWOPS');
                         localStorage.removeItem('lesson');
                         localStorage.setItem('lesson_CWOPS', library.find(c => c.id == 'CWOPS').lessons[lessonNum].id);
