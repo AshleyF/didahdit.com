@@ -881,12 +881,12 @@
                         drawMenu(library.length, i => library[i].id, i => library[i].name);
                         break;
                     case 'lesson':
-                        var lessons = getContent().lessons;
-                        drawMenu(lessons.length, i => lessons[i].id, i => lessons[i].name);
+                        //var lessons = getContent().lessons;
+                        //drawMenu(lessons.length, i => lessons[i].id, i => lessons[i].name);
                         break;
                     case 'phrase':
-                        var phrases = getContent().lessons[getLessonNum()].phrases;
-                        drawMenu(phrases.length, p => p, p => (p + 1) + ' ' + phrases[p]);
+                        //var phrases = getContent().lessons[getLessonNum()].phrases;
+                        //drawMenu(phrases.length, p => p, p => (p + 1) + ' ' + phrases[p]);
                         break;
                 }
                 if (ui.show == 'lesson') {
