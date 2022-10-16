@@ -889,10 +889,6 @@
                         //drawMenu(phrases.length, p => p, p => (p + 1) + ' ' + phrases[p]);
                         break;
                 }
-                if (ui.show == 'lesson') {
-                    var content = getContent();
-                    drawMenu(content.lessons.length, i => content.lessons[i].id, i => content.lessons[i].name);
-                }
             }
 
             function prevLesson() {
@@ -922,12 +918,17 @@
                 }
             }
 
-            function selectDialogMenu(x, y, fnSelect) {
+            function dismissDialog(x, y) {
                 if (x < ui.dialog.left || x > ui.dialog.right || y < ui.dialog.top || y > ui.dialog.bottom) {
                     ui.show = null;
                     redraw();
                     return true;
                 }
+                return false;
+            }
+
+            function selectDialogMenu(x, y, fnSelect) {
+                if (dismissDialog(x, y)) return;
                 for (var b = ui.buttons.length - 1; b >= 0; b--) {
                     var button = ui.buttons[b];
                     if (x >= button.left && x <= button.right && y >= button.top && y <= button.bottom) {
