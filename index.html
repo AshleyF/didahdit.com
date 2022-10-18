@@ -72,7 +72,7 @@
                       phrases: ['you', 'toy', 'foot', 'tooth', 'root', 'cute', 'noise', 'larry', 'roy', 'ton', 'teeth', 'feet', 'yet', 'they', 'say', 'ray', 'hay', 'your', 'fair', 'fare', 'far', 'fur', 'furry', 'hw?'] },
                     { id: '6CP',
                       name: '6c Phrases F Y',
-                      phrases: ['is this fair?', 'yes it is', 'the fur flies', 'she is shy', 'I say no', 'she says yes', 'he says no', 'who is he?', 'he is will', 'no he is walt'] },
+                      phrases: ['is this fair?', 'yes it is', 'the fur flies', 'she is shy', 'i say no', 'she says yes', 'he says no', 'who is he?', 'he is will', 'no he is walt'] },
                     { id: '6DC',
                       name: '6d Calls F Y',
                       phrases: ['F5IN', 'YO1AR', 'HH5H', 'NO3M', 'AA3U', 'S52R', '1512', '3316'] },
@@ -143,20 +143,29 @@
             };
 
             var audioCtx;
-            var gain;
-            var oscillator;
+            var toneGain;
+            var toneOscillator;
+            var dingGain;
+            var dingOscillator;
             var audioStarted = false;
             function startAudio() {
                 say('');
                 (new Audio('silent.wav')).play();
                 audioCtx = new (AudioContext || webkitAudioContext)();
-                oscillator = audioCtx.createOscillator();
-                oscillator.frequency.value = getPitch();
-                gain = audioCtx.createGain();
-                gain.gain.value = 0;
-                oscillator.connect(gain);
-                gain.connect(audioCtx.destination);
-                oscillator.start(0);
+                toneOscillator = audioCtx.createOscillator();
+                dingOscillator = audioCtx.createOscillator();
+                toneOscillator.frequency.value = getPitch();
+                dingOscillator.frequency.value = 2000;
+                toneGain = audioCtx.createGain();
+                dingGain = audioCtx.createGain();
+                toneGain.gain.value = 0;
+                dingGain.gain.value = 0;
+                toneOscillator.connect(toneGain);
+                dingOscillator.connect(dingGain);
+                toneGain.connect(audioCtx.destination);
+                dingGain.connect(audioCtx.destination);
+                toneOscillator.start(0);
+                dingOscillator.start(0);
                 audioStarted = true;
             }
 
@@ -170,13 +179,13 @@
             }
 
             function playTone(len) {
-                const ramp = 0.01;
+                const ramp = 0.005;
                 if (!audioStarted) startAudio();
                 var c = audioCtx.currentTime;
                 t = c > t ? c : t;
-                gain.gain.setTargetAtTime(1, t, ramp);
+                toneGain.gain.setTargetAtTime(1, t, ramp);
                 t += len;
-                gain.gain.setTargetAtTime(0, t, ramp);
+                toneGain.gain.setTargetAtTime(0, t, ramp);
             }
 
             function silence(len) {
@@ -256,9 +265,13 @@
                 }
             }
 
-            var ding = new Audio('ding.wav');
             function playDing() {
-                ding.play();
+                if (!audioStarted) startAudio();
+                var c = audioCtx.currentTime;
+                t = c > t ? c : t;
+                dingGain.gain.linearRampToValueAtTime(0.3, t + 0.005);
+                t += 2.5;
+                dingGain.gain.exponentialRampToValueAtTime(0.000001, t);
             }
 
             var morse = "  ETIANMSURWDKGOHVF L PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
@@ -508,7 +521,7 @@
 
             function setPitch(hz) { // TODO
                 localStorage.setItem('pitch', hz);
-                if (audioStarted) oscillator.frequency.value = hz;
+                if (audioStarted) toneOscillator.frequency.value = hz;
             }
 
             function getPitch() { // TODO
@@ -1148,11 +1161,11 @@
         TODO:
         - Hilight characters upon main tap
         - Tap/hold to speed advance
-        - Synthesized 'ding'
         - Random playback?
         - Quick lesson picker?
         - Course picker?
         - Keyboard control for desktop
+        - Flag to speak numbers (e.g. "#42" -> "fourty-two", "42" -> "four two")
 
         BUGS:
         - Speech length is only estimated
