@@ -1,7 +1,7 @@
 # Morse Code site - didahdit.com
 
-I plan to build a nice site for learning Morse Code, abbreviations and codes for ham radio CW QSOs.
-For the moment, here are some idea and nice sites and apps out there:
+I building a little site for learning Morse Code, abbreviations and codes for ham radio CW QSOs.
+Here are some ideas and nice sites and apps out there:
 
 ## Ideas
 
@@ -22,8 +22,11 @@ For the moment, here are some idea and nice sites and apps out there:
 - [Slow Speed [Con]test](http://www.k1usn.com/sst).
 - [Contest Calendar](http://contestcalendar.com).
 - [Parks on the Air](http://pota.app).
+- [Summits on the Air](https://sotawatch.sota.org.uk/en/)
 - [QSO Simulator](https://seiuchy.macache.com/).
 - [Dit Dit Podcast](https://www.ditdit.fm/).
+- [Reverse Beacon Network](https://www.reversebeacon.net/).
+- [QRPer](https://qrper.com).
 
 ## Apps
 
