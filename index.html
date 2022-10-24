@@ -158,6 +158,10 @@
                 var numberMode = false;
                 for (var i in utterance) {
                     var c = utterance[i];
+                    if (c == '|') {
+                        utter += ', ' + utterance.substring(utterance.indexOf('|') + 1);
+                        break;
+                    }
                     switch (c) {
                         case '#':
                             numberMode = true;
@@ -225,7 +229,6 @@
                                     '@': 'at sign',
                                     '<': ' ', // nothing
                                     '>': 'pro-sign',
-                                    '|': ',', // pause (separator)
                                 }[c];
                                 utter += ' ' + (spell || c) + ' ';
                             } else {
