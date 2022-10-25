@@ -33,6 +33,7 @@
             var audioStarted = false;
             var audioCtx;
             var gain;
+            var volume;
 
             function say(utterance, delay) {
                 var utter = '';
@@ -109,10 +110,13 @@
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 var oscillator = audioCtx.createOscillator();
                 oscillator.frequency.value = 750;
+                volume = audioCtx.createGain();
+                volume.gain.value = 1;
                 gain = audioCtx.createGain();
                 gain.gain.value = 0;
                 oscillator.connect(gain);
-                gain.connect(audioCtx.destination);
+                gain.connect(volume);
+                volume.connect(audioCtx.destination);
                 oscillator.start(0);
                 audioStarted = true;
             }
@@ -803,6 +807,8 @@
         <button id="reset" onclick="reset()">Clear</button>
         <button id="toggleCode" onclick="toggleCode()">Toggle Code</button>
         <button id="toggleDecode" onclick="toggleDecode()">Toggle Decode</button>
+        <button id="mute" onclick="volume.gain.value=0">Mute</button>
+        <button id="unmute" onclick="volume.gain.value=1">Unmute</button>
         <span>&nbsp;</span>
         <button id="qsoActivator" onclick="qso.kind = 'pota-activator'">Activator</button>
         <button id="qsoHunter" onclick="qso.kind = 'pota-hunter'">Hunter</button>
