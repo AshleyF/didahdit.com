@@ -2,6 +2,7 @@
 
 // FEATURE: Upgrade dit to dah mid-dit by pressing right paddle while dit in progress (Ultimatic-only?)
 // FEATURE: Sending speed dictated by PC-side (tone+durration, quiet+durration)
+// BUG: Inverse bounce + memory causes extra elements
 
 const int PADDLE_LEFT = 8;
 const int PADDLE_RIGHT = 9;
@@ -12,6 +13,7 @@ enum Mode {
   CurtisA,
   CurtisB,
   Ultimatic,
+  StraightKey,
 } mode = Ultimatic;
 
 enum DitDah {
@@ -22,11 +24,12 @@ enum DitDah {
 
 enum State {
   Waiting,
-  Protocol,
+  Protocol, // incomming serial
   Left,
   Right,
   LeftRight,
   RightLeft,
+  Straight, // straight key
 } state = Waiting, lastState = Waiting;
 
 long WPM;
@@ -59,7 +62,7 @@ void setup() {
   digitalWrite(PADDLE_RIGHT, HIGH);
   pinMode(RADIO, OUTPUT);
   pinMode(TONE, OUTPUT);
-  setSpeed(20);
+  setSpeed(25);
   Keyboard.begin();
 }
 
@@ -82,25 +85,28 @@ DitDah opposite(DitDah ditDah) {
   return ditDah == Dit ? Dah : Dit;
 }
 
-void playTone(DitDah ditDah) {
-  if (ditDah != None && now > quietUntil) {
-    long len = ditDah == Dah ? DAH : DIT;
-    oppositeLast = opposite(ditDah);
-    digitalWrite(RADIO, HIGH);
-    if (enableTone) analogWrite(TONE, 1);
-
-    Serial.write(ditDah == Dit ? '.' : '-');
-    Serial.flush();
-    toneUntil = micros() + len;
-    quietUntil = toneUntil + PAUSE;
-    decode(ditDah);
-  }
+void startTone() {
+  digitalWrite(RADIO, HIGH);
+  if (enableTone) analogWrite(TONE, 1);
 }
 
 void stopTone() {
   digitalWrite(RADIO, LOW);
   analogWrite(TONE, 0);
   toneUntil = 0;
+}
+
+void playTone(DitDah ditDah) {
+  if (ditDah != None && now > quietUntil) {
+    long len = ditDah == Dah ? DAH : DIT;
+    oppositeLast = opposite(ditDah);
+    startTone();
+    Serial.write(ditDah == Dit ? '.' : '-');
+    Serial.flush();
+    toneUntil = micros() + len;
+    quietUntil = toneUntil + PAUSE;
+    decode(ditDah);
+  }
 }
 
 bool playMemory() {
@@ -110,17 +116,18 @@ bool playMemory() {
   return true;
 }
 
-void serialKeyUpdate(bool leftDown, bool rightDown) {
+void serialKeyUpdate(bool straightDown, bool leftDown, bool rightDown) {
   Serial.write((byte)(
-    (leftDown  ? 0b10 : 0b00) |
-    (rightDown ? 0b01 : 0b00)));
+    (straightDown  ? 0b100 : 0b000) |
+    (leftDown      ? 0b010 : 0b000) |
+    (rightDown     ? 0b001 : 0b000)));
   Serial.flush();
 }
 
 void debounce(bool leftState, bool rightState) {
   if (!leftProtocol && leftState != left && (now - lastLeftChange) > DEBOUNCE) {
-      left = leftState;
-      lastLeftChange = now;
+    left = leftState;
+    lastLeftChange = now;
   }
   if (!rightProtocol && rightState != right && (now - lastRightChange) > DEBOUNCE) {
     right = rightState;
@@ -131,18 +138,21 @@ void debounce(bool leftState, bool rightState) {
 void serialRelayState() {
   if (state != lastState) {
     switch (state) {
+      case Straight:
+        serialKeyUpdate(true, false, false);
+        break;
       case Left:
-        serialKeyUpdate(true, false);
+        serialKeyUpdate(false, true, false);
         break;
       case Right:
-        serialKeyUpdate(false, true);
+        serialKeyUpdate(false, false, true);
         break;
       case LeftRight:
       case RightLeft:
-        serialKeyUpdate(true, true);
+        serialKeyUpdate(false, true, true);
         break;
       default:
-        serialKeyUpdate(false, false);
+        serialKeyUpdate(false, false, false);
         break;
     }
     lastState = state;
@@ -191,6 +201,15 @@ void squeezePaddle(DitDah currentDitDah) {
   }
 }
 
+void straightDown() {
+  if (!left && !right) {
+    stopTone();
+    state = Waiting;
+    return;
+  }
+  startTone();
+}
+
 void protocol() {
   int b = Serial.read();
   switch (b) {
@@ -214,6 +233,9 @@ void protocol() {
       break;
     case 'U':
       setMode(Ultimatic);
+      break;
+    case 'S':
+      setMode(StraightKey);
       break;
     case 'M':
       enableMemory = true;
@@ -340,7 +362,7 @@ void decode(DitDah ditDah) {
 
 void waiting() {
   int peek = Serial.peek();
-  if (peek >= 0 && peek < 4) { // key signal?
+  if (peek >= 0 && peek < 8) { // key signal?
     state = Protocol;
     return;
   }
@@ -355,12 +377,21 @@ void waiting() {
       playTone(oppositeLast);
     }
   }
-  if (left) {
-    memory = Dit;
-    state = Left;
-  } else if (right) {
-    memory = Dah;
-    state = Right;
+  if (mode == StraightKey) {
+    if (left || right) {
+      state = Straight;
+      return;
+    }
+  } else {
+    if (left) {
+        memory = Dit;
+        state = Left;
+        return;
+    } else if (right) {
+        memory = Dah;
+        state = Right;
+        return;
+    }
   }
   decode(None);
 }
@@ -395,6 +426,9 @@ void loop() {
       squeezePaddle(Dah);
     case RightLeft:
       squeezePaddle(Dit);
+      break;
+    case Straight:
+      straightDown();
       break;
   }
 }

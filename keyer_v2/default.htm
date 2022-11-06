@@ -15,8 +15,8 @@
             td { background-color: black; }
         </style>
         <script>
-            const defaultSpeed = 20;
-            const defaultFarnsworth = 21; // dits
+            const defaultSpeed = 25;
+            const defaultFarnsworth = 14; // dits
             const canvasWidth = 1450;
             const canvasHeight = 64;
 
@@ -128,12 +128,16 @@
             var ditlen;
 
             var t = 0;
-            function playTone(len) {
-                const ramp = 0.01;
+            const ramp = 0.01;
+            function makeTone(on) {
                 if (!audioStarted) startAudio();
                 var c = audioCtx.currentTime;
                 t = c > t ? c : t;
-                gain.gain.setTargetAtTime(1, t, ramp);
+                gain.gain.setTargetAtTime(on ? 1 : 0, t, ramp);
+            }
+
+            function playTone(len) {
+                makeTone(true);
                 t += len;
                 gain.gain.setTargetAtTime(0, t, ramp);
                 t += ditlen;
@@ -150,18 +154,18 @@
                 farnsworthWordBreak = wordBreak + (ditlen * farnsworth);
             }
 
-            function dit() {
+            function dit(tone) {
                 p *= 2;
                 updateCharacter();
-                playTone(ditlen)
+                if (tone) playTone(ditlen)
                 updateBreaks(ditlen);
             }
 
-            function dah() {
+            function dah(tone) {
                 p = p * 2 + 1;
                 updateCharacter();
                 var len = 3 * ditlen;
-                playTone(len);
+                if (tone) playTone(len);
                 updateBreaks(len);
             }
 
@@ -280,6 +284,8 @@
                         return 66;
                     case 'U':
                         return 85;
+                    case 'S':
+                        return 83;
                 }
             }
 
@@ -459,7 +465,6 @@
                 function randomCallsign() {
                     return 'KTR4CEY';
                 }
-                var foo = (qso.lastManualSend - qso.stageChangeTime);
                 var manualSentSinceStage = (qso.lastManualSend - qso.stageChangeTime) > 0;
                 var timeSinceLastManualSend = (time - qso.lastManualSend);
                 var sendAndPauseSinceStage = manualSentSinceStage && timeSinceLastManualSend > 3000;
@@ -596,6 +601,11 @@
                 decodeVisible = !decodeVisible;
             }
 
+            function mute(m) {
+                startAudio();
+                volume.gain.value = m ? 0 : 1;
+            }
+
             function updateCharacter() {
                 function setProsign(sign) {
                     char = '<' + sign + '>';
@@ -659,15 +669,16 @@
             function copy(b) {
                 switch (b) {
                     case 46: // dit
-                        dit();
+                        dit(true);
                         break;
                     case 45: // dah
-                        dah();
+                        dah(true);
                         break;
                 }
             }
 
             var cursor = 20;
+            var straightDown = false;
             var leftDown = false;
             var rightDown = false;
             var letterBreak = 0;
@@ -678,6 +689,7 @@
             var clearNextMessage = false;
 
             function drawKeyAndToneState() {
+                if (straightDown) updateBreaks(0);
                 const ribbon = canvasHeight / 8;
                 var now = (new Date()).getTime() / 1000;
                 if (now < wordBreak) {
@@ -705,6 +717,10 @@
                     if (rightDown) {
                         ctx.fillStyle = '#00F';
                         ctx.fillRect(cursor, ribbon, 1, ribbon);
+                    }
+                    if (straightDown) {
+                        ctx.fillStyle = '#909';
+                        ctx.fillRect(cursor, ribbon * 2, 1, ribbon);
                     }
                     if (leftDown) {
                         ctx.fillStyle = '#F00';
@@ -738,6 +754,8 @@
                 window.setTimeout(drawKeyAndToneState, 1);
             }
 
+            var straightKeyHistory = [];
+            var lastHistoryUpdate = 0;
             function read() {
                 if (connectedPort != null) {
                     const reader = connectedPort.readable.getReader();
@@ -745,7 +763,31 @@
                     {
                         for (var i in x.value) {
                             var v = x.value[i];
-                            if (v < 4) {
+                            if (v < 8) {
+                                var lastStraightDown = straightDown;
+                                straightDown = (v & 0x4) != 0;
+                                if (straightDown != lastStraightDown) {
+                                  makeTone(straightDown);
+                                  var now = (new Date()).getTime() / 1000;
+                                  var span = Math.max(0.001, Math.min(0.5, now - lastHistoryUpdate));
+                                  lastHistoryUpdate = now;
+                                  straightKeyHistory.push(straightDown ? -span : span);
+                                  if (!straightDown) {
+                                    var code = coder(straightKeyHistory, speed);
+                                    //document.getElementById('copy').innerText = code;
+                                    switch (code[code.length - 1]) {
+                                        case '.':
+                                            dit(false);
+                                            break;
+                                        case '-':
+                                            dah(false);
+                                            break;
+                                    }
+                                  }
+                                  if (straightKeyHistory.length > 100) {
+                                      straightKeyHistory.shift();
+                                  }
+                                }
                                 leftDown = (v & 0x2) != 0;
                                 rightDown = (v & 0x1) != 0;
                                 markManualSend();
@@ -767,7 +809,7 @@
                     if (keys.length > 0) {
                         var k = keys[0];
                         keys = keys.substring(1);
-                        setKeys(k == 'L' || k == 'S', k == 'R' || k == 'S');
+                        setKeys(k == 'L' || k == 'B', k == 'R' || k == 'B');
                         next += ditlen * 1000 / 2;
                         window.setTimeout(updateKeyState, next - (new Date()).getTime());
                     } else {
@@ -790,12 +832,160 @@
                 examples = examples.reverse();
                 simulate();
             }
+
+            function coder(signal, wpm) {
+                var shortest = Number.MAX_VALUE;
+                var longest = Number.MIN_VALUE;
+                for (var i = 0; i < signal.length; i++) {
+                    var s = signal[i];
+                    if (s > 0) {
+                        if (s < shortest) shortest = s;
+                        if (s > longest) longest = s;
+                    }
+                }
+                var ditSum = 0;
+                var ditCount = 0;
+                var dahSum = 0;
+                var dahCount = 0;
+                for (var i = 0; i < signal.length; i++) {
+                    var s = signal[i];
+                    if (s > 0) {
+                        if (Math.abs(shortest - s) < Math.abs(longest - s)) {
+                            ditSum += s;
+                            ditCount++;
+                        } else {
+                            dahSum += s;
+                            dahCount++;
+                        }
+                    }
+                }
+                // TODO: used element breaks to infer dit vs. dah
+                var ditAvg = ditSum / ditCount;
+                var dahAvg = dahSum / dahCount;
+                var valid = ditSum > 0 && dahSum > 0 && dahAvg > ditAvg * 2;
+                var ditlen = valid ? ditAvg : 1.2 / wpm;
+                var dahlen = valid ? dahAvg : ditlen * 3;
+                var element = ditlen;
+                var letter = ditlen * 3;
+                var word = ditlen * 7;
+                var downClusters = [
+                    { mean: ditlen, elements: [], indices: {} },
+                    { mean: dahlen, elements: [], indices: {} }];
+                var upClusters = [
+                    { mean: element, elements: [], indices: {} },
+                    { mean: letter, elements: [], indices: {} },
+                    { mean: word, elements: [], indices: {} }];
+                var update = false;
+                function add(element, index, clusters) {
+                    var distance = Number.MAX_VALUE;
+                    var cluster = null;
+                    for (var i = 0; i < clusters.length; i++) {
+                        var c = clusters[i];
+                        var d = Math.abs(c.mean - element);
+                        if (d < distance) {
+                            distance = d;
+                            cluster = c;
+                        }
+                    }
+                    if (!cluster.indices[index]) {
+                        cluster.elements.push(element);
+                        for (var i = 0; i < clusters.length; i++) {
+                            clusters[i].indices[index] = false;
+                        }
+                        cluster.indices[index] = true;
+                        update = true;
+                    }
+                }
+                function avg(clusters) {
+                    for (var i = 0; i < clusters.length; i++) {
+                        var c = clusters[i];
+                        var sum = 0;
+                        for (var j = 0; j < c.elements.length; j++) {
+                            sum += c.elements[j];
+                        }
+                        c.mean = sum / c.elements.length;
+                    }
+                }
+                do {
+                    update = false;
+                    for (var i = 0; i < signal.length; i++) {
+                        var e = signal[i];
+                        if (e > 0) add(e, i, downClusters);
+                        else add(-e, i, upClusters);
+                    }
+                } while (update);
+                avg(downClusters);
+                avg(upClusters);
+                var realDitlen = downClusters[0].mean;
+                var realDahlen = downClusters[1].mean;
+                var realElement = upClusters[0].mean;
+                var realLetter = upClusters[1].mean;
+                var realWord = upClusters[2].mean;
+                var paris =
+                    (realDitlen && !isNaN(realDitlen) ? realDitlen : ditlen) * 10 +
+                    (realDahlen && !isNaN(realDahlen) ? realDahlen : ditlen * 3) * 4 +
+                    (realElement && !isNaN(realElement) ? realElement : ditlen) * (9 + 12 + 7); // TODO: realWord vs. realElement * 7
+                var parisWpm = 60 / paris;
+                var idealDit = paris / 50;
+                document.getElementById('stats').innerText =
+                    'WPM: ' + (Math.round(parisWpm * 10) / 10) + ' ' +
+                    'Dit: ' + (Math.round((realDitlen / idealDit) * 1000) / 10) + '% ' +
+                    'Dah: ' + (Math.round((realDahlen / (idealDit * 3)) * 1000) / 10) + '% ' +
+                    'Element: ' + (Math.round((realElement / idealDit) * 1000) / 10) + '% ' +
+                    'Letter: ' + (Math.round(((realLetter * 3) / idealDit) * 1000) / 10) + '% ' +
+                    'Word: ' + (Math.round(((realWord * 7) / idealDit) * 1000) / 10) + '%';
+                var code = '';
+                for (var i = 0; i < signal.length; i++) {
+                    var s = signal[i];
+                    if (s > 0) {
+                        code += Math.abs(realDitlen - s) < Math.abs(realDahlen - s) ? '.' : '-';
+                    } else {
+                        var elementDist = Math.abs(realElement + s);
+                        var letterDist = Math.abs(realLetter + s);
+                        var wordDist = Math.abs(realWord + s);
+                        if (letterDist < elementDist || wordDist < elementDist) {
+                            code += letterDist < wordDist ? ' ' : '/';
+                        }
+                    }
+                }
+                return code;
+            }
+
+            function testCoder(wpm, input) {
+                const sample = ditlen / 3;
+                var signal = [];
+                var element = 0;
+                for (var i = 0; i < input.length; i++) {
+                    switch (input[i]) {
+                        case '-':
+                            if (element < 0) {
+                                signal.push(element);
+                                element = 0;
+                            }
+                            element += sample;
+                            break;
+                        case ' ':
+                            if (element > 0) {
+                                signal.push(element);
+                                element = 0;
+                            }
+                            element -= sample;
+                            break;
+                        default:
+                            throw 'Unexpected signal: ' + signal[i] + ' (' + signal + ')';
+                    }
+                }
+                if (element != 0) signal.push(element);
+                var code = coder(signal, wpm);
+                alert(code);
+            }
         </script>
     </head>
     <body onload="load()">
         <h5 id="mode">Ultimatic (with memory)</h5>
         <h1 id="copy">&nbsp;</h1>
-        <canvas id="canvas" width="1450px" height="64px" style="border: 1px solid black"></canvas>
+        <canvas id="canvas" width="1450px" height="80px" style="border: 1px solid black"></canvas>
+        <h3 id="stats" style="color:white">&nbsp;</h3>
         <hr />
         <textarea id="message" rows="2" cols="120"></textarea>
         <hr />
@@ -807,8 +997,8 @@
         <button id="reset" onclick="reset()">Clear</button>
         <button id="toggleCode" onclick="toggleCode()">Toggle Code</button>
         <button id="toggleDecode" onclick="toggleDecode()">Toggle Decode</button>
-        <button id="mute" onclick="volume.gain.value=0">Mute</button>
-        <button id="unmute" onclick="volume.gain.value=1">Unmute</button>
+        <button id="mute" onclick="mute(true)">Mute</button>
+        <button id="unmute" onclick="mute(false)">Unmute</button>
         <span>&nbsp;</span>
         <button id="qsoActivator" onclick="qso.kind = 'pota-activator'">Activator</button>
         <button id="qsoHunter" onclick="qso.kind = 'pota-hunter'">Hunter</button>
@@ -817,6 +1007,7 @@
         <button id="iambicA" onclick="setMode('A')">Curtis-A</button>
         <button id="iambicB" onclick="setMode('B')">Curtis-B</button>
         <button id="iambicU" onclick="setMode('U')">Ultimatic</button>
+        <button id="straight" onclick="setMode('S')">Straight</button>
         <span>&nbsp;</span>
         <button id="enableMemory" onclick="setMemory(true)">Enable Memory</button>
         <button id="disableMemory" onclick="setMemory(false)">Disable Memory</button>
@@ -858,10 +1049,14 @@
         <a href="javascript:send('5NN')">5NN</a>
         <a href="javascript:send('KK7HXU')">KK7HXU</a>
         <a href="javascript:send('ASHLEY')">ASHLEY</a>
-        <hr />
-        <a href="javascript:train('T T T T T|E E E E E|A A A A A|N N N N N|tea|tee|eat|ate|at|tat|teen|neat|ten|net|tan|eat at ten|ate at ten|at tee')">CWOps1</a>
-        <a href="javascript:train('T T T T T|E E E E E|A A A A A|N N N N N|O O O O O|I I I I I|S S S S S|1 1 1 1 1|4 4 4 4 4|ten|ton|tin|tie|toe|no|not|note|it|at|one|neat|net|nit|toes|stone|tease|noise|one neat note|no noise|tie it|1 ton stone')">CWOps2</a>
-        <a href="javascript:train('N1AS|N4ON|S41T|NO1S|AI1E|IT4O|EA1ON|ES4IT')">CWOps2 (calls)</a>
+        <hr>
+        <a href="javascript:simulateExamples(['LLLLLBBBBBBBB', 'LLLLLBRBBBBBB', 'LLLLLBBBBBRBB'])">ALL</a></li>
+        <hr>
+        <a href="javascript:testCoder(5, '---   ---------         ---   ---------   ---                                    ---------   ---')">5: AD N</a></li>
+        <a href="javascript:testCoder(15, '---   ---------         ---   ---------   ---                                    ---------   ---')">15: AD N</a></li>
+        <a href="javascript:testCoder(30, '---   ---------         ---   ---------   ---                                    ---------   ---')">30: AD N</a></li>
+        <a href="javascript:testCoder(50, '---   ---------         ---   ---------   ---                                    ---------   ---')">50: AD N</a></li>
+        <a href="javascript:testCoder(25, '--   -----------         ----   -------   ----                                    ----------   ---')">25: AD N (varied)</a></li>
         <table>
             <tr>
                 <th>Single Lever</th>
@@ -914,33 +1109,33 @@
                             <li>Tap <a href="javascript:simulateKeys('L')">E</a>, <a href="javascript:simulateKeys('R')">T</a>, or hold <a href="javascript:simulateKeys('LLLLLL')">I</a>, <a href="javascript:simulateKeys('LLLLLLLLLL')">S</a>, <a href="javascript:simulateKeys('LLLLLLLLLLLLLL')">H</a>, <a href="javascript:simulateKeys('LLLLLLLLLLLLLLLLLL')">5</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRR')">M</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRR')">O</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR')">0</a></li>
                             <li>To <a href="javascript:simulateExamples(['LLLLL', 'LLLLLL', 'LLLLLLL'])">end of dit</a> or <a href="javascript:simulateExamples(['RRRRRRRRR', 'RRRRRRRRRRRR', 'RRRRRRRRRRRRRRR'])">⅔ of dah</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LLSSSSSS', 'LLSSSSSSSSSSSSSS', 'LLSSSSSSSSSSSSSSSSSSSSSS', 'LLSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS', 'RRRSSSSSSS', 'RRRSSSSSSSSSSS', 'RRRSSSSSSSSSSSSSSS', 'RRRSSSSSSSSSSSSSSSSSSS'])">Initial switch (squeeze)</a></li>
+                        <li><a href="javascript:simulateExamples(['LLBBBBBB', 'LLBBBBBBBBBBBBBB', 'LLBBBBBBBBBBBBBBBBBBBBBB', 'LLBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', 'RRRBBBBBBB', 'RRRBBBBBBBBBBB', 'RRRBBBBBBBBBBBBBBB', 'RRRBBBBBBBBBBBBBBBBBBB'])">Initial switch (squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLSSSSSS')">A</a> <a href="javascript:simulateKeys('LSS     ')">A</a>, <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSS')">W</a>, <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSSSSSSS')">J</a>, <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS')">1</a>, and <a href="javascript:simulateKeys('RRRSSSSSSS')">N</a> <a href="javascript:simulateKeys('RRRSSS    ')">N</a>, <a href="javascript:simulateKeys('RRRSSSSSSSSSSS')">D</a>, <a href="javascript:simulateKeys('RRRSSSSSSSSSSSSSSS')">B</a>, <a href="javascript:simulateKeys('RRRSSSSSSSSSSSSSSSSSSS')">6</a></li>
+                            <li><a href="javascript:simulateKeys('LLBBBBBB')">A</a> <a href="javascript:simulateKeys('LBB     ')">A</a>, <a href="javascript:simulateKeys('LLBBBBBBBBBBBBBB')">W</a>, <a href="javascript:simulateKeys('LLBBBBBBBBBBBBBBBBBBBBBB')">J</a>, <a href="javascript:simulateKeys('LLBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB')">1</a>, and <a href="javascript:simulateKeys('RRRBBBBBBB')">N</a> <a href="javascript:simulateKeys('RRRBBB    ')">N</a>, <a href="javascript:simulateKeys('RRRBBBBBBBBBBB')">D</a>, <a href="javascript:simulateKeys('RRRBBBBBBBBBBBBBBB')">B</a>, <a href="javascript:simulateKeys('RRRBBBBBBBBBBBBBBBBBBB')">6</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LLLLLLSSSSSS', 'LLLLLLLLLLSSSSSS', 'LLLLLLLLLLLLLLSSSSSS', 'RRRRRRRRRRRRSSSSSS', 'RRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSS'])">Ending switch (squeeze)</a></li>
+                        <li><a href="javascript:simulateExamples(['LLLLLLBBBBBB', 'LLLLLLLLLLBBBBBB', 'LLLLLLLLLLLLLLBBBBBB', 'RRRRRRRRRRRRBBBBBB', 'RRRRRRRRRRRRRRRRRRRRRRRRRRRRBBBBBB'])">Ending switch (squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLLLLLSSSSSS')">U</a> <a href="javascript:simulateKeys('LLLLLSSS    ')">U</a>, <a href="javascript:simulateKeys('LLLLLLLLLLSSSSSS')">V</a> <a href="javascript:simulateKeys('LLLLLLLLLSSS    ')">V</a>, <a href="javascript:simulateKeys('LLLLLLLLLLLLLLSSSSSS')">4</a> <a href="javascript:simulateKeys('LLLLLLLLLLLLLSSS    ')">4</a>, and <a href="javascript:simulateKeys('RRRRRRRRRRRRSSSSSS')">G</a> <a href="javascript:simulateKeys('RRRRRRRRRRRRSSS   ')">G</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSS')">9</a> <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRSSS   ')">9</a></li>
+                            <li><a href="javascript:simulateKeys('LLLLLLBBBBBB')">U</a> <a href="javascript:simulateKeys('LLLLLBBB    ')">U</a>, <a href="javascript:simulateKeys('LLLLLLLLLLBBBBBB')">V</a> <a href="javascript:simulateKeys('LLLLLLLLLBBB    ')">V</a>, <a href="javascript:simulateKeys('LLLLLLLLLLLLLLBBBBBB')">4</a> <a href="javascript:simulateKeys('LLLLLLLLLLLLLBBB    ')">4</a>, and <a href="javascript:simulateKeys('RRRRRRRRRRRRBBBBBB')">G</a> <a href="javascript:simulateKeys('RRRRRRRRRRRRBBB   ')">G</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRBBBBBB')">9</a> <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRBBB   ')">9</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LLLLLLSSSSSSSSSSSSSSSSSSSSSS', 'LLLLLLLLLLSSSSSSSSSSSSSS', 'RRRRRRRRRRRRSSSSSSSSSS', 'RRRRRRRRRRRRSSSSSSSSSSSSSS', 'RRRRRRRRRRRRRRRRRRRRSSSSSSSSSS'])">Middle switch (squeeze)</a></li>
+                        <li><a href="javascript:simulateExamples(['LLLLLLBBBBBBBBBBBBBBBBBBBBBB', 'LLLLLLLLLLBBBBBBBBBBBBBB', 'RRRRRRRRRRRRBBBBBBBBBB', 'RRRRRRRRRRRRBBBBBBBBBBBBBB', 'RRRRRRRRRRRRRRRRRRRRBBBBBBBBBB'])">Middle switch (squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLLLLLSSSSSSSSSSSSSSSSSSSSSS')">2</a>, <a href="javascript:simulateKeys('LLLLLLLLLLSSSSSSSSSSSSSS')">3</a>, and <a href="javascript:simulateKeys('RRRRRRRRRRRRSSSSSSSSSS')">Z</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRSSSSSSSSSSSSSS')">7</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRSSSSSSSSSS')">8</a></li>
+                            <li><a href="javascript:simulateKeys('LLLLLLBBBBBBBBBBBBBBBBBBBBBB')">2</a>, <a href="javascript:simulateKeys('LLLLLLLLLLBBBBBBBBBBBBBB')">3</a>, and <a href="javascript:simulateKeys('RRRRRRRRRRRRBBBBBBBBBB')">Z</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRBBBBBBBBBBBBBB')">7</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRBBBBBBBBBB')">8</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LLSSSSSSLLLLLL', 'LLSSSSSSLLLLLLLLLL', 'RRRSSSSSSSRRRRRR', 'RRRRSSSSSSRRRRRRRRRRRRR'])">Early Interstitial (squeeze)</a></li>
+                        <li><a href="javascript:simulateExamples(['LLBBBBBBLLLLLL', 'LLBBBBBBLLLLLLLLLL', 'RRRBBBBBBBRRRRRR', 'RRRRBBBBBBRRRRRRRRRRRRR'])">Early Interstitial (squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLSSSSSSLLLLLL')">R</a> <a href="javascript:simulateKeys('LSSLLLLLLLLLLL')">R</a>, <a href="javascript:simulateKeys('LLSSSSSSLLLLLLLLLL')">L</a> <a href="javascript:simulateKeys('LSSLLLLLLLLLLLLLLL')">L</a>, and <a href="javascript:simulateKeys('RRRSSSSSSSRRRRRR')">K</a> <a href="javascript:simulateKeys('RRSSSRRRRRRRRRRR')">K</a>, <a href="javascript:simulateKeys('RRRRSSSSSSRRRRRRRRRRRRR')">Y</a> <a href="javascript:simulateKeys('RRSSSRRRRRRRRRRRRRRRRRR')">Y</a></li>
+                            <li><a href="javascript:simulateKeys('LLBBBBBBLLLLLL')">R</a> <a href="javascript:simulateKeys('LBBLLLLLLLLLLL')">R</a>, <a href="javascript:simulateKeys('LLBBBBBBLLLLLLLLLL')">L</a> <a href="javascript:simulateKeys('LBBLLLLLLLLLLLLLLL')">L</a>, and <a href="javascript:simulateKeys('RRRBBBBBBBRRRRRR')">K</a> <a href="javascript:simulateKeys('RRBBBRRRRRRRRRRR')">K</a>, <a href="javascript:simulateKeys('RRRRBBBBBBRRRRRRRRRRRRR')">Y</a> <a href="javascript:simulateKeys('RRBBBRRRRRRRRRRRRRRRRRR')">Y</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LLLLLLSSSSSSLLLLLL', 'RRRRRRRRRRRRSSSSSSRRRRRR'])">Late interstitial (squeeze)</a></li>
+                        <li><a href="javascript:simulateExamples(['LLLLLLBBBBBBLLLLLL', 'RRRRRRRRRRRRBBBBBBRRRRRR'])">Late interstitial (squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLLLLLSSSSSSLLLLLL')">F</a> <a href="javascript:simulateKeys('LLLLLSSLLLLLLLLLLL')">F</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRSSSSSSRRRRRR')">Q</a> <a href="javascript:simulateKeys('RRRRRRRRRRRSSSRRRRRRRRRR')">Q</a></li>
+                            <li><a href="javascript:simulateKeys('LLLLLLBBBBBBLLLLLL')">F</a> <a href="javascript:simulateKeys('LLLLLBBLLLLLLLLLLL')">F</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRBBBBBBRRRRRR')">Q</a> <a href="javascript:simulateKeys('RRRRRRRRRRRBBBRRRRRRRRRR')">Q</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LLSSSSSSSSSSSSSSLLLLLL', 'RRRRSSSSSSSSSSRRRRRR', 'LLLLLLSSSSSSSSSSSSSSLLLLLLLLLL'])">Long middle interstitial (squeeze)</a></li>
+                        <li><a href="javascript:simulateExamples(['LLBBBBBBBBBBBBBBLLLLLL', 'RRRRBBBBBBBBBBRRRRRR', 'LLLLLLBBBBBBBBBBBBBBLLLLLLLLLL'])">Long middle interstitial (squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSLLLLLL')">P</a>, <a href="javascript:simulateKeys('RRRRSSSSSSSSSSRRRRRR')">X</a>, <a href="javascript:simulateKeys('LLLLLLSSSSSSSSSSSSSSLLLLLLLLLL')">?</a></li>
+                            <li><a href="javascript:simulateKeys('LLBBBBBBBBBBBBBBLLLLLL')">P</a>, <a href="javascript:simulateKeys('RRRRBBBBBBBBBBRRRRRR')">X</a>, <a href="javascript:simulateKeys('LLLLLLBBBBBBBBBBBBBBLLLLLLLLLL')">?</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['RRRRSSSSSSRRRRRRSSSSSS', 'LLSSSSSSLLLLLLSSSSSSLLLLLLSSSSSS', 'RRRRSSSSSSSSSSRRRRRRSSSSSS'])">Alternating (multi-squeeze)</a></li>
+                        <li><a href="javascript:simulateExamples(['RRRRBBBBBBRRRRRRBBBBBB', 'LLBBBBBBLLLLLLBBBBBBLLLLLLBBBBBB', 'RRRRBBBBBBBBBBRRRRRRBBBBBB'])">Alternating (multi-squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('RRRRSSSSSSRRRRRRSSSSSS')">C</a> <a href="javascript:simulateKeys('RRRSSSRRRRRRRRRSSSRRRR')">C</a>, <a href="javascript:simulateKeys('LLSSSSSSLLLLLLSSSSSSLLLLLLSSSSSS')">. (period)</a> <a href="javascript:simulateKeys('LLSSSLLLLLLLLSSSLLLLLLLLLSSSLLLL')">. (period)</a>, <a href="javascript:simulateKeys('RRRRSSSSSSSSSSRRRRRRSSSSSS')">/ (slash)</a> <a href="javascript:simulateKeys('RRRRSSSSSSSSSSRRRRRSSSSRRR')">/ (slash)</a></li>
+                            <li><a href="javascript:simulateKeys('RRRRBBBBBBRRRRRRBBBBBB')">C</a> <a href="javascript:simulateKeys('RRRBBBRRRRRRRRRBBBRRRR')">C</a>, <a href="javascript:simulateKeys('LLBBBBBBLLLLLLBBBBBBLLLLLLBBBBBB')">. (period)</a> <a href="javascript:simulateKeys('LLBBBLLLLLLLLBBBLLLLLLLLLBBBLLLL')">. (period)</a>, <a href="javascript:simulateKeys('RRRRBBBBBBBBBBRRRRRRBBBBBB')">/ (slash)</a> <a href="javascript:simulateKeys('RRRRBBBBBBBBBBRRRRRBBBBRRR')">/ (slash)</a></li>
                         </ul>
                     </li>
                 </td>
@@ -948,36 +1143,36 @@
                     <ul>
                         <li><a href="javascript:simulateExamples(['L', 'LLLLLL', 'LLLLLLLLLL', 'LLLLLLLLLLLLLL', 'LLLLLLLLLLLLLLLLLL', 'R', 'RRRRRRRRRRRR', 'RRRRRRRRRRRRRRRRRRRR', 'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR'])">Repetitive elements (same)</a></li>
                         <ul>
-                            <li>Tap <a href="javascript:simulateKeys('L')">E</a>, <a href="javascript:simulateKeys('R')">T</a>, or hold <a href="javascript:simulateKeys('LLLLLL')">I</a>, <a href="javascript:simulateKeys('LLLLLLLLLL')">S</a>, <a href="javascript:simulateKeys('LLLLLLLLLLLLLL')">H</a>, <a href="javascript:simulateKeys('LLLLLLLLLLLLLLLLLL')">5</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRR')">M</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRR')">O</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR')">0</a></li>
+                            <li>Tap <a href="javascript:simulateKeys('L')">E</a>, <a href="javascript:simulateKeys('R')">T</a>, or hold <a href="javascript:simulateKeys('LLLLLL')">I</a>, <a href="javascript:simulateKeys('LLLLLLLLLL')">B</a>, <a href="javascript:simulateKeys('LLLLLLLLLLLLLL')">H</a>, <a href="javascript:simulateKeys('LLLLLLLLLLLLLLLLLL')">5</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRR')">M</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRR')">O</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR')">0</a></li>
                             <li>To <a href="javascript:simulateExamples(['LLLLL', 'LLLLLL', 'LLLLLLL'])">end of dit</a> or <a href="javascript:simulateExamples(['RRRRRRRRR', 'RRRRRRRRRRRR', 'RRRRRRRRRRRRRRR'])">⅔ of dah</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LLSSSSSS', 'LLSSSSSSRRRRRRRR', 'LLSSSSSSRRRRRRRRRRRRRRRR', 'LLSSSSSSRRRRRRRRRRRRRRRRRRRRRRRR', 'RRRSSSSSSS', 'RRRSSSSSSSLLLL', 'RRRSSSSSSSLLLLLLLL', 'RRRSSSSSSSLLLLLLLLLLLL'])">Initial switch (squeeze A, N, else partial)</a></li>
+                        <li><a href="javascript:simulateExamples(['LLBBBBBB', 'LLBBBBBBRRRRRRRR', 'LLBBBBBBRRRRRRRRRRRRRRRR', 'LLBBBBBBRRRRRRRRRRRRRRRRRRRRRRRR', 'RRRBBBBBBB', 'RRRBBBBBBBLLLL', 'RRRBBBBBBBLLLLLLLL', 'RRRBBBBBBBLLLLLLLLLLLL'])">Initial switch (squeeze A, N, else partial)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLSSSSSS')">A</a>, <a href="javascript:simulateKeys('LLSSSSSSRRRRRRRR')">W</a>, <a href="javascript:simulateKeys('LLSSSSSSRRRRRRRRRRRRRRRR')">J</a>, <a href="javascript:simulateKeys('LLSSSSSSRRRRRRRRRRRRRRRRRRRRRRRR')">1</a>, and <a href="javascript:simulateKeys('RRRSSSSSSS')">N</a>, <a href="javascript:simulateKeys('RRRSSSSSSSLLLL')">D</a>, <a href="javascript:simulateKeys('RRRSSSSSSSLLLLLLLL')">B</a>, <a href="javascript:simulateKeys('RRRSSSSSSSLLLLLLLLLLLL')">6</a></li>
+                            <li><a href="javascript:simulateKeys('LLBBBBBB')">A</a>, <a href="javascript:simulateKeys('LLBBBBBBRRRRRRRR')">W</a>, <a href="javascript:simulateKeys('LLBBBBBBRRRRRRRRRRRRRRRR')">J</a>, <a href="javascript:simulateKeys('LLBBBBBBRRRRRRRRRRRRRRRRRRRRRRRR')">1</a>, and <a href="javascript:simulateKeys('RRRBBBBBBB')">N</a>, <a href="javascript:simulateKeys('RRRBBBBBBBLLLL')">D</a>, <a href="javascript:simulateKeys('RRRBBBBBBBLLLLLLLL')">B</a>, <a href="javascript:simulateKeys('RRRBBBBBBBLLLLLLLLLLLL')">6</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LLLLLLSSSSSS', 'LLLLLLLLLLSSSSSS', 'LLLLLLLLLLLLLLSSSSSS', 'RRRRRRRRRRRRSSSSSS', 'RRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSS'])">Ending switch (squeeze)</a></li>
+                        <li><a href="javascript:simulateExamples(['LLLLLLBBBBBB', 'LLLLLLLLLLBBBBBB', 'LLLLLLLLLLLLLLBBBBBB', 'RRRRRRRRRRRRBBBBBB', 'RRRRRRRRRRRRRRRRRRRRRRRRRRRRBBBBBB'])">Ending switch (squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLLLLLSSSSSS')">U</a>, <a href="javascript:simulateKeys('LLLLLLLLLLSSSSSS')">V</a>, <a href="javascript:simulateKeys('LLLLLLLLLLLLLLSSSSSS')">4</a>, and <a href="javascript:simulateKeys('RRRRRRRRRRRRSSSSSS')">G</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRSSSSSS')">9</a></li>
+                            <li><a href="javascript:simulateKeys('LLLLLLBBBBBB')">U</a>, <a href="javascript:simulateKeys('LLLLLLLLLLBBBBBB')">V</a>, <a href="javascript:simulateKeys('LLLLLLLLLLLLLLBBBBBB')">4</a>, and <a href="javascript:simulateKeys('RRRRRRRRRRRRBBBBBB')">G</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRBBBBBB')">9</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LLLLLLSSSSSSRRRRRRRRRRRRRRRR', 'LLLLLLLLLLSSSSSSRRRRRRRR', 'RRRRRRRRRRRRSSSSSSLLLL', 'RRRRRRRRRRRRSSSSSSSLLLLLLL', 'RRRRRRRRRRRRRRRRRRRRSSSSSSSLLL'])">Middle switch (partial squeeze)</a></li>
+                        <li><a href="javascript:simulateExamples(['LLLLLLBBBBBBRRRRRRRRRRRRRRRR', 'LLLLLLLLLLBBBBBBRRRRRRRR', 'RRRRRRRRRRRRBBBBBBLLLL', 'RRRRRRRRRRRRBBBBBBBLLLLLLL', 'RRRRRRRRRRRRRRRRRRRRBBBBBBBLLL'])">Middle switch (partial squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLLLLLSSSSSSRRRRRRRRRRRRRRRR')">2</a>, <a href="javascript:simulateKeys('LLLLLLLLLLSSSSSSRRRRRRRR')">3</a>, and <a href="javascript:simulateKeys('RRRRRRRRRRRRSSSSSSSLLL')">Z</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRSSSSSSSLLLLLLL')">7</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRSSSSSSSLLL')">8</a></li>
+                            <li><a href="javascript:simulateKeys('LLLLLLBBBBBBRRRRRRRRRRRRRRRR')">2</a>, <a href="javascript:simulateKeys('LLLLLLLLLLBBBBBBRRRRRRRR')">3</a>, and <a href="javascript:simulateKeys('RRRRRRRRRRRRBBBBBBBLLL')">Z</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRBBBBBBBLLLLLLL')">7</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRBBBBBBBLLL')">8</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LLSSSSSSSSSSSS', 'LLSSSSSSSSSSSSLLLL', 'RRRSSSSSSSSSSSSS', 'RRRRSSSSSSSSSSSSRRRRRRR'])">Early Interstitial (squeeze longer)</a></li>
+                        <li><a href="javascript:simulateExamples(['LLBBBBBBBBBBBB', 'LLBBBBBBBBBBBBLLLL', 'RRRBBBBBBBBBBBBB', 'RRRRBBBBBBBBBBBBRRRRRRR'])">Early Interstitial (squeeze longer)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLSSSSSSSSSSSS')">R</a>, <a href="javascript:simulateKeys('LLSSSSSSSSSSSSLLLL')">L</a>, and <a href="javascript:simulateKeys('RRRSSSSSSSSSSSSS')">K</a>, <a href="javascript:simulateKeys('RRRRSSSSSSSSSSSSRRRRRRR')">Y</a></li>
+                            <li><a href="javascript:simulateKeys('LLBBBBBBBBBBBB')">R</a>, <a href="javascript:simulateKeys('LLBBBBBBBBBBBBLLLL')">L</a>, and <a href="javascript:simulateKeys('RRRBBBBBBBBBBBBB')">K</a>, <a href="javascript:simulateKeys('RRRRBBBBBBBBBBBBRRRRRRR')">Y</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LLLLLLSSSSSSLLLLLL', 'RRRRRRRRRRRRSSSSSSRRRRRR'])">Late interstitial (squeeze)</a></li>
+                        <li><a href="javascript:simulateExamples(['LLLLLLBBBBBBLLLLLL', 'RRRRRRRRRRRRBBBBBBRRRRRR'])">Late interstitial (squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLLLLLSSSSSSLLLLLL')">F</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRSSSSSSRRRRRR')">Q</a></li>
+                            <li><a href="javascript:simulateKeys('LLLLLLBBBBBBLLLLLL')">F</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRBBBBBBRRRRRR')">Q</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LLSSRRRRRRRRRRRRSSLLLL', 'RRRRSSLLLLLLLLSSRRRR', 'LLLLLLSSRRRRRRRRRRRRSSLLLLLLLL'])">Long middle interstitial (slap)</a></li>
+                        <li><a href="javascript:simulateExamples(['LLBBRRRRRRRRRRRRBBLLLL', 'RRRRBBLLLLLLLLBBRRRR', 'LLLLLLBBRRRRRRRRRRRRBBLLLLLLLL'])">Long middle interstitial (slap)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLSSRRRRRRRRRRRRSSLLLL')">P</a>, <a href="javascript:simulateKeys('RRRRSSLLLLLLLLSSRRRR')">X</a>, <a href="javascript:simulateKeys('LLLLLLSSRRRRRRRRRRRRSSLLLLLLLL')">?</a></li>
+                            <li><a href="javascript:simulateKeys('LLBBRRRRRRRRRRRRBBLLLL')">P</a>, <a href="javascript:simulateKeys('RRRRBBLLLLLLLLBBRRRR')">X</a>, <a href="javascript:simulateKeys('LLLLLLBBRRRRRRRRRRRRBBLLLLLLLL')">?</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['RRSSSSSSSSSSSSSSSSSSSS', 'LLSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS', 'RRRRSSLLLLLLLSSSSSSSSSSSSS'])">Alternating (squeeze)</a></li>
+                        <li><a href="javascript:simulateExamples(['RRBBBBBBBBBBBBBBBBBBBB', 'LLBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', 'RRRRBBLLLLLLLBBBBBBBBBBBBB'])">Alternating (squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('RRSSSSSSSSSSSSSSSSSSSS')">C</a>, <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS')">. (period)</a>, <a href="javascript:simulateKeys('RRRRSSLLLLLLLSSSSSSSSSSSSS')">/ (slash)</a></li>
+                            <li><a href="javascript:simulateKeys('RRBBBBBBBBBBBBBBBBBBBB')">C</a>, <a href="javascript:simulateKeys('LLBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB')">. (period)</a>, <a href="javascript:simulateKeys('RRRRBBLLLLLLLBBBBBBBBBBBBB')">/ (slash)</a></li>
                         </ul>
                     </li>
                 </td>
@@ -988,33 +1183,33 @@
                             <li>Tap <a href="javascript:simulateKeys('L')">E</a>, <a href="javascript:simulateKeys('R')">T</a>, or hold <a href="javascript:simulateKeys('LLLLLL')">I</a>, <a href="javascript:simulateKeys('LLLLLLLLLL')">S</a>, <a href="javascript:simulateKeys('LLLLLLLLLLLLLL')">H</a>, <a href="javascript:simulateKeys('LLLLLLLLLLLLLLLLLL')">5</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRR')">M</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRR')">O</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR')">0</a></li>
                             <li>To <a href="javascript:simulateExamples(['LLLLL', 'LLLLLL', 'LLLLLLL'])">end of dit</a> or <a href="javascript:simulateExamples(['RRRRRRRRR', 'RRRRRRRRRRRR', 'RRRRRRRRRRRRRRR'])">⅔ of dah</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LSS  ', 'LLSSSSSSRRRRRRRR', 'LLSSSSSSRRRRRRRRRRRRRRRR', 'LLSSSSSSRRRRRRRRRRRRRRRRRRRRRRRR', 'RRRSSSS', 'RRRSSSSSSSLLLL', 'RRRSSSSSSSLLLLLLLL', 'RRRSSSSSSSLLLLLLLLLLLL'])">Initial switch (short squeeze A, N, else same)</a></li>
+                        <li><a href="javascript:simulateExamples(['LBB  ', 'LLBBBBBBRRRRRRRR', 'LLBBBBBBRRRRRRRRRRRRRRRR', 'LLBBBBBBRRRRRRRRRRRRRRRRRRRRRRRR', 'RRRBBBB', 'RRRBBBBBBBLLLL', 'RRRBBBBBBBLLLLLLLL', 'RRRBBBBBBBLLLLLLLLLLLL'])">Initial switch (short squeeze A, N, else same)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LSS  ')">A</a>, <a href="javascript:simulateKeys('LLSSSSSSRRRRRRRR')">W</a>, <a href="javascript:simulateKeys('LLSSSSSSRRRRRRRRRRRRRRRR')">J</a>, <a href="javascript:simulateKeys('LLSSSSSSRRRRRRRRRRRRRRRRRRRRRRRR')">1</a>, and <a href="javascript:simulateKeys('RRRSSSS')">N</a>, <a href="javascript:simulateKeys('RRRSSSSSSSLLLL')">D</a>, <a href="javascript:simulateKeys('RRRSSSSSSSLLLLLLLL')">B</a>, <a href="javascript:simulateKeys('RRRSSSSSSSLLLLLLLLLLLL')">6</a></li>
+                            <li><a href="javascript:simulateKeys('LBB  ')">A</a>, <a href="javascript:simulateKeys('LLBBBBBBRRRRRRRR')">W</a>, <a href="javascript:simulateKeys('LLBBBBBBRRRRRRRRRRRRRRRR')">J</a>, <a href="javascript:simulateKeys('LLBBBBBBRRRRRRRRRRRRRRRRRRRRRRRR')">1</a>, and <a href="javascript:simulateKeys('RRRBBBB')">N</a>, <a href="javascript:simulateKeys('RRRBBBBBBBLLLL')">D</a>, <a href="javascript:simulateKeys('RRRBBBBBBBLLLLLLLL')">B</a>, <a href="javascript:simulateKeys('RRRBBBBBBBLLLLLLLLLLLL')">6</a></li>
                         </ul>
                         <li><a href="javascript:simulateExamples(['LLLLLL RRRRR', 'LLLLLLLLLL RRRRR', 'LLLLLLLLLLLLLL RRRRR', 'RRRRRRRRRRRR LLLLL', 'RRRRRRRRRRRRRRRRRRRRRRRRRRRR LLLLL'])">Ending switch (slap)</a></li>
                         <ul>
                             <li><a href="javascript:simulateKeys('LLLLLL RRRRR')">U</a>, <a href="javascript:simulateKeys('LLLLLLLLLL RRRRR')">V</a>, <a href="javascript:simulateKeys('LLLLLLLLLLLLLL RRRRR')">4</a>, and <a href="javascript:simulateKeys('RRRRRRRRRRRR LLLLL')">G</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRRRRRRRRR LLLLL')">9</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LLLLLLSSSSSSRRRRRRRRRRRRRRRR', 'LLLLLLLLLLSSSSSSRRRRRRRR', 'RRRRRRRRRRRRSSSSSSLLLL', 'RRRRRRRRRRRRSSSSSSSLLLLLLL', 'RRRRRRRRRRRRRRRRRRRRSSSSSSSLLL'])">Middle switch (same)</a></li>
+                        <li><a href="javascript:simulateExamples(['LLLLLLBBBBBBRRRRRRRRRRRRRRRR', 'LLLLLLLLLLBBBBBBRRRRRRRR', 'RRRRRRRRRRRRBBBBBBLLLL', 'RRRRRRRRRRRRBBBBBBBLLLLLLL', 'RRRRRRRRRRRRRRRRRRRRBBBBBBBLLL'])">Middle switch (same)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLLLLLSSSSSSRRRRRRRRRRRRRRRR')">2</a>, <a href="javascript:simulateKeys('LLLLLLLLLLSSSSSSRRRRRRRR')">3</a>, and <a href="javascript:simulateKeys('RRRRRRRRRRRRSSSSSSSLLL')">Z</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRSSSSSSSLLLLLLL')">7</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRSSSSSSSLLL')">8</a></li>
+                            <li><a href="javascript:simulateKeys('LLLLLLBBBBBBRRRRRRRRRRRRRRRR')">2</a>, <a href="javascript:simulateKeys('LLLLLLLLLLBBBBBBRRRRRRRR')">3</a>, and <a href="javascript:simulateKeys('RRRRRRRRRRRRBBBBBBBLLL')">Z</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRBBBBBBBLLLLLLL')">7</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRRRRRRRRRBBBBBBBLLL')">8</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LLSSSSSS', 'LLSSSSSSSSSSSSLLLL', 'RRRSSSSSSS   ', 'RRRRSSSSSSSSSSSSRRRRRRR'])">Early Interstitial (short squeeze R, K, else same)</a></li>
+                        <li><a href="javascript:simulateExamples(['LLBBBBBB', 'LLBBBBBBBBBBBBLLLL', 'RRRBBBBBBB   ', 'RRRRBBBBBBBBBBBBRRRRRRR'])">Early Interstitial (short squeeze R, K, else same)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLSSSSSS')">R</a>, <a href="javascript:simulateKeys('LLSSSSSSSSSSSSLLLL')">L</a>, and <a href="javascript:simulateKeys('RRRSSSSSSS   ')">K</a>, <a href="javascript:simulateKeys('RRRRSSSSSSSSSSSSRRRRRRR')">Y</a></li>
+                            <li><a href="javascript:simulateKeys('LLBBBBBB')">R</a>, <a href="javascript:simulateKeys('LLBBBBBBBBBBBBLLLL')">L</a>, and <a href="javascript:simulateKeys('RRRBBBBBBB   ')">K</a>, <a href="javascript:simulateKeys('RRRRBBBBBBBBBBBBRRRRRRR')">Y</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LLLLLLSSSSSSLLLLLL', 'RRRRRRRRRRRRSSSSSSRRRRRR'])">Late interstitial (same)</a></li>
+                        <li><a href="javascript:simulateExamples(['LLLLLLBBBBBBLLLLLL', 'RRRRRRRRRRRRBBBBBBRRRRRR'])">Late interstitial (same)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLLLLLSSSSSSLLLLLL')">F</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRSSSSSSRRRRRR')">Q</a></li>
+                            <li><a href="javascript:simulateKeys('LLLLLLBBBBBBLLLLLL')">F</a>, <a href="javascript:simulateKeys('RRRRRRRRRRRRBBBBBBRRRRRR')">Q</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['LLSSRRRRRRRRRRRRSSLLLL', 'RRRRSSLLLLLLLLSSRRRR', 'LLLLLLSSRRRRRRRRRRRRSSLLLLLLLL'])">Long middle interstitial (same)</a></li>
+                        <li><a href="javascript:simulateExamples(['LLBBRRRRRRRRRRRRBBLLLL', 'RRRRBBLLLLLLLLBBRRRR', 'LLLLLLBBRRRRRRRRRRRRBBLLLLLLLL'])">Long middle interstitial (same)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('LLSSRRRRRRRRRRRRSSLLLL')">P</a>, <a href="javascript:simulateKeys('RRRRSSLLLLLLLLSSRRRR')">X</a>, <a href="javascript:simulateKeys('LLLLLLSSRRRRRRRRRRRRSSLLLLLLLL')">?</a></li>
+                            <li><a href="javascript:simulateKeys('LLBBRRRRRRRRRRRRBBLLLL')">P</a>, <a href="javascript:simulateKeys('RRRRBBLLLLLLLLBBRRRR')">X</a>, <a href="javascript:simulateKeys('LLLLLLBBRRRRRRRRRRRRBBLLLLLLLL')">?</a></li>
                         </ul>
-                        <li><a href="javascript:simulateExamples(['RRSSSSSSSSSSSSSS      ', 'LLSSSSSSSSSSSSSSSSSSSSSSSS      ', 'RRRRSSLLLLLLLSSSSSSS      '])">Alternating (shorter squeeze)</a></li>
+                        <li><a href="javascript:simulateExamples(['RRBBBBBBBBBBBBBB      ', 'LLBBBBBBBBBBBBBBBBBBBBBBBB      ', 'RRRRBBLLLLLLLBBBBBBB      '])">Alternating (shorter squeeze)</a></li>
                         <ul>
-                            <li><a href="javascript:simulateKeys('RRSSSSSSSSSSSSSS      ')">C</a>, <a href="javascript:simulateKeys('LLSSSSSSSSSSSSSSSSSSSSSSSS      ')">. (period)</a>, <a href="javascript:simulateKeys('RRRRSSLLLLLLLSSSSSSS      ')">/ (slash)</a></li>
+                            <li><a href="javascript:simulateKeys('RRBBBBBBBBBBBBBB      ')">C</a>, <a href="javascript:simulateKeys('LLBBBBBBBBBBBBBBBBBBBBBBBB      ')">. (period)</a>, <a href="javascript:simulateKeys('RRRRBBLLLLLLLBBBBBBB      ')">/ (slash)</a></li>
                         </ul>
                     </li>
                 </td>
