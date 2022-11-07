@@ -158,15 +158,12 @@
                 p *= 2;
                 updateCharacter();
                 if (tone) playTone(ditlen)
-                updateBreaks(ditlen);
             }
 
             function dah(tone) {
                 p = p * 2 + 1;
                 updateCharacter();
-                var len = 3 * ditlen;
-                if (tone) playTone(len);
-                updateBreaks(len);
+                if (tone) playTone(3 * ditlen);
             }
 
             function load() {
@@ -272,8 +269,8 @@
             }
 
             function displayMode() {
-                var modeName = mode == 'U' ? 'Ultimatic' : mode == 'A' ? 'Curtis-A' : mode == 'B' ? 'Curtis-B' : 'Unknown';
-                document.getElementById('mode').innerText = modeName + ' (' + speed + ' WPM + ' + farnsworth + ' dits, memory ' + (memory ? 'on' : 'off') + ' memory, tone ' + (tone ? 'on' : 'off') + ', ' + (connectedPort ? 'connected' : 'disconnected') + ', QSO: ' + qso.stage + ')';
+                var modeName = mode == 'U' ? 'Ultimatic' : mode == 'A' ? 'Curtis-A' : mode == 'B' ? 'Curtis-B' : mode == 'S' ? 'Straight' : 'Unknown';
+                document.getElementById('mode').innerText = modeName + ' (' + (Math.round(speed * 10) / 10) + ' WPM + ' + farnsworth + ' dits, memory ' + (memory ? 'on' : 'off') + ' memory, tone ' + (tone ? 'on' : 'off') + ', ' + (connectedPort ? 'connected' : 'disconnected') + ', QSO: ' + qso.stage + ')';
             }
 
             function getModeByte(m) {
@@ -670,9 +667,11 @@
                 switch (b) {
                     case 46: // dit
                         dit(true);
+                        updateBreaks(ditlen);
                         break;
                     case 45: // dah
                         dah(true);
+                        updateBreaks(3 * ditlen);
                         break;
                 }
             }
@@ -706,6 +705,7 @@
                         updateDisplay();
                         clearNextMessage = false;
                     }
+                    if (!audioStarted) startAudio();
                     var currentGain = gain.gain.value;
                     if ((lastGain < 0.5 && currentGain > 0.5) || (lastGain > 0.5 && currentGain < 0.5)) {
                         ctx.fillStyle = '#555'; // mark tone boundaries
@@ -754,8 +754,7 @@
                 window.setTimeout(drawKeyAndToneState, 1);
             }
 
-            var straightKeyHistory = [];
-            var lastHistoryUpdate = 0;
+            var lastStraightKeyChange = 0;
             function read() {
                 if (connectedPort != null) {
                     const reader = connectedPort.readable.getReader();
@@ -769,23 +768,10 @@
                                 if (straightDown != lastStraightDown) {
                                   makeTone(straightDown);
                                   var now = (new Date()).getTime() / 1000;
-                                  var span = Math.max(0.001, Math.min(0.5, now - lastHistoryUpdate));
-                                  lastHistoryUpdate = now;
-                                  straightKeyHistory.push(straightDown ? -span : span);
+                                  var span = Math.max(0.001, Math.min(0.5, now - lastStraightKeyChange));
+                                  lastStraightKeyChange = now;
                                   if (!straightDown) {
-                                    var code = coder(straightKeyHistory, speed);
-                                    //document.getElementById('copy').innerText = code;
-                                    switch (code[code.length - 1]) {
-                                        case '.':
-                                            dit(false);
-                                            break;
-                                        case '-':
-                                            dah(false);
-                                            break;
-                                    }
-                                  }
-                                  if (straightKeyHistory.length > 100) {
-                                      straightKeyHistory.shift();
+                                    coder(straightDown ? -span : span);
                                   }
                                 }
                                 leftDown = (v & 0x2) != 0;
@@ -833,151 +819,34 @@
                 simulate();
             }
 
-            function coder(signal, wpm) {
-                var shortest = Number.MAX_VALUE;
-                var longest = Number.MIN_VALUE;
-                for (var i = 0; i < signal.length; i++) {
-                    var s = signal[i];
-                    if (s > 0) {
-                        if (s < shortest) shortest = s;
-                        if (s > longest) longest = s;
-                    }
-                }
-                var ditSum = 0;
-                var ditCount = 0;
-                var dahSum = 0;
-                var dahCount = 0;
-                for (var i = 0; i < signal.length; i++) {
-                    var s = signal[i];
-                    if (s > 0) {
-                        if (Math.abs(shortest - s) < Math.abs(longest - s)) {
-                            ditSum += s;
-                            ditCount++;
-                        } else {
-                            dahSum += s;
-                            dahCount++;
-                        }
-                    }
-                }
-                // TODO: used element breaks to infer dit vs. dah
-                var ditAvg = ditSum / ditCount;
-                var dahAvg = dahSum / dahCount;
-                var valid = ditSum > 0 && dahSum > 0 && dahAvg > ditAvg * 2;
-                var ditlen = valid ? ditAvg : 1.2 / wpm;
-                var dahlen = valid ? dahAvg : ditlen * 3;
-                var element = ditlen;
-                var letter = ditlen * 3;
-                var word = ditlen * 7;
-                var downClusters = [
-                    { mean: ditlen, elements: [], indices: {} },
-                    { mean: dahlen, elements: [], indices: {} }];
-                var upClusters = [
-                    { mean: element, elements: [], indices: {} },
-                    { mean: letter, elements: [], indices: {} },
-                    { mean: word, elements: [], indices: {} }];
-                var update = false;
-                function add(element, index, clusters) {
-                    var distance = Number.MAX_VALUE;
-                    var cluster = null;
-                    for (var i = 0; i < clusters.length; i++) {
-                        var c = clusters[i];
-                        var d = Math.abs(c.mean - element);
-                        if (d < distance) {
-                            distance = d;
-                            cluster = c;
-                        }
-                    }
-                    if (!cluster.indices[index]) {
-                        cluster.elements.push(element);
-                        for (var i = 0; i < clusters.length; i++) {
-                            clusters[i].indices[index] = false;
-                        }
-                        cluster.indices[index] = true;
-                        update = true;
-                    }
-                }
-                function avg(clusters) {
-                    for (var i = 0; i < clusters.length; i++) {
-                        var c = clusters[i];
-                        var sum = 0;
-                        for (var j = 0; j < c.elements.length; j++) {
-                            sum += c.elements[j];
-                        }
-                        c.mean = sum / c.elements.length;
-                    }
-                }
-                do {
-                    update = false;
-                    for (var i = 0; i < signal.length; i++) {
-                        var e = signal[i];
-                        if (e > 0) add(e, i, downClusters);
-                        else add(-e, i, upClusters);
-                    }
-                } while (update);
-                avg(downClusters);
-                avg(upClusters);
-                var realDitlen = downClusters[0].mean;
-                var realDahlen = downClusters[1].mean;
-                var realElement = upClusters[0].mean;
-                var realLetter = upClusters[1].mean;
-                var realWord = upClusters[2].mean;
-                var paris =
-                    (realDitlen && !isNaN(realDitlen) ? realDitlen : ditlen) * 10 +
-                    (realDahlen && !isNaN(realDahlen) ? realDahlen : ditlen * 3) * 4 +
-                    (realElement && !isNaN(realElement) ? realElement : ditlen) * (9 + 12 + 7); // TODO: realWord vs. realElement * 7
-                var parisWpm = 60 / paris;
-                var idealDit = paris / 50;
-                document.getElementById('stats').innerText =
-                    'WPM: ' + (Math.round(parisWpm * 10) / 10) + ' ' +
-                    'Dit: ' + (Math.round((realDitlen / idealDit) * 1000) / 10) + '% ' +
-                    'Dah: ' + (Math.round((realDahlen / (idealDit * 3)) * 1000) / 10) + '% ' +
-                    'Element: ' + (Math.round((realElement / idealDit) * 1000) / 10) + '% ' +
-                    'Letter: ' + (Math.round(((realLetter * 3) / idealDit) * 1000) / 10) + '% ' +
-                    'Word: ' + (Math.round(((realWord * 7) / idealDit) * 1000) / 10) + '%';
-                var code = '';
-                for (var i = 0; i < signal.length; i++) {
-                    var s = signal[i];
-                    if (s > 0) {
-                        code += Math.abs(realDitlen - s) < Math.abs(realDahlen - s) ? '.' : '-';
-                    } else {
-                        var elementDist = Math.abs(realElement + s);
-                        var letterDist = Math.abs(realLetter + s);
-                        var wordDist = Math.abs(realWord + s);
-                        if (letterDist < elementDist || wordDist < elementDist) {
-                            code += letterDist < wordDist ? ' ' : '/';
-                        }
-                    }
-                }
-                return code;
-            }
+            function coder(len) {
+                var realDitlen = ditlen;
+                var realDahlen = ditlen * 3;
+                var element = realDitlen;
+                var letter = realDitlen * 3;
+                var word = realDitlen * 7;
 
-            function testCoder(wpm, input) {
-                const sample = ditlen / 3;
-                var signal = [];
-                var element = 0;
-                for (var i = 0; i < input.length; i++) {
-                    switch (input[i]) {
-                        case '-':
-                            if (element < 0) {
-                                signal.push(element);
-                                element = 0;
-                            }
-                            element += sample;
-                            break;
-                        case ' ':
-                            if (element > 0) {
-                                signal.push(element);
-                                element = 0;
-                            }
-                            element -= sample;
-                            break;
-                        default:
-                            throw 'Unexpected signal: ' + signal[i] + ' (' + signal + ')';
+                if (len > 0) {
+                    len = Math.max(Math.min(len, realDahlen * 2), realDitlen / 2);
+                    if (len < realDahlen / 2) {
+                        dit(false);
+                        realDitlen = (realDitlen + len) / 2;
+                    } else {
+                        dah(false);
+                        realDahlen = (realDahlen + len) / 2;
                     }
+                } else {
+                    silence(-len);
                 }
-                if (element != 0) signal.push(element);
-                var code = coder(signal, wpm);
-                alert(code);
+
+                var paris =
+                    realDitlen * 10 +
+                    realDahlen * 4 +
+                    element * (9 + 12 + 7); // TODO: word vs. element * 7
+                var parisWpm = 60 / paris;
+                ditlen = paris / 50;
+                speed = 1.2 / ditlen;
+                displayMode();
             }
         </script>
     </head>
@@ -985,7 +854,6 @@
         <h5 id="mode">Ultimatic (with memory)</h5>
         <h1 id="copy">&nbsp;</h1>
         <canvas id="canvas" width="1450px" height="80px" style="border: 1px solid black"></canvas>
-        <h3 id="stats" style="color:white">&nbsp;</h3>
         <hr />
         <textarea id="message" rows="2" cols="120"></textarea>
         <hr />
@@ -1051,12 +919,6 @@
         <a href="javascript:send('ASHLEY')">ASHLEY</a>
         <hr>
         <a href="javascript:simulateExamples(['LLLLLBBBBBBBB', 'LLLLLBRBBBBBB', 'LLLLLBBBBBRBB'])">ALL</a></li>
-        <hr>
-        <a href="javascript:testCoder(5, '---   ---------         ---   ---------   ---                                    ---------   ---')">5: AD N</a></li>
-        <a href="javascript:testCoder(15, '---   ---------         ---   ---------   ---                                    ---------   ---')">15: AD N</a></li>
-        <a href="javascript:testCoder(30, '---   ---------         ---   ---------   ---                                    ---------   ---')">30: AD N</a></li>
-        <a href="javascript:testCoder(50, '---   ---------         ---   ---------   ---                                    ---------   ---')">50: AD N</a></li>
-        <a href="javascript:testCoder(25, '--   -----------         ----   -------   ----                                    ----------   ---')">25: AD N (varied)</a></li>
         <table>
             <tr>
                 <th>Single Lever</th>
