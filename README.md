@@ -27,6 +27,7 @@ Here are some ideas and nice sites and apps out there:
 - [Dit Dit Podcast](https://www.ditdit.fm/).
 - [Reverse Beacon Network](https://www.reversebeacon.net/).
 - [QRPer](https://qrper.com).
+- [APRS](http://aprs.fi).
 
 ## Apps
 
