@@ -14,7 +14,7 @@ enum Mode {
   CurtisB,
   Ultimatic,
   StraightKey,
-} mode = Ultimatic;
+} mode = StraightKey;
 
 enum DitDah {
   None,
@@ -62,7 +62,7 @@ void setup() {
   digitalWrite(PADDLE_RIGHT, HIGH);
   pinMode(RADIO, OUTPUT);
   pinMode(TONE, OUTPUT);
-  setSpeed(25);
+  setSpeed(15);
   Keyboard.begin();
 }
 
@@ -79,6 +79,7 @@ long now;
 long toneUntil = 0;
 long quietUntil = 0;
 bool lastSqueeze = false;
+long lastStraightKeyChange = 0;
 DitDah oppositeLast = None;
 
 DitDah opposite(DitDah ditDah) {
@@ -96,13 +97,17 @@ void stopTone() {
   toneUntil = 0;
 }
 
+void writeDitDah(DitDah ditDah) {
+    Serial.write(ditDah == Dit ? '.' : '-');
+    Serial.flush();
+}
+
 void playTone(DitDah ditDah) {
   if (ditDah != None && now > quietUntil) {
     long len = ditDah == Dah ? DAH : DIT;
     oppositeLast = opposite(ditDah);
     startTone();
-    Serial.write(ditDah == Dit ? '.' : '-');
-    Serial.flush();
+    writeDitDah(ditDah);
     toneUntil = micros() + len;
     quietUntil = toneUntil + PAUSE;
     decode(ditDah);
@@ -205,6 +210,8 @@ void straightDown() {
   if (!left && !right) {
     stopTone();
     state = Waiting;
+    if (enableKeyboard) coder();
+    lastStraightKeyChange = now;
     return;
   }
   startTone();
@@ -360,6 +367,16 @@ void decode(DitDah ditDah) {
   }
 }
 
+void coder() {
+  long span = max(1000, min(500000, now - lastStraightKeyChange));
+  if (state != Straight) {
+    span = max(min(span, DAH * 2), DIT / 2);
+    DitDah element = span < DAH / 2 ? Dit : Dah;
+    writeDitDah(element);
+    decode(element);
+  }
+}
+
 void waiting() {
   int peek = Serial.peek();
   if (peek >= 0 && peek < 8) { // key signal?
@@ -380,6 +397,8 @@ void waiting() {
   if (mode == StraightKey) {
     if (left || right) {
       state = Straight;
+      //coder();
+      lastStraightKeyChange = now;
       return;
     }
   } else {

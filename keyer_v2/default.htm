@@ -124,6 +124,7 @@
             var mode;
             var memory;
             var tone;
+            var enforce;
             var speed;
             var ditlen;
 
@@ -220,6 +221,7 @@
                 setMode('U');
                 setMemory(true);
                 setTone(false);
+                setEnforceElements(true);
                 read();
                 drawKeyAndToneState();
             }
@@ -269,7 +271,7 @@
             }
 
             function displayMode() {
-                var modeName = mode == 'U' ? 'Ultimatic' : mode == 'A' ? 'Curtis-A' : mode == 'B' ? 'Curtis-B' : mode == 'S' ? 'Straight' : 'Unknown';
+                var modeName = mode == 'U' ? 'Ultimatic' : mode == 'A' ? 'Curtis-A' : mode == 'B' ? 'Curtis-B' : mode == 'S' ? 'Straight (' + (enforce ? 'enforced' : 'relaxed') + ')' : 'Unknown';
                 document.getElementById('mode').innerText = modeName + ' (' + (Math.round(speed * 10) / 10) + ' WPM + ' + farnsworth + ' dits, memory ' + (memory ? 'on' : 'off') + ' memory, tone ' + (tone ? 'on' : 'off') + ', ' + (connectedPort ? 'connected' : 'disconnected') + ', QSO: ' + qso.stage + ')';
             }
 
@@ -316,12 +318,17 @@
                 displayMode();
             }
 
+            function setEnforceElements(e) {
+                enforce = e;
+                displayMode();
+            }
+
             function setKeyboard(k) {
                 sendByte(getKeyboardByte(k));
             }
 
             function getSpeedByte(wpm) {
-                return speed + 200;
+                return Math.min(255, Math.round(wpm) + 200);
             }
 
             function setSpeed(wpm) {
@@ -819,34 +826,28 @@
                 simulate();
             }
 
+            function adjustSpeed(dit) {
+                var paris = 50 * dit; // .--. .- .-. .. ...  10 dits, 4 dahs (*3), 9 elements, 4 letters (*3), 1 word (*7)
+                speed = 60 / paris;
+                ditlen = dit; // setSpeed(60 / paris); // relay down to keyer?
+                displayMode();
+            }
+
             function coder(len) {
                 var realDitlen = ditlen;
                 var realDahlen = ditlen * 3;
-                var element = realDitlen;
-                var letter = realDitlen * 3;
-                var word = realDitlen * 7;
-
                 if (len > 0) {
-                    len = Math.max(Math.min(len, realDahlen * 2), realDitlen / 2);
+                    len = Math.max(Math.min(len, realDahlen * 2), ditlen / 2);
                     if (len < realDahlen / 2) {
                         dit(false);
-                        realDitlen = (realDitlen + len) / 2;
+                        adjustSpeed((ditlen + len) / 2);
                     } else {
                         dah(false);
-                        realDahlen = (realDahlen + len) / 2;
+                        adjustSpeed((ditlen * 3 + len) / 6);
                     }
                 } else {
                     silence(-len);
                 }
-
-                var paris =
-                    realDitlen * 10 +
-                    realDahlen * 4 +
-                    element * (9 + 12 + 7); // TODO: word vs. element * 7
-                var parisWpm = 60 / paris;
-                ditlen = paris / 50;
-                speed = 1.2 / ditlen;
-                displayMode();
             }
         </script>
     </head>
@@ -882,6 +883,9 @@
         <span>&nbsp;</span>
         <button id="enableTone" onclick="setTone(true)">Enable Tone</button>
         <button id="disableTone" onclick="setTone(false)">Disable Tone</button>
+        <span>&nbsp;</span>
+        <button id="enforceElements" onclick="setEnforceElements(true)">Enforce</button>
+        <button id="relaxElements" onclick="setEnforceElements(false)">Relax</button>
         <hr />
         <button id="speed5" onclick="setSpeed(5)">5 WPM</button>
         <button id="speed10" onclick="setSpeed(10)">10 WPM</button>

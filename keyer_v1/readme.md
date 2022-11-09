@@ -1,3 +1,7 @@
-# v2 Arduino Morse Decoder
+# v1 Arduino Morse Decoder
 
-This is an even simpler Arduino build made to run on the Seeed SAMD board. It has no screen, dimmer, or buzzer. It merely connects to a key/paddle, to a radio, and to a computer that drives and configures everything via the web page.
+This is a very simple Arduino build of a sounder and LCD screen to display decoding. It displays the dits and dahs on the second row while showing the decoding on the first.
+
+I've added connectors for a paddle and to a radio, a transistor to key the radio, and a serial interface with the web page to display what's being keyed and to send text to be keyed on the radio.
+
+![Hardware](keyer.jpg)
