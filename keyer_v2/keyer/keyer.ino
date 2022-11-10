@@ -47,7 +47,7 @@ void setSpeed(long wpm) {
   LETTER = DIT * 3;
   WORD = DIT * 7;
   PAUSE = DIT;
-  DEBOUNCE = DIT;
+  DEBOUNCE = min(DIT, 60000000 / (20 * 50));
 }
 
 void setMode(Mode m) {

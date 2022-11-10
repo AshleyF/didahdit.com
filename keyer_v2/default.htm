@@ -694,46 +694,27 @@
             var clearNextKeyState = false;
             var clearNextMessage = false;
 
-            var lastStraightKey = false;
-            var lastStraightKeyTone = false;
+            var straightKeyTone = false;
             var lastStraightKeyToneChange = 0;
+            var straightKeyBuffer = 0;
             function handleStraightKey() {
                 var now = (new Date()).getTime() / 1000;
-                if (straightDown) updateBreaks(0);
-                if (!enforce) {
-                    makeTone(straightDown);
-                    if (!straightDown && lastStraightKey) {
-                        var span = now - lastStraightKeyToneChange;
-                        coder(Math.max(0.001, Math.min(0.5, span)));
-                    }
-                    if (straightDown != lastStraightKeyTone) {
-                        lastStraightKeyTone = straightDown;
-                        lastStraightKeyToneChange = now;
-                    }
-                    lastStraightKey = straightDown;
-                } else {
-                    var tone = lastStraightKeyTone;
-                    if (straightDown) {
-                        var span = now - lastStraightKeyToneChange;
-                        if (span >= ditlen * 4) {
-                            tone = true;
-                        }
-                    } else {
-                        tone = false;
-                    }
-                    if (tone != lastStraightKeyTone) {
-                        makeTone(tone);
-                        if (!tone) {
-                            var span = now - lastStraightKeyToneChange;
-                            coder(Math.max(0.001, Math.min(0.5, span)));
-                        }
-                        lastStraightKeyTone = tone;
-                        lastStraightKeyToneChange = now;
+                var span = now - lastStraightKeyToneChange;
+                var dahlen = ditlen * 3
+                var len = straightKeyTone && span > (dahlen / 2) ? dahlen : ditlen; // enforce min length dit or snap to dah
+                if ((!enforce || span >= len) && straightKeyBuffer > 0) {
+                    straightKeyBuffer = Math.max(0, straightKeyBuffer - 1);
+                    straightKeyTone = !straightKeyTone;
+                    makeTone(straightKeyTone);
+                    lastStraightKeyToneChange = now;
+                    if (!straightKeyTone) {
+                        coder(Math.max(ditlen / 2, Math.min(ditlen * 6, span))); // min 1/2 dit, max 2 * dah
                     }
                 }
             }
 
             function drawKeyAndToneState() {
+                if (straightDown) updateBreaks(0);
                 if (mode == 'S') handleStraightKey();
                 const ribbon = canvasHeight / 8;
                 var now = (new Date()).getTime() / 1000;
@@ -800,6 +781,7 @@
                 window.setTimeout(drawKeyAndToneState, 1);
             }
 
+            var lastStraightKey = false;
             function read() {
                 if (connectedPort != null) {
                     const reader = connectedPort.readable.getReader();
@@ -809,6 +791,10 @@
                             var v = x.value[i];
                             if (v < 8) {
                                 straightDown = (v & 0x4) != 0;
+                                if (straightDown != lastStraightKey) {
+                                    straightKeyBuffer++;
+                                    lastStraightKey = straightDown;
+                                }
                                 leftDown = (v & 0x2) != 0;
                                 rightDown = (v & 0x1) != 0;
                                 markManualSend();
@@ -855,10 +841,12 @@
             }
 
             function adjustSpeed(dit) {
-                var paris = 50 * dit; // .--. .- .-. .. ...  10 dits, 4 dahs (*3), 9 elements, 4 letters (*3), 1 word (*7)
-                speed = 60 / paris;
-                ditlen = dit; // setSpeed(60 / paris); // relay down to keyer?
-                displayMode();
+                if (!enforce) {
+                    var paris = 50 * dit; // .--. .- .-. .. ...  10 dits, 4 dahs (*3), 9 elements, 4 letters (*3), 1 word (*7)
+                    speed = 60 / paris;
+                    ditlen = dit; // setSpeed(60 / paris); // relay down to keyer?
+                    displayMode();
+                }
             }
 
             function coder(len) {
