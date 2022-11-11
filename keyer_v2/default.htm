@@ -700,16 +700,23 @@
             function handleStraightKey() {
                 var now = (new Date()).getTime() / 1000;
                 var span = now - lastStraightKeyToneChange;
-                var dahlen = ditlen * 3
-                var len = straightKeyTone && span > (dahlen / 2) ? dahlen : ditlen; // enforce min length dit or snap to dah
-                if ((!enforce || span >= len) && straightKeyBuffer > 0) {
-                    straightKeyBuffer = Math.max(0, straightKeyBuffer - 1);
-                    straightKeyTone = !straightKeyTone;
-                    makeTone(straightKeyTone);
-                    lastStraightKeyToneChange = now;
-                    if (!straightKeyTone) {
-                        coder(Math.max(ditlen / 2, Math.min(ditlen * 6, span))); // min 1/2 dit, max 2 * dah
+                var len = straightKeyTone && span > (ditlen * 2) ? ditlen * 3 : ditlen; // enforce min length dit or snap to dah
+                if (straightKeyBuffer > 0) {
+                    if (!enforce || span >= len) {
+                        straightKeyBuffer = Math.max(0, straightKeyBuffer - 1);
+                        straightKeyTone = !straightKeyTone;
+                        makeTone(straightKeyTone);
+                        sendByte(straightKeyTone ? 0x1 : 0); // simulate keys to relay to radio
+                        lastStraightKeyToneChange = now;
+                        if (!straightKeyTone) {
+                            coder(Math.max(ditlen / 2, Math.min(ditlen * 6, span))); // min 1/2 dit, max 2 * dah
+                        }
                     }
+                } else if (
+                    enforce && straightDown &&
+                    ((straightKeyTone && span > ditlen * 3) || // force up after dah
+                    (!straightKeyTone && span > ditlen))) { // force back down after element space
+                        straightKeyBuffer++;
                 }
             }
 
@@ -792,7 +799,9 @@
                             if (v < 8) {
                                 straightDown = (v & 0x4) != 0;
                                 if (straightDown != lastStraightKey) {
-                                    straightKeyBuffer++;
+                                    if ((straightDown && !straightKeyTone) ||
+                                        (!straightDown && straightKeyTone))
+                                        straightKeyBuffer++;
                                     lastStraightKey = straightDown;
                                 }
                                 leftDown = (v & 0x2) != 0;
@@ -852,7 +861,7 @@
             function coder(len) {
                 var dahlen = ditlen * 3;
                 len = Math.max(Math.min(len, dahlen * 2), ditlen / 2);
-                if (len < dahlen / 2) {
+                if (len < ditlen * 2) {
                   dit(false);
                   adjustSpeed((ditlen + len) / 2);
                 } else {

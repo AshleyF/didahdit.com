@@ -208,13 +208,15 @@ void squeezePaddle(DitDah currentDitDah) {
 
 void straightDown() {
   if (!left && !right) {
-    stopTone();
+    if (enableKeyboard) {
+        stopTone();
+        coder();
+    }
     state = Waiting;
-    if (enableKeyboard) coder();
     lastStraightKeyChange = now;
     return;
   }
-  startTone();
+  if (enableKeyboard) startTone();
 }
 
 void protocol() {
@@ -422,11 +424,23 @@ void loop() {
   int peek = Serial.peek();
   if (peek != -1 && peek < 4) { // key signal?
     Serial.read();
-    leftProtocol = (peek & 0b10) != 0;
-    rightProtocol = (peek & 0b01) != 0;
+    if (mode == StraightKey) {
+        if ((peek & 0b01) != 0) {
+            digitalWrite(RADIO, HIGH);
+            if (enableTone) analogWrite(TONE, 1);
+        } else {
+            digitalWrite(RADIO, LOW);
+            analogWrite(TONE, 0);
+        }
+    } else {
+        leftProtocol = (peek & 0b10) != 0;
+        rightProtocol = (peek & 0b01) != 0;
+    }
   }
-  if (leftProtocol) left = true;
-  if (rightProtocol) right = true;
+  if (mode != StraightKey) {
+    if (leftProtocol) left = true;
+    if (rightProtocol) right = true;
+  }
   if (toneUntil != 0 && now > toneUntil) stopTone();
   switch (state) {
     case Waiting:
