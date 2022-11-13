@@ -106,19 +106,22 @@
                 say(document.getElementById('message').value, 0);
             }
 
-            function startAudio() {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                var oscillator = audioCtx.createOscillator();
-                oscillator.frequency.value = 750;
-                volume = audioCtx.createGain();
-                volume.gain.value = 1;
-                gain = audioCtx.createGain();
-                gain.gain.value = 0;
-                oscillator.connect(gain);
-                gain.connect(volume);
-                volume.connect(audioCtx.destination);
-                oscillator.start(0);
-                audioStarted = true;
+            function audio() {
+                if (!audioStarted) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    var oscillator = audioCtx.createOscillator();
+                    oscillator.frequency.value = 750;
+                    volume = audioCtx.createGain();
+                    volume.gain.value = 1;
+                    gain = audioCtx.createGain();
+                    gain.gain.value = 0;
+                    oscillator.connect(gain);
+                    gain.connect(volume);
+                    volume.connect(audioCtx.destination);
+                    oscillator.start(0);
+                    audioStarted = true;
+                }
+                return audioCtx.currentTime;
             }
 
             var mode;
@@ -131,8 +134,7 @@
             var t = 0;
             const ramp = 0.01;
             function makeTone(on) {
-                if (!audioStarted) startAudio();
-                var c = audioCtx.currentTime;
+                var c = audio();
                 t = c > t ? c : t;
                 gain.gain.setTargetAtTime(on ? 1 : 0, t, ramp);
             }
@@ -358,8 +360,7 @@
                 document.getElementById('message').value = message; // TODO: display phrases w/o |
                 var prosign = false;
                 var words = message.split('|');
-                if (!audioStarted) startAudio();
-                var startTime = audioCtx.currentTime;
+                var startTime = audio();
                 for (var w in words) {
                     var word = words[w];
                     for (var i in word) {
@@ -394,6 +395,11 @@
                     silence(trainingSpeechPause * 2);
                 }
                 silence(ditlen * 7); // final word break
+            }
+
+            function practiceSending(message) {
+                sending += message;
+                updateDisplay();
             }
 
             function send(message, manual = true) {
@@ -606,7 +612,7 @@
             }
 
             function mute(m) {
-                startAudio();
+                audio();
                 volume.gain.value = m ? 0 : 1;
             }
 
@@ -739,7 +745,7 @@
                         updateDisplay();
                         clearNextMessage = false;
                     }
-                    if (!audioStarted) startAudio();
+                    audio();
                     var currentGain = gain.gain.value;
                     if ((lastGain < 0.5 && currentGain > 0.5) || (lastGain > 0.5 && currentGain < 0.5)) {
                         ctx.fillStyle = '#555'; // mark tone boundaries
@@ -925,6 +931,10 @@
         <button id="farnsworth" onclick="setFarnsworth(14)">14 dits</button>
         <button id="farnsworth" onclick="setFarnsworth(21)">21 dits</button>
         <button id="farnsworth" onclick="setFarnsworth(28)">28 dits</button>
+        <hr />
+        <a href="javascript:practiceSending('THE QUICK BROWN FOX JUMPS OVER THE LAZY DOGS BACK')">QBF</a>
+        <a href="javascript:practiceSending('CQ CQ CQ POTA DE KK7HXU KK7HXU K')">CQ</a>
+        <a href="javascript:practiceSending('BENS BEST BENT WIRE')">BBBW</a>
         <hr />
         <a href="javascript:send('CQ')">CQ</a>
         <a href="javascript:send('QRL?')">QRL?</a>
