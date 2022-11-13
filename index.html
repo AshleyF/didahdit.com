@@ -127,26 +127,28 @@
             var dingGain;
             var dingOscillator;
             var audioStarted = false;
-            function startAudio() {
-                say('');
-                (new Audio('silent.wav')).play();
-                audioCtx = new (AudioContext || webkitAudioContext)();
-                toneOscillator = audioCtx.createOscillator();
-                dingOscillator = audioCtx.createOscillator();
-                toneOscillator.frequency.value = getPitch();
-                dingOscillator.frequency.value = 2000;
-                toneGain = audioCtx.createGain();
-                dingGain = audioCtx.createGain();
-                toneGain.gain.value = 0;
-                dingGain.gain.value = 0;
-                toneOscillator.connect(toneGain);
-                dingOscillator.connect(dingGain);
-                toneGain.connect(audioCtx.destination);
-                dingGain.connect(audioCtx.destination);
-                toneOscillator.start(0);
-                dingOscillator.start(0);
-                audioStarted = true;
-                t = 0.5; // add delay for 'warmup'
+            function audio() {
+                if (!audioStarted) {
+                    say('');
+                    audioCtx = new (AudioContext || webkitAudioContext)();
+                    toneOscillator = audioCtx.createOscillator();
+                    dingOscillator = audioCtx.createOscillator();
+                    toneOscillator.frequency.value = getPitch();
+                    dingOscillator.frequency.value = 2000;
+                    toneGain = audioCtx.createGain();
+                    dingGain = audioCtx.createGain();
+                    toneGain.gain.value = 0;
+                    dingGain.gain.value = 0;
+                    toneOscillator.connect(toneGain);
+                    dingOscillator.connect(dingGain);
+                    toneGain.connect(audioCtx.destination);
+                    dingGain.connect(audioCtx.destination);
+                    toneOscillator.start(0);
+                    dingOscillator.start(0);
+                    audioStarted = true;
+                    return audioCtx.currentTime + 0.5; // add delay for 'warmup'
+                }
+                return audioCtx.currentTime;
             }
 
             var t = 0;
@@ -160,8 +162,7 @@
 
             function playTone(len) {
                 const ramp = 0.005;
-                if (!audioStarted) startAudio();
-                var c = audioCtx.currentTime;
+                var c = audio();
                 t = c > t ? c : t;
                 toneGain.gain.setTargetAtTime(1, t, ramp);
                 t += len;
@@ -271,8 +272,7 @@
             }
 
             function playDing() {
-                if (!audioStarted) startAudio();
-                var c = audioCtx.currentTime;
+                var c = audio();
                 t = c > t ? c : t;
                 dingGain.gain.linearRampToValueAtTime(0.2, t + 0.005);
                 t += 2.5;
@@ -338,8 +338,7 @@
                             (t - startTime) * 1000);
                     }
                 }
-                if (!audioStarted) startAudio();
-                var startTime = audioCtx.currentTime;
+                var startTime = audio();
                 for (var i = 0; i < code.length; i++) {
                     switch (code[i]) {
                         case '.':
