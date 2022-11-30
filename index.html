@@ -424,12 +424,15 @@
                                             redraw();
                                             var utter = convertUtterance(getCurrentPhrase());
                                             say(utter);
+                                            var pause = trainingSpeechPause + utter.length * trainingSpeechCharacterPause;
+                                            if (ui.progress) pause /= 2; // half before, half after
                                             continuationTimeout1 = setTimeout(
                                                 function () {
                                                     if (ui.playing) {
                                                         if (nextPhrase()) {
                                                             ui.count = 0;
-                                                            playPhrase(getCurrentPhrase(), speakAndAdvance, false);
+                                                            var play = function () { playPhrase(getCurrentPhrase(), speakAndAdvance, false) };
+                                                            if (ui.progress) setTimeout(play, pause); else play();
                                                         } else {
                                                             say('lesson complete');
                                                             ui.playing = false;
@@ -438,7 +441,7 @@
                                                         redraw();
                                                     }
                                                 },
-                                                trainingSpeechPause + utter.length * trainingSpeechCharacterPause);
+                                                pause);
                                         }
                                     },
                                     trainingSpeechPause);
