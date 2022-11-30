@@ -413,6 +413,7 @@
                 const trainingSpeechCharacterPause = 110;
                 var delay = codeMilliseconds(code);
                 if (speakAndAdvance) {
+                    var wordBreak = fditlen * 7 * 1000;
                     continuationTimeout1 = setTimeout(
                         function () {
                             if (ui.playing) {
@@ -424,15 +425,13 @@
                                             redraw();
                                             var utter = convertUtterance(getCurrentPhrase());
                                             say(utter);
-                                            var pause = trainingSpeechPause + utter.length * trainingSpeechCharacterPause;
-                                            if (ui.progress) pause /= 2; // half before, half after
                                             continuationTimeout1 = setTimeout(
                                                 function () {
                                                     if (ui.playing) {
                                                         if (nextPhrase()) {
                                                             ui.count = 0;
-                                                            var play = function () { playPhrase(getCurrentPhrase(), speakAndAdvance, false) };
-                                                            if (ui.progress) setTimeout(play, pause); else play();
+                                                            var play = function() { playPhrase(getCurrentPhrase(), speakAndAdvance, false) };
+                                                            if (ui.progress) setTimeout(play, wordBreak); else play();
                                                         } else {
                                                             say('lesson complete');
                                                             ui.playing = false;
@@ -441,13 +440,13 @@
                                                         redraw();
                                                     }
                                                 },
-                                                pause);
+                                                trainingSpeechPause + utter.length * trainingSpeechCharacterPause - (ui.progress ? wordBreak : 0));
                                         }
                                     },
                                     trainingSpeechPause);
                             }
                         },
-                        delay + fditlen * 7 * 1000);
+                        delay + wordBreak);
                 } else {
                     continuationTimeout1 = setTimeout(
                         function () {
