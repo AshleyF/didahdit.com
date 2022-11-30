@@ -378,7 +378,7 @@
                             return;
                     }
                 }
-                ui.count++;
+                ui.count += 2;
                 redraw();
             }
 
@@ -754,6 +754,9 @@
                 var phraseHeight = h - padding * 4 - progressHeight - buttonSize - buttonSize * largeButton;
                 var phrase = convertPhrase(content.lessons[lessonNum].phrases[phraseNum]); 
                 if (ui.playing && ui.progress && phrase.length > ui.count) {
+                    if (phrase[ui.count - 1] == '<' || phrase[ui.count - 2] == '<') {
+                        while (phrase[ui.count++] != '>');
+                    }
                     drawFittedText(
                         phrase,
                         disabledButtonColor,
