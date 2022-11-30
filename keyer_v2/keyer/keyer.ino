@@ -14,7 +14,7 @@ enum Mode {
   CurtisB,
   Ultimatic,
   StraightKey,
-} mode = StraightKey;
+} mode = Ultimatic;
 
 enum DitDah {
   None,
@@ -62,7 +62,7 @@ void setup() {
   digitalWrite(PADDLE_RIGHT, HIGH);
   pinMode(RADIO, OUTPUT);
   pinMode(TONE, OUTPUT);
-  setSpeed(15);
+  setSpeed(25);
   Keyboard.begin();
 }
 
@@ -122,6 +122,7 @@ bool playMemory() {
 }
 
 void serialKeyUpdate(bool straightDown, bool leftDown, bool rightDown) {
+  writeKeyboardPaddles(leftDown, rightDown);
   Serial.write((byte)(
     (straightDown  ? 0b100 : 0b000) |
     (leftDown      ? 0b010 : 0b000) |
@@ -280,9 +281,18 @@ long silentSince = -1; // -1 = no tone sent, 0 = tone sent
 bool shift = false;
 bool autoSpace = true;
 
+void writeKeyboardChar(char c) {
+    Keyboard.write(c);
+}
+
+void writeKeyboardPaddles(bool left, bool right) {
+    //if (left) Keyboard.press(','); else Keyboard.release(',');
+    //if (right) Keyboard.press('.'); else Keyboard.release('.');
+}
+
 void writeProsign(char* sign) {
   for (int i = 0; i < strlen(sign); i++) {
-    Keyboard.write(sign[i]);
+    writeKeyboardChar(sign[i]);
     sinceLastOutput = now;
   }
 }
@@ -304,7 +314,7 @@ void decode(DitDah ditDah) {
       if (silentSince == 0) silentSince = now;
       if (autoSpace && silentSince == -1 && now - sinceLastOutput > WORD * 3) { // TODO: farnsworth?
         autoSpace = false;
-        Keyboard.write(' ');
+        writeKeyboardChar(' ');
       }
       break;
   }
@@ -312,16 +322,16 @@ void decode(DitDah ditDah) {
     silentSince = -1;
     switch (p) {
       case 31: // backspace
-        Keyboard.write(KEY_BACKSPACE);
+        writeKeyboardChar(KEY_BACKSPACE);
         autoSpace = false;
         break;
       case 19: // ..-- space on Google Morse keyboard
-        Keyboard.write(' ');
+        writeKeyboardChar(' ');
         autoSpace = false;
         break;
       case 21: // .-.- return on Google Morse keyboard
         //writeProsign("<AA>");
-        Keyboard.write(KEY_RETURN);
+        writeKeyboardChar(KEY_RETURN);
         autoSpace = false;
         break;
       case 34:
@@ -358,7 +368,7 @@ void decode(DitDah ditDah) {
         if (p < 121) {
           char c = morse[p];
           if (c != ' ') {
-            Keyboard.write(shift ? toupper(c) : c);
+            writeKeyboardChar(shift ? toupper(c) : c);
             sinceLastOutput = now;
             shift = false;
           }
