@@ -9,10 +9,10 @@
                   lessons: [
                     { id: 'CWOB1',
                       name: 'E T A N',
-                      phrases: ['E', 'T', 'A', 'N', 'E E E', 'T T T', 'A A A', 'N N N', 'an', 'at', 'ann', 'ant', 'ate', 'eat', 'eta', 'net', 'tan', 'tat', 'tea', 'tee', 'ten', 'anna', 'anne', 'ante', 'nate', 'neat', 'tate', 'teat', 'teen', 'tent', 'eaten', 'tenet', 'tenant', 'annette', 'antenna', 'a tan', 'an ant', 'anna ate', 'eat at ten', 'ate at ten', 'at tee', 'a neat tent'] },
+                      phrases: ['E', 'T', 'A', 'N', 'E E E', 'T T T', 'A A A', 'N N N', 'an', 'at', 'ann', 'ant', 'ate', 'eat', 'ETA|estimated time of arival', 'net', 'tan', 'tat', 'tea', 'tee', 'ten', 'anna', 'anne', 'ante', 'nate', 'neat', 'tate', 'teat', 'teen', 'tent', 'eaten', 'tenet', 'tenant', 'annette', 'antenna', 'a tan', 'an ant', 'anna ate', 'eat at ten', 'ate at ten', 'at tee', 'a neat tent'] },
                     { id: 'CWOB2',
                       name: 'O I S 1 4',
-                      phrases: ['O', 'I', 'S', '1', '4', 'O O O', 'I I I', 'S S S', '1 1 1', '4 4 4', 'T T T', 'E E E', 'A A A', 'N N N', 'as', 'in', 'it', 'no', 'on', 'to', 'sin', 'st', 'its', 'sit', 'son', 'too', 'oasis', 'soon', 'sits', 'soot', 'sota', 'ian', 'asia', 'toss', 'at', 'sea', 'inn', 'oat', 'one', 'see', 'tao', 'tie', 'nit', 'sat', 'tin', 'toe', 'sine', 'sonia', 'not', 'set', 'into', 'noon', 'nose', 'sans', 'site', 'noise', 'oases', 'onion', 'tot', 'onto', 'toes', 'noose', 'snot', 'toot', 'snoot', 'assess', 'assist', 'insist', 'ease', 'asian', 'anti', 'nine', 'sane', 'sean', 'tina', 'east', 'one neat note', 'no noise', 'tie it', '1 ton stone', 'N1AS', 'N4ON', 'S41T', 'NO1S', 'AI1E', 'IT4O', 'EA1ON', 'ES4IT'] },
+                      phrases: ['O', 'I', 'S', '1', '4', 'O O O', 'I I I', 'S S S', '1 1 1', '4 4 4', 'T T T', 'E E E', 'A A A', 'N N N', 'as', 'in', 'it', 'no', 'on', 'to', 'sin', 'st', 'its', 'sit', 'son', 'too', 'oasis', 'soon', 'sits', 'soot', 'SOTA|sohtah, summits on the air', 'ian', 'asia', 'toss', 'at', 'sea', 'inn', 'oat', 'one', 'see', 'tao', 'tie', 'nit', 'sat', 'tin', 'toe', 'sine', 'sonia', 'not', 'set', 'into', 'noon', 'nose', 'sans', 'site', 'noise', 'oases', 'onion', 'tot', 'onto', 'toes', 'noose', 'snot', 'toot', 'snoot', 'assess', 'assist', 'insist', 'ease', 'asian', 'anti', 'nine', 'sane', 'sean', 'tina', 'east', 'one neat note', 'no noise', 'tie it', '#1 ton stone', 'N1AS', 'N4ON', 'S41T', 'NO1S', 'AI1E', 'IT4O', 'EA1ON', 'ES4IT', '#14', '#41', '#44', '#11', '#441', '#141', '#114', '#411'] },
                     { id: 'CWOB3',
                       name: 'R H D L 2 5',
                       phrases: ['R', 'H', 'D', 'L', '2', '5', 'R R R|wherefore art thou romeo?', 'H H H', 'D D D', 'L L L', '2 2 2', '5 5 5', 'O O O', 'I I I', 'S S S', 'dr', 'rd', 'did', 'do', 'hi', 'hid', 'odd', 'oh', 'lid', 'old', 'ill', 'rod', 'dill', 'hold', 'doll', 'hill', 'add', 'dad', 'lord', 'had', 'drill', 'he', 'roll', 'all', 'his', 'oil', 'red', 'sod', 'dish', 'hard', 'held', 'hood', 'idol', 'odds', 'her', 'dell', 'hall', 'herd', 'lard', 'lids', 'slid', 'sir', 'door', 'hell', 'odor', 'sold', 'aid', 'lori', 'sill', 'ado', 'died', 'drool', 'shill', 'doe', 'sad', 'dads', 'dial', 'hide', 'laid', 'horrid', 'air', 'ash', 'don', 'has', 'lie', 'nod', 'dash', 'deli', 'hail', 'hind', 'idle', 'lied', 'load', 'raid', 'dot', 'leo', 'she', 'dole', 'dora', 'hair', 'halo', 'hash', 'ohio', 'ride', 'hello', 'and', 'hailstone', 'isolation', 'loadstone', 'tradition', 'nineteenth', '#142', '#451', '#1425', 'a tall hill', 'she is here', 'he is late', '#4 sheds', '#12 hills', 'DL1AT', 'HH5H', 'HS1TD', 'ND2T', 'NA4T'] },
@@ -413,11 +413,10 @@
                 const trainingSpeechCharacterPause = 110;
                 var delay = codeMilliseconds(code);
                 if (speakAndAdvance) {
-                    var wordBreak = fditlen * 7 * 1000;
                     continuationTimeout1 = setTimeout(
                         function () {
                             if (ui.playing) {
-                                playDing();
+                                if (!ui.progress) playDing();
                                 continuationTimeout1 = setTimeout(
                                     function () {
                                         if (ui.playing) {
@@ -431,7 +430,7 @@
                                                         if (nextPhrase()) {
                                                             ui.count = 0;
                                                             var play = function() { playPhrase(getCurrentPhrase(), speakAndAdvance, false) };
-                                                            if (ui.progress) setTimeout(play, wordBreak); else play();
+                                                            if (ui.progress) setTimeout(play, fditlen * 3 * 1000); else play();
                                                         } else {
                                                             say('lesson complete');
                                                             ui.playing = false;
@@ -440,13 +439,13 @@
                                                         redraw();
                                                     }
                                                 },
-                                                trainingSpeechPause + utter.length * trainingSpeechCharacterPause);
+                                                (ui.progress ? 0 : trainingSpeechPause) + utter.length * trainingSpeechCharacterPause);
                                         }
                                     },
-                                    trainingSpeechPause);
+                                    ui.progress ? 0 : trainingSpeechPause);
                             }
                         },
-                        delay + wordBreak);
+                        delay + fditlen * 7 * 1000);
                 } else {
                     continuationTimeout1 = setTimeout(
                         function () {
