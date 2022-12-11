@@ -78,7 +78,7 @@
                             "'": 'apostrophe',
                             '"': 'quotation mark',
                             '_': 'underscore',
-                            '=': 'double dash',
+                            // also <BT> '=': 'double dash',
                             '&': 'ampersand',
                             '$': 'dollar sign',
                             '(': 'left parenthesis',
@@ -635,6 +635,9 @@
                         break;
                     case 42:
                         setProsign('AR');
+                        break;
+                    case 49:
+                        setProsign('BT');
                         break;
                     case 53:
                         setProsign('CT');
