@@ -26,7 +26,8 @@
             var connectedPort = null;
             var morse = "  ETIANMSURWDKGOHVFÜL PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
             var p = 1;
-            var message = '&nbsp;';
+            var message = '';
+            var messageDisplay = '&nbsp;';
             var sending = '';
             var char = '';
 
@@ -579,15 +580,23 @@
                 }
             }
 
+            function escape(str) {
+                return str.replace(/\</g, '&lt;').replace(/\>/g, '&gt;');
+            }
+
             function updateDisplay() {
-                function escape(str) {
-                    return str.replace(/\</g, '&lt;').replace(/\>/g, '&gt;');
-                }
-                document.getElementById('copy').innerHTML = escape(message) + escape(char) + "<span style='border-left: 1px solid #777'>&nbsp;</span><span style='color:#555'>" + escape(sending) + "</span>";
+                var temp = // preemptively chop off char in progress (but reverts if later unmatched -- completes after letter timeout)
+                    sending.startsWith(char) ?
+                    sending.substring(char.length) :
+                    sending.startsWith(' ') && sending.length > 1 && sending.substring(1).startsWith(char) ?
+                    sending.substring(char.length + 1) :
+                    sending;
+                document.getElementById('copy').innerHTML = messageDisplay + "<span style='color:#555'>" + escape(char) + "</span><span style='border-left: 1px solid #777'>&nbsp;</span><span style='color:#555'>" + escape(temp) + "</span>";
             }
 
             function reset() {
-                message = '&nbsp;';
+                message = '';
+                messageDisplay = '&nbsp;';
                 sending = '';
                 p = 1;
                 char = '';
@@ -656,25 +665,21 @@
                         break;
                     case 256: // correction (clear)
                         // TODO
-                        message = '&nbsp;';
+                        message = '';
+                        messageDisplay = '&nbsp;';
                         char = '';
                         break;
                     default:
                         if (p >= 121) { // unknown
                             // TODO
-                            char = '';
+                            char = '□';
                         } else {
                             char = morse[p];
                             if (char == ' ') { // unknown?
-                                char = '';
+                                char = '□';
                             }
                         }
                         break;
-                }
-                if (sending.startsWith(char)) {
-                    sending = sending.substring(char.length);
-                } else if (sending.startsWith(' ') && sending.length > 1 && sending.substring(1).startsWith(char)) {
-                    sending = sending.substring(char.length + 1);
                 }
                 updateDisplay();
             }
@@ -744,7 +749,8 @@
                         clearNextKeyState = false;
                     }
                     if (clearNextMessage) {
-                        message = '&nbsp;';
+                        message = '';
+                        messageDisplay = '&nbsp;';
                         updateDisplay();
                         clearNextMessage = false;
                     }
@@ -778,12 +784,49 @@
                     ctx.fillRect(cursor, 0, 1, canvasHeight);
                 }
                 if (now - letterBreak > 0) {
-                    message += char;
-                    simulateQso(message);
-                    char = '';
-                    p = 1;
+                    if (p != 1)
+                    {
+                        if (sending.startsWith(char)) {
+                            sending = sending.substring(char.length);
+                            message += char;
+                            messageDisplay += escape(char);
+                        } else if (sending.startsWith(' ') && sending.length > 1 && sending.substring(1).startsWith(char)) {
+                            sending = sending.substring(char.length + 1);
+                            message += char;
+                            messageDisplay += "<span style='color:#00f'>_</span>" + escape(char); // missed space
+                        } else if (sending == '') {
+                            message += char;
+                            messageDisplay += escape(char);
+                        } else {
+                            if (char == 'E') {
+                                messageDisplay += "<span style='color:#777'>·</span>";
+                                char = '';
+                            }
+                            else {
+                                message += char;
+                                messageDisplay += "<span style='color:#f00'>" + escape(char) + "</span>";
+                            }
+                        }
+                        simulateQso(message);
+                        char = '';
+                        p = 1;
+                        updateDisplay();
+                    }
                 }
                 if (now - farnsworthWordBreak > 0 && !message.endsWith(' ')) {
+                    if (sending != '')
+                    {
+                        if (sending.startsWith(' ')) {
+                            sending = sending.substring(1);
+                            messageDisplay += ' ';
+                        } else {
+                            messageDisplay += "<span style='color:#00f'>…</span>"; // extra space
+                        }
+                    }
+                    else
+                    {
+                        messageDisplay += ' ';
+                    }
                     message += ' ';
                     updateDisplay();
                 }
@@ -950,7 +993,7 @@
         <a href="javascript:practiceSending('F Y FFF YYY MMM WWW 333 666 FFFFF YYYYY MMMMM WWWWW 33333 66666 FM MY MUFF HF YUM FLY FRY YUMMY WHY IF CUFF MUMMY OF OFF YO DUFF HUFF MIFF DUFFY FLU FLUFF HUFFY FUR RUFF FLUFFY CRY DRY DUMMY AMY MAY YAM FEW ICY WAY YAW YOU LYLY MOMMY COY YEW RUMMY EMMY HOFF MUFFS FIR LUCY RIFF COMFY FOR SHY WRYLY FUN ROY SLY DULY FILM WHIFF FAD FIRM FULL HOMY RUDY MUDDY DAY FED FLOW FORM FOWL FROM FUME FURL WILY WOLF DAFFY FULLY WOLFF MUMMIFY DYE HAY DEFY MACY CHUMMY ELF FAR HEY LAY CUFFS FURRY SCUFF FER RAY REF FRAY CRUMMY RYE SOY FREY CODY FARM FLAW FOUL CLIFF HW? F5IN YO1AR HH5H NO3M AA3U S52R 1512 3316')">FY</a>
         <a href="javascript:practiceSending('P G 7 9 / PPP GGG 777 999 /// FFF YYY 333 666 PPPPP GGGGG 77777 99999 ///// FFFFF YYYYY 33333 66666 GYP PM UP GYM PUG PUP GUY YUP GUM MUG GUPPY PYGMY GIG UMP PUPPY GO PIG PUMP PIP GUFF PLY PUFF PRY FIG GAG MUGGY YUPPY CUP EGG FOG GAP DUG PEG YIP PIGGY HUG MIG PEP UGH LUG SPY WIG PUFFY RUG GULP PIMP PLUG POPPY POMP PULP GAY PHD PAY YAP FOGGY YEP GUMMY PEGGY AMP GEM MAP MEG PAM WAG GULF PUDGY COG GUS PAW UGLY GYPSY PEPPY PIGMY DIG PEW DUMP DIP DOG GOD GLUM HUMP PUPS HIP HOG POD LUMP PLUM WIMP HOP LIP LOG RIG RUMP PLUMP LOP POL RIP GRIP GLYPH GUN PRO PLOP PUPA 7423 14253679 G4AN/3 N1AR/5 W9UCA/9 W3/PY2AA F6/N6AM 2N2222')">PG79/</a>
         <a href="javascript:practiceSending('B V BBB VVV 777 999 BBBBB VVVVV 77777 99999 ///// BY BUG PUB BMW BIB BUY BOB BUM BIG BOG GOB BOP BUMP BUGGY BE BUFF BAG CUB FIB GAB BEG FOB BOY BUD DUB IVY BOBBY HUB MOB VIM BOMB BULB BOW BUR RUB VOW BAY ABBY BABY BUMPY BYE BLVD GRUB BEVY BURP BUFFY GABBY BUS SUB VIC WEB COBB BID FLUB BAGGY HUBBY DUMB VAMP BUBBLY RIB BLOB BURY PUBS RUBY FLYBY CAB ORB ROB BUN NUB GLIB WOMB BAD BUT TUB BLIP BLOG RUGBY GRUBBY BED BLAB BUOY PLUMB BAR BOO BRA VAL BARB BUSY BUYS WAVY HUBBUB BLUFF BODY CLUB COMB VERB BRAG CURB GARB GRAB DIVVY HOBBY GUMBO LOBBY 6146 5514 BV2AA BA1RO WB2AE N6RB/4 W2/VE1AR VE2/W2LE')">BV</a>
-        <a href="javascript:practiceSending('J K 8 0 &lt;BT&gt; JJJ KKK 888 000 &lt;BT&gt;&lt;BT&gt;&lt;BT&gt; BBB VVV JJJJJ KKKKK 88888 00000 &lt;BT&gt;&lt;BT&gt;&lt;BT&gt;&lt;BT&gt;&lt;BT&gt; BBBBB VVVVV JR JUG OK JIB JOB JIG JOG KIP JAB JAG JOY KEG JUMP JIM JUL KIM SKY BUCK JAY KAY YAK JAM KEY JAW BULK PUCK JEW JOCK KICK KID JAMB YUCK JACK JUDY KIRK JUMPY JUNK MUCK JED GAWK JUGS JULY JURY PICK JAR JEFF ARK ELK SKI BACK BUNK FUJI JERK BULKY BALK PACK PORK PUKE IKE JOE OAK BARK BOOK DUCK JOBS PECK PUNK YOCK YUKS ASK INK JON KIN HUCK JODY JOKE JUDD MICK KOJAK JOT KIT KINK LUCK MOCK MUSK WICK JIFFY FOLK FORK PARK SKIP YOLK BIKE FUNK HULK JIVE MILK PERK YACK YORK JACKY JUMBO SWITCH DIPOLE VERTICAL OHMS HOME TEST 807 3500Z 4250A K1JD N1AR W2TT K2UMU N2NW VE3NE VA3KP K4BAI N5KO')">JK80 &lt;BT&gt;</a>
+        <a href="javascript:practiceSending('J K 8 0 &lt;BT&gt; JJJ KKK 888 000 &lt;BT&gt;&lt;BT&gt;&lt;BT&gt; BBB VVV JJJJJ KKKKK 88888 00000 &lt;BT&gt;&lt;BT&gt;&lt;BT&gt;&lt;BT&gt;&lt;BT&gt; BBBBB VVVVV JR JUG OK JIB JOB JIG JOG KIP JAB JAG JOY KEG JUMP JIM JUL KIM SKY BUCK JAY KAY YAK JAM KEY JAW BULK PUCK JEW JOCK KICK KID JAMB YUCK JACK JUDY KIRK JUMPY JUNK MUCK JED GAWK JUGS JULY JURY PICK JAR JEFF ARK ELK SKI BACK BUNK FUJI JERK BULKY BALK PACK PORK PUKE IKE JOE OAK BARK BOOK DUCK JOBS PECK PUNK YOCK YUKS ASK INK JON KIN HUCK JODY JOKE JUDD MICK KOJAK JOT KIT KINK LUCK MOCK MUSK WICK JIFFY FOLK FORK PARK SKIP YOLK BIKE FUNK HULK JIVE MILK PERK YACK YORK JACKY JUMBO SWITCH DIPOLE VERTICAL OHMS HOME TEST 807 3500 4250A K1JD N1AR W2TT K2UMU N2NW VE3NE VA3KP K4BAI N5KO')">JK80 &lt;BT&gt;</a>
         <a href="javascript:practiceSending('X Q Z &lt;BK&gt; XXX QQQ ZZZ &lt;BK&gt;&lt;BK&gt;&lt;BK&gt; KKK JJJ 888 000 XXXXX QQQQQ ZZZZZ &lt;BK&gt;&lt;BK&gt;&lt;BK&gt;&lt;BK&gt;&lt;BK&gt; KKKKK JJJJJ 88888 00000 HZ KHZ BUZZ BOX FUZZ JAZZ ZIP MHZ FIX FOX ZAP MIX FIZZ WIZ FAX MAX UZI WAX QUIZ COX FUZZY JAZZY LIZ TUX HEX FOXY SIX QUIP REX SOX ZOO FLUX FIZZY ZIGGY SAX ZOE ZIPPY ZIT WAXY BOZO COZY JINX SUZY AXE ZULU CRUX KNOX QUAY TAX CRUZ DIZZY ZEN AJAX FUZE ROXY WHIZ FRIZZ LIZZY WHIZZ FLEX HAZY EXPO LAZY ZING LYNX ZAPS PIZZA QUICK MARX ZOOM PIZAZZ QUAD APEX GAZE PIZZAZZ QUIRK ONYX QUACK XMAS PROXY CZAR BOOZY FAZE OXBOW QUARK ZIGZAG EXAM COAX MAZE QUIT GIZMO FRIZZY ZEUS ZINC KLUTZ AQUA HOAX IRAQ EPOXY QUIPS EXEC ZERO AFFIX XEROX BUZZER QRX QRZ QTH QRS QRO QRP WX QRM 8044 7400 73 ZL2TT VK4OM JE1TRV BA1CW KH6LC AL2A AA3B')">XQZ &lt;BK&gt;</a>
         <hr />
         <a href="javascript:send('CQ')">CQ</a>
