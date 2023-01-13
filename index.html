@@ -310,10 +310,6 @@
                 playContinuation = function() {};
                 if (continuationTimeout0) clearTimeout(continuationTimeout0);
                 if (continuationTimeout1) clearTimeout(continuationTimeout1);
-                if (ui.hide) {
-                    ui.hide = false;
-                    redraw();
-                }
             }
 
             function getCurrentPhrase() {
@@ -440,7 +436,7 @@
                                                             if (ui.progress) setTimeout(play, fditlen * 3 * 1000); else play();
                                                         } else {
                                                             say('lesson complete');
-                                                            ui.playing = false;
+                                                            ui.playing = ui.hide = false;
                                                             nextLesson();
                                                         }
                                                         redraw();
@@ -1115,32 +1111,35 @@
                                     return;
                                 case 'content':
                                     stopPhrase();
-                                    ui.playing = false;
+                                    ui.playing = ui.hide = false;
                                     ui.show = 'content';
                                     redraw();
                                     return;
                                 case 'lesson':
                                     stopPhrase();
-                                    ui.playing = false;
+                                    ui.playing = ui.hide = false;
                                     ui.show = 'lesson';
                                     redraw();
                                     return;
                                 case 'phraseNum':
                                     stopPhrase();
-                                    ui.playing = false;
+                                    ui.playing = ui.hide = false;
                                     ui.show = 'phrase';
                                     redraw();
                                     return;
                                 case 'phrase':
                                     if (ui.playing) {
-                                        ui.hide = false;
                                         ui.progress = !ui.progress;
                                     } else {
-                                        stopPhrase();
-                                        ui.playing = true;
-                                        ui.progress = true;
-                                        ui.count = 0;
-                                        playPhrase(getCurrentPhrase(), false);
+                                        if (ui.hide) {
+                                            ui.hide = false;
+                                        } else {
+                                            stopPhrase();
+                                            ui.playing = true;
+                                            ui.progress = true;
+                                            ui.count = 0;
+                                            playPhrase(getCurrentPhrase(), false);
+                                        }
                                     }
                                     redraw();
                                     return;
@@ -1156,25 +1155,25 @@
                                     return;
                                 case 'prevLesson':
                                     stopPhrase();
-                                    ui.playing = false;
+                                    ui.playing = ui.hide = false;
                                     prevLesson();
                                     redraw();
                                     return;
                                 case 'nextLesson':
                                     stopPhrase();
-                                    ui.playing = false;
+                                    ui.playing = ui.hide = false;
                                     nextLesson();
                                     redraw();
                                     return;
                                 case 'prevPhrase':
                                     stopPhrase();
-                                    ui.playing = false;
+                                    ui.playing = ui.hide = false;
                                     prevPhrase();
                                     redraw();
                                     return;
                                 case 'nextPhrase':
                                     stopPhrase();
-                                    ui.playing = false;
+                                    ui.playing = ui.hide = false;
                                     nextPhrase();
                                     redraw();
                                     return;
