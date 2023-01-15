@@ -1245,7 +1245,7 @@
             onload = function() {
                 if (location.hash.length > 0)
                 {
-                    var phrases = location.hash.split('|').map(decodeURI);
+                    var phrases = location.hash.substr(1).split('|').map(decodeURI);
                     library.push(
                         { id: '_dynamic',
                           name: 'Custom Content',
