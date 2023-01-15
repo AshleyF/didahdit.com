@@ -1243,6 +1243,19 @@
             }
 
             onload = function() {
+                if (location.hash.length > 0)
+                {
+                    var phrases = location.hash.split('|').map(decodeURI);
+                    alert(phrases);
+                    localStorage.setItem('content', '_dynamic');
+                    library.push(
+                        { id: '_dynamic',
+                          name: 'Custom Content',
+                          lessons: [
+                          { id: 'CUST0',
+                            name: 'Custom',
+                            phrases: phrases}]});
+                }
                 if (location.search == '?clear-settings') localStorage.clear();
                 //testMigration();
                 migrateSettings();
@@ -1275,12 +1288,10 @@
     </body>
     <!--
         TODO:
-        - Hilight characters upon main tap
         - Tap/hold to speed advance
         - Random playback?
         - Phrase picker?
         - Keyboard control for desktop
-        - Query string driven content?
         - FavIcon
         BUG:
         - Accidental selection of canvas by the user is confusing and can't be undone!
