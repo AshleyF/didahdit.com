@@ -1246,8 +1246,6 @@
                 if (location.hash.length > 0)
                 {
                     var phrases = location.hash.split('|').map(decodeURI);
-                    alert(phrases);
-                    localStorage.setItem('content', '_dynamic');
                     library.push(
                         { id: '_dynamic',
                           name: 'Custom Content',
@@ -1255,6 +1253,7 @@
                           { id: 'CUST0',
                             name: 'Custom',
                             phrases: phrases}]});
+                    localStorage.setItem('content', '_dynamic');
                 }
                 if (location.search == '?clear-settings') localStorage.clear();
                 //testMigration();
