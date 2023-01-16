@@ -538,6 +538,11 @@
             }
 
             function setSpeed(wpm) {
+                var farnsworth = getFarnsworth();
+                if (wpm < farnsworth || getSpeed() == farnsworth)
+                {
+                    localStorage.setItem('farnsworth', wpm); // farnsworth should track (when equal) and never be faster WPM
+                }
                 localStorage.setItem('speed', wpm);
                 computeSpeedVariables(wpm, getFarnsworth());
             }
@@ -547,6 +552,10 @@
             }
 
             function setFarnsworth(farnsworthWpm) {
+                if (farnsworthWpm > getSpeed())
+                {
+                    localStorage.setItem('speed', farnsworthWpm); // farnsworth cannot be faster than WPM
+                }
                 localStorage.setItem('farnsworth', farnsworthWpm);
                 computeSpeedVariables(getSpeed(), farnsworthWpm);
             }
@@ -1027,6 +1036,31 @@
                 }
             }
 
+            function playV(n) {
+                stopPhrase();
+                continuationTimeout0 = setTimeout(function() {
+                    playTone(ditlen); // dit
+                    silence(ditlen);
+                    continuationTimeout0 = setTimeout(function() {
+                        playTone(ditlen); // dit
+                        silence(ditlen);
+                        continuationTimeout0 = setTimeout(function() {
+                            playTone(ditlen); // dit
+                            silence(ditlen);
+                            continuationTimeout0 = setTimeout(function() {
+                                playTone(ditlen * 3); // dah
+                                silence(fditlen * 7);
+                                if (n > 1) {
+                                    continuationTimeout0 = setTimeout(function() {
+                                        playV(n - 1);
+                                    }, ditlen * 3000 + fditlen * 7000);
+                                }
+                            }, ditlen * 2000);
+                        }, ditlen * 2000);
+                    }, ditlen * 2000);
+                }, 300); // small delay to allow for quick succession with cancelability
+            }
+
             function touch(x, y) {
                 if (ui.show == 'settings') {
                     if (dismissDialog(x, y)) return;
@@ -1039,52 +1073,43 @@
                                     redraw();
                                     return;
                                 case 'speed':
-                                    stopPhrase();
-                                    playPhrase('r', false);
+                                    playV(1);
                                     return;
                                 case 'speedUp':
-                                    stopPhrase();
                                     setSpeed(getSpeed() + 1);
                                     redraw();
-                                    playPhrase('vv', false);
+                                    playV(1);
                                     return;
                                 case 'speedDown':
-                                    stopPhrase();
                                     setSpeed(getSpeed() - 1);
                                     redraw();
-                                    playPhrase('vv', false);
+                                    playV(1);
                                     return;
                                 case 'farnsworth':
-                                    stopPhrase();
-                                    playPhrase('vv', false);
+                                    playV(2);
                                     return;
                                 case 'farnsworthUp':
-                                    stopPhrase();
                                     setFarnsworth(getFarnsworth() + 1);
                                     redraw();
-                                    playPhrase('vv', false);
+                                    playV(2);
                                     return;
                                 case 'farnsworthDown':
-                                    stopPhrase();
                                     setFarnsworth(getFarnsworth() - 1);
                                     redraw();
-                                    playPhrase('vv', false);
+                                    playV(2);
                                     return;
                                 case 'pitch':
-                                    stopPhrase();
-                                    playPhrase('v', false);
+                                    playV(1);
                                     return;
                                 case 'pitchUp':
-                                    stopPhrase();
                                     setPitch(getPitch() + 10);
                                     redraw();
-                                    playPhrase('v', false);
+                                    playV(1);
                                     return;
                                 case 'pitchDown':
-                                    stopPhrase();
                                     setPitch(getPitch() - 10);
                                     redraw();
-                                    playPhrase('v', false);
+                                    playV(1);
                                     return;
                             }
                         }
