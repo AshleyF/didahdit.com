@@ -34,6 +34,7 @@
             var audioStarted = false;
             var audioCtx;
             var gain;
+            var dingGain;
             var volume;
 
             function say(utterance, delay) {
@@ -111,15 +112,22 @@
                 if (!audioStarted) {
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                     var oscillator = audioCtx.createOscillator();
+                    var dingOscillator = audioCtx.createOscillator();
                     oscillator.frequency.value = 750;
+                    dingOscillator.frequency.value = 1500;
                     volume = audioCtx.createGain();
                     volume.gain.value = 1;
                     gain = audioCtx.createGain();
                     gain.gain.value = 0;
+                    dingGain = audioCtx.createGain();
+                    dingGain.gain.value = 0;
                     oscillator.connect(gain);
+                    dingOscillator.connect(dingGain);
                     gain.connect(volume);
+                    dingGain.connect(volume);
                     volume.connect(audioCtx.destination);
                     oscillator.start(0);
+                    dingOscillator.start(0);
                     audioStarted = true;
                 }
                 return audioCtx.currentTime;
@@ -191,6 +199,15 @@
                         e.preventDefault();
                     }
                 });
+                var speedKey = 0;
+                function processSpeedKey(i) {
+                    if (speedKey == 0) {
+                        speedKey = i * 10;
+                    } else {
+                        setSpeed(speedKey + i);
+                        speedKey = 0;
+                    }
+                }
                 document.body.addEventListener('keydown', (e) => {
                     if (!e.repeat && e.srcElement.id != 'message') {
                         switch (e.code) {
@@ -202,6 +219,67 @@
                                 break;
                             case 'Escape':
                                 reset();
+                                speedKey = 0;
+                                break;
+                            case 'KeyC':
+                                connect();
+                                break;
+                            case 'KeyA':
+                                setMode('A');
+                                break;
+                            case 'KeyB':
+                                setMode('B');
+                                break;
+                            case 'KeyU':
+                                setMode('U');
+                                break;
+                            case 'KeyM':
+                                setMemory(true);
+                                break;
+                            case 'KeyN':
+                                setMemory(false);
+                                break;
+                            case 'KeyT':
+                                mute(true);
+                                break;
+                            case 'KeyE':
+                                mute(false);
+                                break;
+                            case 'KeyV':
+                                startCamera();
+                                break;
+                            case 'KeyW':
+                                stopCamera();
+                                break;
+                            case 'Digit0':
+                                processSpeedKey(0);
+                                break;
+                            case 'Digit1':
+                                processSpeedKey(1);
+                                break;
+                            case 'Digit2':
+                                processSpeedKey(2);
+                                break;
+                            case 'Digit3':
+                                processSpeedKey(3);
+                                break;
+                            case 'Digit4':
+                                processSpeedKey(4);
+                                break;
+                            case 'Digit5':
+                                processSpeedKey(5);
+                                break;
+                            case 'Digit6':
+                                processSpeedKey(6);
+                                break;
+                            case 'Digit7':
+                                processSpeedKey(7);
+                                break;
+                            case 'Digit8':
+                                processSpeedKey(8);
+                                break;
+                            case 'Digit9':
+                                processSpeedKey(9);
                                 break;
                         }
                     }
@@ -651,6 +729,9 @@
                     case 53:
                         setProsign('CT');
                         break;
+                    case 54:
+                        setProsign('KN'); // overrides '(' char
+                        break;
                     case 69:
                         setProsign('SK');
                         break;
@@ -734,6 +815,13 @@
                 }
             }
 
+            function playDing() {
+                var c = audio();
+                t = c > t ? c : t;
+                dingGain.gain.linearRampToValueAtTime(0.2, t + 0.005);
+                dingGain.gain.exponentialRampToValueAtTime(0.000001, t + 2.5);
+            }
+
             function drawKeyAndToneState() {
                 if (straightDown) updateBreaks(0);
                 if (mode == 'S') handleStraightKey();
@@ -805,6 +893,7 @@
                             else {
                                 message += char;
                                 messageDisplay += "<span style='color:#f00'>" + escape(char) + "</span>";
+                                playDing();
                             }
                         }
                         simulateQso(message);
@@ -981,10 +1070,22 @@
         <a href="javascript:practiceSending('ABCDEFGHIJKLMNOPQRSTUVWXYZ ZYXWVUTSRQPONMLKJIHGFEDCBA')">ABC</a>
         <a href="javascript:practiceSending('314159265358979323846')">NUM</a>
         <a href="javascript:practiceSending('THE QUICK BROWN FOX JUMPS OVER THE LAZY DOGS BACK 70364 51289')">QBF</a>
-        <a href="javascript:practiceSending('CQ CQ CQ POTA DE KK7HXU KK7HXU K')">CQ</a>
-        <a href="javascript:practiceSending('ASHLEY DE KK7HXU')">Me</a>
-        <a href="javascript:practiceSending('BENS BEST BENT WIRE')">BBBW</a>
+        <a href="javascript:practiceSending('BENS BEST BENT WIRE/5')">BBBW</a>
         <a href="javascript:practiceSending('WHAT HATH GOD WROUGHT')">WHGW</a>
+        <hr />
+        <a href="javascript:practiceSending('CQ CQ CQ POTA DE KK7HXU KK7HXU K')">CQ</a>
+        <a href="javascript:practiceSending('NAME IS ASHLEY ASHLEY')">NAME</a>
+        <a href="javascript:practiceSending('UR RST 5NN 5NN')">RST</a>
+        <a href="javascript:practiceSending('QTH IS DEER PARK, WA DEER PARK, WA')">QTH</a>
+        <a href="javascript:practiceSending('RIG IS ICOM 7300 &lt;BT&gt; ANT IS CHA MPAS VERT &lt;BT&gt; HAM SINCE 2022')">RIG ANT HAM</a>
+        <a href="javascript:practiceSending('NAME IS ASHLEY ASHLEY ES UR RST 5NN 5NN &lt;BK&gt;')">NAME RST</a>
+        <a href="javascript:practiceSending('NAME IS ASHLEY ASHLEY ES QTH IS DEER PARK, WA DEER PARK, WA')">NAME QTH</a>
+        <hr />
+        <a href="javascript:practiceSending('CQ SST KK7HXU')">Run</a>
+        <a href="javascript:practiceSending('KA7MDM')">Search</a>
+        <a href="javascript:practiceSending('KA7MDM TU ASHLEY WA')">Found</a>
+        <a href="javascript:practiceSending('TU GREGG WA')">Pounce</a>
+        <a href="javascript:practiceSending('TU KK7HXU SST')">Bye</a>
         <hr />
         <a href="javascript:practiceSending('E T A N EEE TTT AAA NNN EEEEE TTTTT AAAAA NNNNN AN AT ANN ANT ATE EAT ETA NET TAN TAT TEA TEE TEN ANNA ANNE ANTE NATE NEAT TATE TEAT TEEN TENT EATEN TENET TENANT ANNETTE ANTENNA')">ETAN</a>
         <a href="javascript:practiceSending('O I S 1 4 OOO III SSS 111 444 TTT EEE AAA NNN OOOOO IIIII SSSSS 11111 44444 TTTTT EEEEE AAAAA NNNNN AS IN IT NO ON TO SIN ST ITS SIT SON TOO OASIS SOON SITS SOOT SOTA IAN ASIA TOSS AT SEA INN OAT ONE SEE TAO TIE NIT SAT TIN TOE SINE SONIA NOT SET INTO NOON NOSE SANS SITE NOISE OASES ONION TOT ONTO TOES NOOSE SNOT TOOT SNOOT ASSESS ASSIST INSIST EASE ASIAN ANTI NINE SANE SEAN TINA EAST N1AS N4ON S41T NO1S AI1E IT4O EA1ON ES4IT 14 41 44 11 441 141 114 411')">OIS14</a>
@@ -1016,5 +1117,6 @@
         <a href="javascript:send('5NN')">5NN</a>
         <a href="javascript:send('KK7HXU')">KK7HXU</a>
         <a href="javascript:send('ASHLEY')">ASHLEY</a>
+        <a href="javascript:send('TU ASHLEY WA')">TU ASHLEY WA</a>
     </body>
 </html>

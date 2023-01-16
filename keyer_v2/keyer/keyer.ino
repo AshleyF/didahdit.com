@@ -343,8 +343,14 @@ void decode(DitDah ditDah) {
       case 42:
         writeProsign("<AR>");
         break;
+      case 49:
+        writeProsign("<BT>");
+        break;
       case 53:
         writeProsign("<CT>");
+        break;
+      case 54:
+        writeProsign("<KN>"); // overrides '(' char
         break;
       case 66: // ....-. shift on Google Morse keyboard
         shift = true;
