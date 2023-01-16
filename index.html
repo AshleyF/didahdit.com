@@ -1282,11 +1282,17 @@
                     localStorage.setItem('phrase_CWOPS', 0); // reset phrase within (sorry)
                     localStorage.setItem('version', 3);
                 }
+                function migrateV3toV4() {
+                    // v3 had no wordsworth setting
+                    localStorage.setItem('wordsworth', localStorage.getItem('farnsworth')); // default wordsworth to match farnsworth
+                    localStorage.setItem('version', 4);
+                }
                 try
                 {
                     if ((localStorage.getItem('version') || '0') == '0') migrateV0toV1()
                     if ((localStorage.getItem('version') || '0') == '1') migrateV1toV2()
                     if ((localStorage.getItem('version') || '0') == '2') migrateV2toV3()
+                    if ((localStorage.getItem('version') || '0') == '3') migrateV3toV4()
                 } catch (e) {
                     trace('Settings migration error: ' + e);
                     localStorage.clear();
@@ -1305,6 +1311,10 @@
                 localStorage.setItem('version', 2); // v2 -> v3
                 localStorage.setItem('lesson_CWOPS', '3CC');
                 localStorage.setItem('phrase_CWOPS', 4);
+                migrateSettings();
+                localStorage.setItem('version', 3); // v3 -> v4
+                localStorage.setItem('farnsworth', 10);
+                localStorage.removeItem('wordsworth');
                 migrateSettings();
             }
 
@@ -1332,6 +1342,7 @@
                 redraw();
                 setSpeed(getSpeed());
                 setFarnsworth(getFarnsworth());
+                setWordsworth(getWordsworth());
                 document.onvisibilitychange = function(e) {
                     if (document.hidden) {
                         stopPhrase();
