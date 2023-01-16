@@ -2,6 +2,7 @@
     <head>
         <title>Learn Morse Code</title>
         <style>body { margin: 0; padding: 0; }</style>
+        <script src="NoSleep.min.js"></script>
         <script>
             var library = [
                 { id: 'CWOPS',
@@ -441,6 +442,7 @@
                                                         } else {
                                                             say('lesson complete');
                                                             ui.playing = ui.hide = false;
+                                                            noSleep.disable();
                                                             nextLesson();
                                                         }
                                                         redraw();
@@ -458,6 +460,7 @@
                         function () {
                             if (ui.playing) {
                                 ui.playing = false;
+                                noSleep.disable();
                                 redraw();
                             }
                         },
@@ -1175,24 +1178,28 @@
                                 case 'settings':
                                     stopPhrase();
                                     ui.playing = false;
+                                    noSleep.disable();
                                     ui.show = 'settings';
                                     redraw();
                                     return;
                                 case 'content':
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
+                                    noSleep.disable();
                                     ui.show = 'content';
                                     redraw();
                                     return;
                                 case 'lesson':
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
+                                    noSleep.disable();
                                     ui.show = 'lesson';
                                     redraw();
                                     return;
                                 case 'phraseNum':
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
+                                    noSleep.disable();
                                     ui.show = 'phrase';
                                     redraw();
                                     return;
@@ -1205,6 +1212,7 @@
                                         } else {
                                             stopPhrase();
                                             ui.playing = true;
+                                            noSleep.enable();
                                             ui.progress = true;
                                             ui.count = 0;
                                             playPhrase(getCurrentPhrase(), false);
@@ -1217,6 +1225,7 @@
                                     ui.count = 0;
                                     stopPhrase();
                                     ui.playing = !ui.playing;
+                                    if (ui.playing) noSleep.enable(); else noSleep.disable();
                                     if (ui.playing) {
                                         playPhrase(getCurrentPhrase(), true);
                                     }
@@ -1225,24 +1234,28 @@
                                 case 'prevLesson':
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
+                                    noSleep.disable();
                                     prevLesson();
                                     redraw();
                                     return;
                                 case 'nextLesson':
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
+                                    noSleep.disable();
                                     nextLesson();
                                     redraw();
                                     return;
                                 case 'prevPhrase':
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
+                                    noSleep.disable();
                                     prevPhrase();
                                     redraw();
                                     return;
                                 case 'nextPhrase':
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
+                                    noSleep.disable();
                                     nextPhrase();
                                     redraw();
                                     return;
@@ -1321,7 +1334,9 @@
                 migrateSettings();
             }
 
+            var noSleep;
             onload = function() {
+                noSleep = new NoSleep();
                 if (location.hash.length > 0)
                 {
                     var phrases = decodeURIComponent(location.hash.substr(1)).split('|');
@@ -1351,6 +1366,7 @@
                         stopPhrase();
                         stopAudio();
                         ui.playing = false;
+                        noSleep.disable();
                         redraw();
                     }
                 };
