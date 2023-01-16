@@ -138,6 +138,7 @@
                 dialog: { left: 0, right: 0, top: 0, bottom: 0 },
                 speed: 20,
                 farnsworth: 5,
+                wordsworth: 5,
             };
 
             function trace(message) {
@@ -376,7 +377,7 @@
                         case '/':
                             ui.count += 2;
                             redraw();
-                            silence(fditlen * 7);
+                            silence(wditlen * 7);
                             continuation(i + 1);
                             return;
                     }
@@ -400,7 +401,7 @@
                                 s += fditlen * 3;
                                 break;
                             case '/':
-                                s += fditlen * 7;
+                                s += wditlen * 7;
                                 break;
                         }
                     }
@@ -448,7 +449,7 @@
                                     ui.progress ? 0 : trainingSpeechPause);
                             }
                         },
-                        delay + fditlen * 7 * 1000);
+                        delay + wditlen * 7 * 1000);
                 } else {
                     continuationTimeout1 = setTimeout(
                         function () {
@@ -532,19 +533,27 @@
 
             var ditlen;
             var fditlen;
-            function computeSpeedVariables(wpm, farnsworth) {
+            var wditlen;
+            function computeSpeedVariables(wpm, farnsworth, wordsworth) {
                 ditlen = 1.2 / wpm;
                 fditlen = (60 / farnsworth - 31 * ditlen) / 19;
+                wditlen = (60 / wordsworth - 31 * ditlen) / 19;
             }
 
             function setSpeed(wpm) {
+                var speed = getSpeed();
                 var farnsworth = getFarnsworth();
-                if (wpm < farnsworth || getSpeed() == farnsworth)
+                if (wpm < farnsworth || speed == farnsworth)
                 {
-                    localStorage.setItem('farnsworth', wpm); // farnsworth should track (when equal) and never be faster WPM
+                    localStorage.setItem('farnsworth', wpm); // farnsworth should track (when equal) and never be faster
+                }
+                var wordsworth = getWordsworth();
+                if (wpm < wordsworth || speed == wordsworth)
+                {
+                    localStorage.setItem('wordsworth', wpm); // wordssworth should track (when equal) and never be faster
                 }
                 localStorage.setItem('speed', wpm);
-                computeSpeedVariables(wpm, getFarnsworth());
+                computeSpeedVariables(wpm, getFarnsworth(), getWordsworth());
             }
 
             function getSpeed() {
@@ -556,12 +565,34 @@
                 {
                     localStorage.setItem('speed', farnsworthWpm); // farnsworth cannot be faster than WPM
                 }
+                var wordsworth = getWordsworth();
+                if (farnsworthWpm < wordsworth || getFarnsworth() == wordsworth)
+                {
+                    localStorage.setItem('wordsworth', farnsworthWpm); // wordssworth should track (when equal) and never be faster
+                }
                 localStorage.setItem('farnsworth', farnsworthWpm);
-                computeSpeedVariables(getSpeed(), farnsworthWpm);
+                computeSpeedVariables(getSpeed(), farnsworthWpm, getWordsworth());
             }
 
             function getFarnsworth() {
                 return getIntSetting('farnsworth', 5);
+            }
+
+            function setWordsworth(wordsworthWpm) {
+                if (wordsworthWpm > getSpeed())
+                {
+                    localStorage.setItem('speed', wordsworthWpm); // wordsworth cannot be faster than WPM
+                }
+                if (wordsworthWpm > getFarnsworth())
+                {
+                    localStorage.setItem('farnsworth', wordsworthWpm); // wordsworth cannot be faster than farnsworth
+                }
+                localStorage.setItem('wordsworth', wordsworthWpm);
+                computeSpeedVariables(getSpeed(), getFarnsworth(), wordsworthWpm);
+            }
+
+            function getWordsworth() {
+                return getIntSetting('wordsworth', 5);
             }
 
             function setPitch(hz) { // TODO
@@ -808,7 +839,7 @@
                     var left = padding * (w > h ? 4 : 1);
                     var right = w - padding * (w > h ? 4 : 1);
                     var top = padding * (h > w ? 4 : 1);
-                    var bottom = top + buttonSize * 4 + padding * 6 + attributionHeight;
+                    var bottom = top + buttonSize * 5 + padding * 7 + attributionHeight;
                     ui.dialog = {
                         left: left,
                         right: right,
@@ -937,7 +968,8 @@
                     }
                     drawUpDownControl('Speed', 'speed', getSpeed(), 5, 50, top + padding * 2 + buttonSize);
                     drawUpDownControl('Farnsworth', 'farnsworth', getFarnsworth(), 1, 50, top + padding * 3 + buttonSize * 2);
-                    drawUpDownControl('Pitch', 'pitch', getPitch(), 100, 900, top + padding * 4 + buttonSize * 3);
+                    drawUpDownControl('Wordsworth', 'wordsworth', getWordsworth(), 1, 50, top + padding * 4 + buttonSize * 3);
+                    drawUpDownControl('Pitch', 'pitch', getPitch(), 100, 900, top + padding * 5 + buttonSize * 4);
                     ui.buttons = buttons;
                 }
                 function drawMenu(len, fnGetId, fnGetName) {
@@ -1040,25 +1072,21 @@
                 stopPhrase();
                 continuationTimeout0 = setTimeout(function() {
                     playTone(ditlen); // dit
-                    silence(ditlen);
                     continuationTimeout0 = setTimeout(function() {
                         playTone(ditlen); // dit
-                        silence(ditlen);
                         continuationTimeout0 = setTimeout(function() {
                             playTone(ditlen); // dit
-                            silence(ditlen);
                             continuationTimeout0 = setTimeout(function() {
                                 playTone(ditlen * 3); // dah
-                                silence(fditlen * 7);
                                 if (n > 1) {
                                     continuationTimeout0 = setTimeout(function() {
                                         playV(n - 1);
-                                    }, ditlen * 3000 + fditlen * 7000);
+                                    }, ditlen * 3000 + wditlen * 7000);
                                 }
                             }, ditlen * 2000);
                         }, ditlen * 2000);
                     }, ditlen * 2000);
-                }, 300); // small delay to allow for quick succession with cancelability
+                }, 200); // small delay to allow for quick succession with cancelability
             }
 
             function touch(x, y) {
@@ -1095,6 +1123,19 @@
                                     return;
                                 case 'farnsworthDown':
                                     setFarnsworth(getFarnsworth() - 1);
+                                    redraw();
+                                    playV(2);
+                                    return;
+                                case 'wordsworth':
+                                    playV(2);
+                                    return;
+                                case 'wordsworthUp':
+                                    setWordsworth(getWordsworth() + 1);
+                                    redraw();
+                                    playV(2);
+                                    return;
+                                case 'wordsworthDown':
+                                    setWordsworth(getWordsworth() - 1);
                                     redraw();
                                     playV(2);
                                     return;
