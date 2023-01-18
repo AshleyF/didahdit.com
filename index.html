@@ -497,7 +497,12 @@
 
             function setLessonNum(num) {
                 var content = getContent();
-                localStorage.setItem('lesson_' + content.id, content.lessons[num].id);
+                var key = 'lesson_' + content.id;
+                var id = content.lessons[num].id;
+                if (localStorage.getItem(key) != id) {
+                    localStorage.setItem(key, id);
+                    localStorage.removeItem('random_seed_' + content.id); // force rescramble
+                }
             }
 
             function setLesson(id) {
@@ -513,6 +518,10 @@
 
             function getIntSetting(name, dflt) {
                 return parseInt(localStorage.getItem(name) || dflt);
+            }
+
+            function getBoolSetting(name, dflt) {
+                return localStorage.getItem(name) === 'true' || dflt;
             }
 
             function getPhraseNum() {
@@ -601,13 +610,21 @@
                 return getIntSetting('wordsworth', 5);
             }
 
-            function setPitch(hz) { // TODO
+            function setPitch(hz) {
                 localStorage.setItem('pitch', hz);
                 if (audioStarted) toneOscillator.frequency.value = hz;
             }
 
-            function getPitch() { // TODO
+            function getPitch() {
                 return getIntSetting('pitch', 650);
+            }
+
+            function setScramble(scramble) {
+                localStorage.setItem('scramble', scramble);
+            }
+
+            function getScramble() {
+                return getBoolSetting('scramble', false);
             }
 
             function resizeCanvas() {
@@ -645,6 +662,10 @@
                 ctx.fillStyle = backgroundColor;
                 ctx.fillRect(0, 0, w, h);
                 document.body.style.backgroundColor = backgroundColor;
+
+                function randomPhrase(index, len) {
+                    return getScramble() ? Math.floor(Math.random() * len) : index;
+                }
 
                 function drawFittedText(txt, color, x, y, width, height, weight, actual, align, progress, count, overlay) {
                     ctx.fillStyle = color;
@@ -802,7 +823,8 @@
                 var phraseY = buttonSize + padding * 2 + progressHeight;
                 var phraseWidth = w - padding * 2;
                 var phraseHeight = h - padding * 4 - progressHeight - buttonSize - buttonSize * largeButton;
-                var phrase = convertPhrase(content.lessons[lessonNum].phrases[phraseNum]); 
+                var phraseIndex = randomPhrase(phraseNum, content.lessons[lessonNum].phrases.length);
+                var phrase = convertPhrase(content.lessons[lessonNum].phrases[phraseIndex]); 
                 if (ui.playing && ui.progress && phrase.length > ui.count) {
                     if (phrase[ui.count - 1] == '<' || phrase[ui.count - 2] == '<') {
                         while (phrase[ui.count++] != '>');
@@ -841,11 +863,10 @@
                 if (ui.show == 'settings') {
                     ctx.fillStyle = dimColor;
                     ctx.fillRect(0, 0, w, h);
-                    const attributionHeight = padding;
                     var left = padding * (w > h ? 4 : 1);
                     var right = w - padding * (w > h ? 4 : 1);
                     var top = padding * (h > w ? 4 : 1);
-                    var bottom = top + buttonSize * 5 + padding * 7 + attributionHeight;
+                    var bottom = top + buttonSize * 6 + padding * 7;
                     ui.dialog = {
                         left: left,
                         right: right,
@@ -853,66 +874,59 @@
                         bottom: bottom
                     };
                     fillRoundedRect(left, top, right, bottom, padding, dialogBackgroundColor);
-                    drawFittedText(
-                        'Feedback to Ashley 73 de KK7HXU',
-                        dialogAttributionColor,
-                        left + padding,
-                        bottom - padding - attributionHeight,
-                        right - left - padding * 2,
-                        attributionHeight,
-                        'normal',
-                        false,
-                        'center');
-                    drawFittedText(
-                        'Light/Dark:',
-                        subduedButtonColor,
-                        left + padding,
-                        top + padding,
-                        right - padding - buttonSize * 3,
-                        buttonSize,
-                        'normal',
-                        false,
-                        'left');
                     controlLeft = right - padding - buttonSize * 3;
                     const switchThinFactor = 1.1;
-                    fillRoundedRect(
-                        controlLeft + padding * switchThinFactor,
-                        top + padding * switchThinFactor,
-                        right - padding * switchThinFactor - padding,
-                        top + padding / switchThinFactor + buttonSize,
-                        buttonSize / switchThinFactor / 2,
-                        subduedButtonColor);
+                    function drawSwitch(name, label, switchText, on, top) {
+                        drawFittedText(
+                            label,
+                            subduedButtonColor,
+                            left + padding,
+                            top + padding,
+                            right - padding - buttonSize * 3,
+                            buttonSize,
+                            'normal',
+                            false,
+                            'left');
+                        fillRoundedRect(
+                            controlLeft + padding * switchThinFactor,
+                            top + padding * switchThinFactor,
+                            right - padding * switchThinFactor - padding,
+                            top + padding / switchThinFactor + buttonSize,
+                            buttonSize / switchThinFactor / 2,
+                            subduedButtonColor);
+                        ctx.beginPath();
+                        ctx.arc(
+                            (on ? right - padding * 2 - buttonSize : controlLeft + padding) + buttonSize / 2,
+                            top + padding + buttonSize / 2,
+                            buttonSize / 2,
+                            0,
+                            2 * Math.PI,
+                            false);
+                        ctx.fillStyle = backgroundColor;
+                        ctx.fill();
+                        ctx.lineWidth = padding / 10;
+                        ctx.strokeStyle = subduedButtonColor;
+                        ctx.stroke();
+                        var margin = buttonSize / 4;
+                        drawFittedText(
+                            switchText,
+                            subduedButtonColor,
+                            (on ? right - padding * 2 - buttonSize : controlLeft + padding) + margin,
+                            top + padding + margin,
+                            buttonSize - margin * 2,
+                            buttonSize - margin * 2,
+                            'normal',
+                            true,
+                            'center');
+                        buttons.push({
+                            name: name,
+                            left: controlLeft,
+                            top: top,
+                            right: right,
+                            bottom: top + buttonSize + padding / 2 })
+                    }
                     var dark = getDarkMode();
-                    ctx.beginPath();
-                    ctx.arc(
-                        (dark ? right - padding * 2 - buttonSize : controlLeft + padding) + buttonSize / 2,
-                        top + padding + buttonSize / 2,
-                        buttonSize / 2,
-                        0,
-                        2 * Math.PI,
-                        false);
-                    ctx.fillStyle = backgroundColor;
-                    ctx.fill();
-                    ctx.lineWidth = padding / 10;
-                    ctx.strokeStyle = subduedButtonColor;
-                    ctx.stroke();
-                    var margin = buttonSize / 4;
-                    drawFittedText(
-                        dark ? '☽' : '☼',
-                        subduedButtonColor,
-                        (dark ? right - padding * 2 - buttonSize : controlLeft + padding) + margin,
-                        top + padding + margin,
-                        buttonSize - margin * 2,
-                        buttonSize - margin * 2,
-                        'normal',
-                        true,
-                        'center');
-                    buttons.push({
-                        name: 'mode',
-                        left: controlLeft,
-                        top: top,
-                        right: right,
-                        bottom: top + buttonSize + padding / 2 })
+                    drawSwitch('mode', 'Light/Dark:', dark ? '☽' : '☼', dark, top);
                     function drawUpDownControl(label, name, val, min, max, row) {
                         drawFittedText(
                             label,
@@ -976,6 +990,9 @@
                     drawUpDownControl('Farnsworth', 'farnsworth', getFarnsworth(), 1, 50, top + padding * 3 + buttonSize * 2);
                     drawUpDownControl('Wordsworth', 'wordsworth', getWordsworth(), 1, 50, top + padding * 4 + buttonSize * 3);
                     drawUpDownControl('Pitch', 'pitch', getPitch(), 100, 900, top + padding * 5 + buttonSize * 4);
+                    var scramble = getScramble();
+                    var y = top + padding * 5 + buttonSize * 5;
+                    drawSwitch('scramble', 'Scramble:', scramble ? 'on' : 'off', scramble, y);
                     ui.buttons = buttons;
                 }
                 function drawMenu(len, fnGetId, fnGetName) {
@@ -1157,6 +1174,10 @@
                                     setPitch(getPitch() - 10);
                                     redraw();
                                     playV(1);
+                                    return;
+                                case 'scramble':
+                                    setScramble(!getScramble());
+                                    redraw();
                                     return;
                             }
                         }
