@@ -1339,7 +1339,8 @@
                 noSleep = new NoSleep();
                 if (location.hash.length > 0)
                 {
-                    var phrases = decodeURIComponent(location.hash.substr(1)).split('|');
+                    var hash = decodeURIComponent(location.hash.substr(1));
+                    var phrases = hash.split('|');
                     library.push(
                         { id: '_dynamic',
                           name: 'Custom Content',
@@ -1347,7 +1348,10 @@
                           { id: 'CUST0',
                             name: 'Custom',
                             phrases: phrases}]});
-                    localStorage.setItem('content', '_dynamic');
+                    if (localStorage.getItem('lasthash') != hash) {
+                        localStorage.setItem('lasthash', hash);
+                        localStorage.setItem('content', '_dynamic');
+                    }
                 }
                 if (location.search == '?clear-settings') localStorage.clear();
                 //testMigration();
