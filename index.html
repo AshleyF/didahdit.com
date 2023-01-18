@@ -317,8 +317,20 @@
                 if (continuationTimeout1) clearTimeout(continuationTimeout1);
             }
 
+            function randomPhrase(index, len) {
+                if (getScramble()) {
+                    const m = 0x80000000; // 2**31;
+                    var r = ((1103515245 * index + 12345) % m) / (m - 1);
+                    return Math.floor(r * len);
+                } else {
+                    return index;
+                }
+            }
+
             function getCurrentPhrase() {
-                return getContent().lessons[getLessonNum()].phrases[getPhraseNum()]
+                var phrases = getContent().lessons[getLessonNum()].phrases;
+                var phraseIndex = randomPhrase(getPhraseNum(), phrases.length);
+                return phrases[phraseIndex]
             }
 
             function encodePhrase(phrase) {
@@ -662,10 +674,6 @@
                 ctx.fillStyle = backgroundColor;
                 ctx.fillRect(0, 0, w, h);
                 document.body.style.backgroundColor = backgroundColor;
-
-                function randomPhrase(index, len) {
-                    return getScramble() ? Math.floor(Math.random() * len) : index;
-                }
 
                 function drawFittedText(txt, color, x, y, width, height, weight, actual, align, progress, count, overlay) {
                     ctx.fillStyle = color;
@@ -1358,6 +1366,8 @@
             var noSleep;
             onload = function() {
                 noSleep = new NoSleep();
+                //noSleep.enable = function() {};
+                //noSleep.disable = function() {};
                 if (location.hash.length > 0)
                 {
                     var hash = decodeURIComponent(location.hash.substr(1));
