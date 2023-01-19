@@ -317,11 +317,34 @@
                 if (continuationTimeout1) clearTimeout(continuationTimeout1);
             }
 
+            var shuffleCache = {};
             function randomPhrase(index, len) {
                 if (getScramble()) {
-                    const m = 0x80000000; // 2**31;
-                    var r = ((1103515245 * index + 12345) % m) / (m - 1);
-                    return Math.floor(r * len);
+                    var id = 'shuffle_' + getContent().id;
+                    var shuffle = shuffleCache[id];
+                    if (shuffle == null)
+                    {
+                        shuffle = localStorage.getItem(id);
+                        if (shuffle != null) {
+                            try {
+                                shuffle = JSON.parse(shuffle);
+                            } catch { }
+                        }
+                    }
+                    if (shuffle == null || shuffle.length != len) {
+                        shuffle = [];
+                        for (var i = 0; i < len; i++) { shuffle.push(i); }
+                        for (var i = len - 1; i > 0; i--)
+                        {
+                            var r = Math.floor(Math.random() * i); // swap with random
+                            var t = shuffle[r];
+                            shuffle[r] = shuffle[i];
+                            shuffle[i] = t;
+                        }
+                        localStorage.setItem(id, JSON.stringify(shuffle));
+                        shuffleCache[id] = shuffle;
+                    }
+                    return shuffle[index];
                 } else {
                     return index;
                 }
@@ -513,7 +536,7 @@
                 var id = content.lessons[num].id;
                 if (localStorage.getItem(key) != id) {
                     localStorage.setItem(key, id);
-                    localStorage.removeItem('random_seed_' + content.id); // force rescramble
+                    localStorage.removeItem('shuffle_' + content.id); // force rescramble
                 }
             }
 
