@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>Learn Morse Code</title>
+        <title>CW Practice</title>
         <style>body { margin: 0; padding: 0; }</style>
         <script src="NoSleep.min.js"></script>
         <script>
@@ -1158,7 +1158,7 @@
                             }, ditlen * 2000);
                         }, ditlen * 2000);
                     }, ditlen * 2000);
-                }, 400); // small delay to allow for quick succession with cancelability
+                }, 550); // small delay to allow for quick succession with cancelability (and repeate timeout to start)
             }
 
             function touch(x, y) {
@@ -1169,10 +1169,12 @@
                         if (x >= button.left && x <= button.right && y >= button.top && y <= button.bottom) {
                             switch (button.name) {
                                 case 'mode':
+                                    cancelRepeat();
                                     setDarkMode(!getDarkMode());
                                     redraw();
                                     return;
                                 case 'speed':
+                                    cancelRepeat();
                                     playV(1);
                                     return;
                                 case 'speedUp':
@@ -1186,6 +1188,7 @@
                                     playV(1);
                                     return;
                                 case 'farnsworth':
+                                    cancelRepeat();
                                     playV(2);
                                     return;
                                 case 'farnsworthUp':
@@ -1199,6 +1202,7 @@
                                     playV(2);
                                     return;
                                 case 'wordsworth':
+                                    cancelRepeat();
                                     playV(2);
                                     return;
                                 case 'wordsworthUp':
@@ -1212,6 +1216,7 @@
                                     playV(2);
                                     return;
                                 case 'pitch':
+                                    cancelRepeat();
                                     playV(1);
                                     return;
                                 case 'pitchUp':
@@ -1225,6 +1230,7 @@
                                     playV(1);
                                     return;
                                 case 'scramble':
+                                    cancelRepeat();
                                     setScramble(!getScramble());
                                     redraw();
                                     return;
@@ -1246,6 +1252,7 @@
                         if (x >= button.left && x <= button.right && y >= button.top && y <= button.bottom) {
                             switch (button.name) {
                                 case 'settings':
+                                    cancelRepeat();
                                     stopPhrase();
                                     ui.playing = false;
                                     noSleep.disable();
@@ -1253,6 +1260,7 @@
                                     redraw();
                                     return;
                                 case 'content':
+                                    cancelRepeat();
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
                                     noSleep.disable();
@@ -1260,6 +1268,7 @@
                                     redraw();
                                     return;
                                 case 'lesson':
+                                    cancelRepeat();
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
                                     noSleep.disable();
@@ -1267,6 +1276,7 @@
                                     redraw();
                                     return;
                                 case 'phraseNum':
+                                    cancelRepeat();
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
                                     noSleep.disable();
@@ -1274,6 +1284,7 @@
                                     redraw();
                                     return;
                                 case 'phrase':
+                                    cancelRepeat();
                                     if (ui.playing) {
                                         ui.progress = !ui.progress;
                                     } else {
@@ -1291,6 +1302,7 @@
                                     redraw();
                                     return;
                                 case 'playPause':
+                                    cancelRepeat();
                                     ui.progress = false;
                                     ui.count = 0;
                                     stopPhrase();
@@ -1302,6 +1314,7 @@
                                     redraw();
                                     return;
                                 case 'prevLesson':
+                                    cancelRepeat();
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
                                     noSleep.disable();
@@ -1309,6 +1322,7 @@
                                     redraw();
                                     return;
                                 case 'nextLesson':
+                                    cancelRepeat();
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
                                     noSleep.disable();
@@ -1404,6 +1418,11 @@
                 migrateSettings();
             }
 
+            var repeatTimer = null;
+            function cancelRepeat() {
+                clearTimeout(repeatTimer);
+            }
+
             var noSleep;
             onload = function() {
                 noSleep = new NoSleep();
@@ -1430,8 +1449,17 @@
                 migrateSettings();
                 var ratio = devicePixelRatio;
                 canvas = document.getElementById('canvas');
-                canvas.onmousedown = function(e) { e.preventDefault(); touch(e.x * ratio, e.y * ratio); };
-
+                canvas.ontouchstart = function(e) {
+                    e.preventDefault();
+                    var p = e.touches[0];
+                    var x = p.pageX * ratio;
+                    var y = p.pageY * ratio;
+                    repeatTimer = setTimeout(function() {
+                        repeatTimer = setInterval(function() { touch(x, y); }, 150);
+                    }, 350);
+                    touch(x, y);
+                };
+                canvas.ontouchend = function(e) { cancelRepeat() };
                 resizeCanvas();
                 redraw();
                 setSpeed(getSpeed());
@@ -1459,12 +1487,8 @@
     </body>
     <!--
         TODO:
-        - Tap/hold to speed advance
-        - Random playback?
         - Phrase picker?
         - Keyboard control for desktop
         - FavIcon
-        BUG:
-        - Accidental selection of canvas by the user is confusing and can't be undone!
     -->
 </html>
