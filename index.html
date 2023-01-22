@@ -1449,16 +1449,30 @@
                 migrateSettings();
                 var ratio = devicePixelRatio;
                 canvas = document.getElementById('canvas');
+                var firstPress = true;
                 canvas.ontouchstart = function(e) {
-                    e.preventDefault();
-                    var p = e.touches[0];
-                    var x = p.pageX * ratio;
-                    var y = p.pageY * ratio;
-                    repeatTimer = setTimeout(function() {
-                        repeatTimer = setInterval(function() { touch(x, y); }, 150);
-                    }, 350);
-                    touch(x, y);
+                    if (!firstPress) {
+                        e.preventDefault();
+                        var p = e.touches[0];
+                        var x = p.pageX * ratio;
+                        var y = p.pageY * ratio;
+                        repeatTimer = setTimeout(function() {
+                            repeatTimer = setInterval(function() { touch(x, y); }, 150);
+                        }, 350);
+                        touch(x, y);
+                    }
                 };
+                canvas.onmousedown = function(e) {
+                    // audio and speech must be enabled during first user interaction
+                    // and ontouchstart doesn't seem to count, so first touch does this
+                    // and repeating doesn't work. Thereafter, ontouchstart takes over.
+                    if (firstPress) {
+                        firstPress = false;
+                        say('');
+                        audio();
+                        touch(e.x * ratio, e.y * ratio);
+                    }
+                }
                 canvas.ontouchend = function(e) { cancelRepeat() };
                 resizeCanvas();
                 redraw();
