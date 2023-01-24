@@ -113,7 +113,7 @@
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                     var oscillator = audioCtx.createOscillator();
                     var dingOscillator = audioCtx.createOscillator();
-                    oscillator.frequency.value = 750;
+                    oscillator.frequency.value = 600;
                     dingOscillator.frequency.value = 1500;
                     volume = audioCtx.createGain();
                     volume.gain.value = 1;
