@@ -1490,6 +1490,9 @@
                         redraw();
                     }
                 };
+                window.onblur = function(e) {
+                    cancelRepeat();
+                }
             }
 
             onresize = function() {
