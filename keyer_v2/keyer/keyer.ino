@@ -286,8 +286,8 @@ void writeKeyboardChar(char c) {
 }
 
 void writeKeyboardPaddles(bool left, bool right) {
-    //if (left) Keyboard.press(','); else Keyboard.release(',');
-    //if (right) Keyboard.press('.'); else Keyboard.release('.');
+    if (left) Keyboard.press(KEY_LEFT_CTRL); else Keyboard.release(KEY_LEFT_CTRL);
+    if (right) Keyboard.press(KEY_RIGHT_CTRL); else Keyboard.release(KEY_RIGHT_CTRL);
 }
 
 void writeProsign(char* sign) {
