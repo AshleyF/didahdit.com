@@ -2,6 +2,7 @@
     <head>
         <title>CW Practice</title>
         <style>body { margin: 0; padding: 0; }</style>
+        <meta name="viewport" content="width=device-width" />
         <script src="NoSleep.min.js"></script>
         <script>
             var library = [
@@ -682,11 +683,9 @@
             }
 
             function resizeCanvas() {
-                var ratio = devicePixelRatio;
+                var ratio = 1; // devicePixelRatio;
                 var w = window.innerWidth;
                 var h = window.innerHeight;
-                //var w = document.body.clientWidth;
-                //var h = document.body.clientHeight;
                 canvas.width = w * ratio;
                 canvas.height = h * ratio;
                 canvas.style.width = w + 'px';
@@ -1448,7 +1447,7 @@
                 if (location.search == '?clear-settings') localStorage.clear();
                 //testMigration();
                 migrateSettings();
-                var ratio = devicePixelRatio;
+                var ratio = 1; // devicePixelRatio;
                 canvas = document.getElementById('canvas');
                 var firstPress = true;
                 var noTouch = true; // until first event
