@@ -473,7 +473,7 @@
                 var code = encodePhrase(convertPhrase(phrase));
                 playCode(code);
                 const trainingSpeechPause = 2000;
-                const trainingSpeechCharacterPause = 120;
+                const trainingSpeechCharacterPause = 130;
                 var delay = codeMilliseconds(code);
                 if (speakAndAdvance) {
                     continuationTimeout1 = setTimeout(
@@ -509,7 +509,7 @@
                                     ui.progress ? 0 : trainingSpeechPause);
                             }
                         },
-                        delay + wditlen * 7 * 1000);
+                        delay + ditlen * 7 * 1000); // not farnsworth/wordsworth at end, just 7*ditlen
                 } else {
                     continuationTimeout1 = setTimeout(
                         function () {

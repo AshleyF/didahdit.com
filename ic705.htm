@@ -62,20 +62,11 @@
                 });
             }
             
-            function disconnect() {
-                if (connectedPort != null) {
-                    connectedPort.close();
-                    connectedPort = null;
-                    // TODO: reader busy/locked https://stackoverflow.com/questions/65748344/how-can-i-interrupt-a-reader-when-it-hangs-need-a-timeout-on-reader-read
-                }
-            }
-
-            //function sendByte(b) {
+            //function disconnect() {
             //    if (connectedPort != null) {
-            //        const writer = connectedPort.writable.getWriter();
-            //        writer.write(new Uint8Array([b])).then(() => {
-            //            writer.releaseLock();
-            //        });
+            //        connectedPort.close();
+            //        connectedPort = null;
+            //        // TODO: reader busy/locked https://stackoverflow.com/questions/65748344/how-can-i-interrupt-a-reader-when-it-hangs-need-a-timeout-on-reader-read
             //    }
             //}
 
@@ -102,63 +93,66 @@
                 }
             }
 
+            var writer = null;
+            function sendCommand(command, subcommand, data, transceiver, controller) {
+                if (connectedPort != null) {
+                    var message = [0xfe, 0xfe]; // preamble
+                    message.push(transceiver || 0xa4); // transceiver address (default 0xa4, IC-705)
+                    message.push(controller || 0xe0); // default controller address
+                    message.push(command);
+                    if (subcommand) message.push(subcommand);
+                    if (data) message = message.concat(data);
+                    message.push(0xfd); // end of message
+                    if (!writer) writer = connectedPort.writable.getWriter();
+                    //const writer = connectedPort.writable.getWriter();
+                    writer.write(new Uint8Array(message));
+                    //writer.write(new Uint8Array(message)).then(() => { writer.releaseLock(); });
+                }
+            }
+
+            function speakMode() {
+                sendCommand(0x13 /* speak */, 0x02 /* mode */);
+            }
+
+            function setMode(mode) {
+                sendCommand(0x01 /* send mode data */, mode);
+            }
+
+            function setModeCW() {
+                setMode(0x03 /* CW */);
+            }
+
+            function setModeLSB() {
+                setMode(0x00 /* LSB */);
+            }
+
+            function setModeUSB() {
+                setMode(0x01 /* USB */);
+            }
+
+            function sendCW(message) {
+                var ascii = [];
+                for (var i in message) {
+                    ascii.push(message.charCodeAt(i));
+                }
+                sendCommand(0x17 /* send CW */, null, ascii);
+            }
+
             function test() {
                 log("Testing");
-                if (connectedPort != null) {
-                    const writer = connectedPort.writable.getWriter();
-                    writer.write(new Uint8Array([
-                        //0xfe, // preamble
-                        //0xfe, // preamble
-                        //0xa4, // default transceiver address
-                        //0xe0, // default controller address
-                        //0x13, // speak
-                        //0x02, // mode
-                        //0xfd, // end of message
-
-                        0xfe, // preamble
-                        0xfe, // preamble
-                        0xa4, // default transceiver address
-                        0xe0, // default controller address
-                        0x17, // send CW
-                        0x41, // A
-                        0x42, // B
-                        0x43, // C
-                        0xfd, // end of message
-
-                        0xfe, // preamble
-                        0xfe, // preamble
-                        0xa4, // default transceiver address
-                        0xe0, // default controller address
-                        0x27, // scope
-                        0x10, // status
-                        0x01, // on
-                        0xfd, // end of message
-
-                        0xfe, // preamble
-                        0xfe, // preamble
-                        0xa4, // default transceiver address
-                        0xe0, // default controller address
-                        0x27, // scope
-                        0x11, // wave data
-                        0x01, // on
-                        0xfd, // end of message
-
-                        0xfe, // preamble
-                        0xfe, // preamble
-                        0xa4, // default transceiver address
-                        0xe0, // default controller address
-                        0x27, // scope
-                        0x00, // read waveform data
-                        0xfd, // end of message
-                    ])).then(() => {
-                        writer.releaseLock();
-                    });
-                }
+                sendCW("cq pota");
+                sendCW(" kk7hxu");
+                sendCW(" ^kn test");
+                //sendCW("I love you Tracey");
+                //sendCW("Ann");
             }
         </script>
     </head>
     <body onload="load()">
         <h5 id="log"></h5>
+        <a href="javascript:setModeCW()">CW</a>
+        <a href="javascript:setModeUSB()">USB</a>
+        <a href="javascript:setModeLSB()">LSB</a>
         <a href="javascript:test()">Test</a>
     </body>
 </html>
