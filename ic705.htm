@@ -1,0 +1,164 @@
+<html>
+    <head>
+        <title>Icom 705 CI-V Test</title>
+        <style>
+            body {
+                background-color: black;
+                color: white;
+                font-family: sans-serif;
+                cursor: hand }
+            a { color: #eee; }
+            button { background-color: #555; color: #eee; }
+            textarea { background-color: #555; color: #eee; }
+            h5 { color: #555; }
+            hr { color: #555; }
+        </style>
+        <script>
+            var connectedPort = null;
+
+            function load() {
+                if ('serial' in navigator) {
+                    navigator.serial.addEventListener('connect', (e) => {
+                        // Connect to `e.target` or add it to a list of available ports.
+                        //alert('Connected: ' + JSON.stringify(e));
+                    });
+                    navigator.serial.addEventListener('disconnect', (e) => {
+                        // Remove `e.target` from the list of available ports.
+                        //alert('Disconnected: ' + JSON.stringify(e));
+                    });
+                } else {
+                    alert('SERIAL UNAVAILABLE'); // The Web Serial API is supported.
+                }
+                document.body.addEventListener('keydown', (e) => {
+                    if (!e.repeat && e.srcElement.id != 'message') {
+                        switch (e.code) {
+                            case 'KeyC':
+                                connect();
+                                break;
+                        }
+                    }
+                });
+                read();
+            }
+
+            function connect() {
+                // const port = await navigator.serial.requestPort();
+                //const usbVendorId = 0xABCD;
+                //navigator.serial.requestPort({ filters: [{ usbVendorId }]}).then((port) => {
+                navigator.serial.requestPort().then((port) => {
+                    // Connect to `port` or add it to the list of available ports.
+                    port.open({ baudRate: 115200 }).then(() => {
+                        connectedPort = port;
+                    }).catch(e => {
+                        alert('ERROR OPENING: ' + e);
+                    });
+                    //navigator.serial.getPorts().then((ports) => {
+                    //    // Initialize the list of available ports with `ports` on page load.
+                    //    alert('Ports: ' + JSON.stringify(ports));
+                    //});
+                }).catch((e) => {
+                    // The user didn't select a port.
+                    alert('ERROR NO PORT CHOSEN: ' + JSON.stringify(e));
+                });
+            }
+            
+            function disconnect() {
+                if (connectedPort != null) {
+                    connectedPort.close();
+                    connectedPort = null;
+                    // TODO: reader busy/locked https://stackoverflow.com/questions/65748344/how-can-i-interrupt-a-reader-when-it-hangs-need-a-timeout-on-reader-read
+                }
+            }
+
+            //function sendByte(b) {
+            //    if (connectedPort != null) {
+            //        const writer = connectedPort.writable.getWriter();
+            //        writer.write(new Uint8Array([b])).then(() => {
+            //            writer.releaseLock();
+            //        });
+            //    }
+            //}
+
+            function log(message) {
+                document.getElementById('log').innerHTML += '<br />' + message;
+            }
+
+            function read() {
+                if (connectedPort != null) {
+                    const reader = connectedPort.readable.getReader();
+                    reader.read().then(x =>
+                    {
+                        var msg = "Read: ";
+                        for (var i in x.value) {
+                            var v = x.value[i];
+                            msg += v + " ";
+                        }
+                        log(msg);
+                        reader.releaseLock();
+                        window.setTimeout(read, 10);
+                    });
+                } else {
+                    window.setTimeout(read, 10);
+                }
+            }
+
+            function test() {
+                log("Testing");
+                if (connectedPort != null) {
+                    const writer = connectedPort.writable.getWriter();
+                    writer.write(new Uint8Array([
+                        //0xfe, // preamble
+                        //0xfe, // preamble
+                        //0xa4, // default transceiver address
+                        //0xe0, // default controller address
+                        //0x13, // speak
+                        //0x02, // mode
+                        //0xfd, // end of message
+
+                        0xfe, // preamble
+                        0xfe, // preamble
+                        0xa4, // default transceiver address
+                        0xe0, // default controller address
+                        0x17, // send CW
+                        0x41, // A
+                        0x42, // B
+                        0x43, // C
+                        0xfd, // end of message
+
+                        0xfe, // preamble
+                        0xfe, // preamble
+                        0xa4, // default transceiver address
+                        0xe0, // default controller address
+                        0x27, // scope
+                        0x10, // status
+                        0x01, // on
+                        0xfd, // end of message
+
+                        0xfe, // preamble
+                        0xfe, // preamble
+                        0xa4, // default transceiver address
+                        0xe0, // default controller address
+                        0x27, // scope
+                        0x11, // wave data
+                        0x01, // on
+                        0xfd, // end of message
+
+                        0xfe, // preamble
+                        0xfe, // preamble
+                        0xa4, // default transceiver address
+                        0xe0, // default controller address
+                        0x27, // scope
+                        0x00, // read waveform data
+                        0xfd, // end of message
+                    ])).then(() => {
+                        writer.releaseLock();
+                    });
+                }
+            }
+        </script>
+    </head>
+    <body onload="load()">
+        <h5 id="log"></h5>
+        <a href="javascript:test()">Test</a>
+    </body>
+</html>
