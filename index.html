@@ -473,7 +473,7 @@
                 var code = encodePhrase(convertPhrase(phrase));
                 playCode(code);
                 const trainingSpeechPause = 2000;
-                const trainingSpeechCharacterPause = 110;
+                const trainingSpeechCharacterPause = 120;
                 var delay = codeMilliseconds(code);
                 if (speakAndAdvance) {
                     continuationTimeout1 = setTimeout(
@@ -1451,37 +1451,41 @@
                 canvas = document.getElementById('canvas');
                 var firstPress = true;
                 var noTouch = true; // until first event
+                function repeatTouch(x, y) {
+                    cancelRepeat(); // in case touchend was lost somehow
+                    repeatTimer = setTimeout(function() {
+                        repeatTimer = setInterval(function() { touch(x, y); }, 150);
+                    }, 350);
+                    touch(x, y);
+                }
                 canvas.ontouchstart = function(e) {
                     noTouch = false;
                     if (!firstPress) {
                         e.preventDefault();
                         var p = e.touches[0];
-                        var x = p.pageX * ratio;
-                        var y = p.pageY * ratio;
-                        cancelRepeat(); // in case touchend was lost somehow
-                        repeatTimer = setTimeout(function() {
-                            repeatTimer = setInterval(function() { touch(x, y); }, 150);
-                        }, 350);
-                        touch(x, y);
+                        repeatTouch(p.pageX * ratio, p.pageY * ratio);
                     }
                 };
                 canvas.onmousedown = function(e) {
                     // audio and speech must be enabled during first user interaction
                     // and ontouchstart doesn't seem to count, so first touch does this
                     // and repeating doesn't work. Thereafter, ontouchstart takes over.
+                    var x = e.x * ratio;
+                    var y = e.y * ratio;
                     if (firstPress) {
                         firstPress = false;
                         say('');
                         audio();
-                        touch(e.x * ratio, e.y * ratio);
+                        repeatTouch(x, y);
                         return;
                     }
                     if (noTouch)
                     {
-                        touch(e.x * ratio, e.y * ratio);
+                        repeatTouch(x, y);
                     }
                 }
-                canvas.ontouchend = function(e) { cancelRepeat() };
+                canvas.ontouchend = function(e) { cancelRepeat(); };
+                canvas.onmouseup = function(e) { cancelRepeat(); }
                 resizeCanvas();
                 redraw();
                 setSpeed(getSpeed());
