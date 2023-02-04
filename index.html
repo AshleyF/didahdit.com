@@ -492,11 +492,7 @@
                                                         if (nextPhrase()) {
                                                             ui.count = 0;
                                                             var play = function() { playPhrase(getCurrentPhrase(), speakAndAdvance, false) };
-                                                            if (ui.progress) {
-                                                                continuationTimeout1 = setTimeout(play, fditlen * 3 * 1000);
-                                                            } else {
-                                                                play();
-                                                            }
+                                                            if (ui.progress) setTimeout(play, fditlen * 3 * 1000); play();
                                                         } else {
                                                             say('lesson complete');
                                                             ui.playing = ui.hide = false;
@@ -1044,7 +1040,7 @@
                     drawUpDownControl('Pitch', 'pitch', getPitch(), 100, 900, top + padding * 5 + buttonSize * 4);
                     var scramble = getScramble();
                     var y = top + padding * 5 + buttonSize * 5;
-                    drawSwitch('scramble', 'Scramble:', scramble ? 'on' : 'off', scramble, y);
+                    drawSwitch('scramble', 'ScramblE:', scramble ? 'on' : 'off', scramble, y);
                     ui.buttons = buttons;
                 }
                 function drawMenu(len, fnGetId, fnGetName) {
@@ -1490,7 +1486,6 @@
                 canvas.ontouchend = function(e) { cancelRepeat(); };
                 canvas.onmouseup = function(e) { cancelRepeat(); }
                 resizeRedrawCanvas();
-                screen.orientation.addEventListener("change", resizeRedrawCanvas);
                 setSpeed(getSpeed());
                 setFarnsworth(getFarnsworth());
                 setWordsworth(getWordsworth());
@@ -1516,7 +1511,7 @@
 
             onresize = function() {
                 resizeRedrawCanvas();
-                //setTimeout(resizeRedrawCanvas, 2000); // again because of browser timing bug!
+                setTimeout(resizeRedrawCanvas, 2000); // again because of browser timing bug!
             }
         </script>
     </head>
