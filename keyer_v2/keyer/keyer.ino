@@ -66,7 +66,7 @@ void setup() {
   Keyboard.begin();
 }
 
-bool enableTone = true;
+bool enableTone = false; // TODO
 bool enableKeyboard = true;
 bool enableMemory = true;
 bool left = false;
@@ -87,11 +87,13 @@ DitDah opposite(DitDah ditDah) {
 }
 
 void startTone() {
+  //writeKeyboardPaddles(true, false); // TODO
   digitalWrite(RADIO, HIGH);
   if (enableTone) analogWrite(TONE, 1);
 }
 
 void stopTone() {
+  //writeKeyboardPaddles(false, false); // TODO
   digitalWrite(RADIO, LOW);
   analogWrite(TONE, 0);
   toneUntil = 0;
@@ -122,7 +124,7 @@ bool playMemory() {
 }
 
 void serialKeyUpdate(bool straightDown, bool leftDown, bool rightDown) {
-  writeKeyboardPaddles(leftDown, rightDown);
+  writeKeyboardPaddles(leftDown, rightDown); // TODO
   Serial.write((byte)(
     (straightDown  ? 0b100 : 0b000) |
     (leftDown      ? 0b010 : 0b000) |
@@ -282,7 +284,7 @@ bool shift = false;
 bool autoSpace = true;
 
 void writeKeyboardChar(char c) {
-    Keyboard.write(c);
+    // Keyboard.write(c); // TODO
 }
 
 void writeKeyboardPaddles(bool left, bool right) {

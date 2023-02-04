@@ -171,7 +171,110 @@
                 if (tone) playTone(3 * ditlen);
             }
 
+            var buffer = [];
+            mostRecentPaddle = 'none';
+            lastSent = null;
+
+            function pushDit() {
+                buffer.push(true); // dit
+                sendRadioDit();
+                lastSent = true;
+            }
+
+            function pushDah() {
+                buffer.push(false); // dah
+                sendRadioDah();
+                lastSent = false;
+            }
+
+            var endedWithSqueeze = false;
+            function keyerLoop() {
+                if (buffer.length > 0) {
+                    endedWithSqueeze = (leftDown && rightDown);
+                    var element = buffer.shift();
+                    if (element) { // dit?
+                        dit(true);
+                        updateBreaks(ditlen);
+                        setTimeout(keyerLoop, 2 * ditlen * 1000);
+                    } else {
+                        dah(true);
+                        updateBreaks(3 * ditlen);
+                        setTimeout(keyerLoop, 4 * ditlen * 1000);
+                    }
+                } else {
+                    if (leftDown && rightDown) { // squeeze?
+                        switch (mode) {
+                            case 'U': // ultimatic
+                                if (mostRecentPaddle == 'left') {
+                                    pushDit();
+                                    keyerLoop();
+                                } else if (mostRecentPaddle == 'right') {
+                                    pushDah();
+                                    keyerLoop();
+                                }
+                                break;
+                            case 'A': // iambic A
+                            case 'B': // iambic B
+                                if (lastSent != null && lastSent) pushDah(); else pushDit(); // opposite
+                                keyerLoop();
+                                break;
+                            default:
+                                throw "Unsupported mode: " + mode;
+                        }
+                    } else if (leftDown) {
+                        pushDit();
+                        keyerLoop();
+                    } else if (rightDown) {
+                        pushDah();
+                        keyerLoop();
+                    } else {
+                        if (mode == 'B' && endedWithSqueeze) {
+                            if (lastSent != null && lastSent) pushDah(); else pushDit(); // opposite
+                            endedWithSqueeze = false;
+                            keyerLoop();
+                        } else {
+                            endedWithSqueeze = false;
+                            setTimeout(keyerLoop, 10);
+                        }
+                    }
+                }
+            }
+
+            const SQUEEZE = 200; // max milliseconds between releases
+
+            function keyUpdateLeft(state) {
+                if (leftDown != state) {
+                    leftDown = state;
+                    if (leftDown) {
+                        mostRecentPaddle = 'left';
+                        pushDit();
+                    }
+                }
+            }
+
+            var lastRightReleaseTime = 0;
+            function keyUpdateRight(state) {
+                if (rightDown != state) {
+                    rightDown = state;
+                    if (rightDown) {
+                        mostRecentPaddle = 'right';
+                        pushDah();
+                    }
+                }
+            }
+
+            var loaded = false;
+            function init() {
+                document.body.addEventListener('keydown', (e) => {
+                    if (!loaded && e.key == 'Enter') load();
+                });
+            }
+
             function load() {
+                loaded = true;
+                document.getElementById("intro").style.display = 'none';
+                document.getElementById("main").style.display = '';
+                keyerLoop();
                 testQsoLoop();
                 if ('serial' in navigator) {
                     navigator.serial.addEventListener('connect', (e) => {
@@ -183,13 +286,41 @@
                         //alert('Disconnected: ' + JSON.stringify(e));
                     });
                 } else {
-                    alert('SERIAL UNAVAILABLE'); // The Web Serial API is supported.
+                    //alert('SERIAL UNAVAILABLE'); // The Web Serial API is supported.
                 }
                 document.getElementById('message').addEventListener('keypress', (e) => {
                     if (e.charCode == 13 && connectedPort != null) {
                         sendMessage();
                         e.target.value = '';
                         e.preventDefault();
+                    }
+                });
+                document.body.addEventListener('keydown', (e) => {
+                    if (!e.repeat) {
+                        switch (e.code) {
+                            case 'Comma':
+                            case 'ControlLeft':
+                                keyUpdateLeft(true);
+                                break;
+                            case 'Period':
+                            case 'ControlRight':
+                                keyUpdateRight(true);
+                                break;
+                        }
+                    }
+                });
+                document.body.addEventListener('keyup', (e) => {
+                    if (!e.repeat) {
+                        switch (e.code) {
+                            case 'Comma':
+                            case 'ControlLeft':
+                                keyUpdateLeft(false);
+                                break;
+                            case 'Period':
+                            case 'ControlRight':
+                                keyUpdateRight(false);
+                                break;
+                        }
                     }
                 });
                 var speedKey = 0;
@@ -203,75 +334,75 @@
                 }
                 document.body.addEventListener('keydown', (e) => {
                     if (!e.repeat && e.srcElement.id != 'message') {
-                        switch (e.code) {
-                            case 'Comma':
-                                setKeys(true, rightDown);
-                                break;
-                            case 'Period':
-                                setKeys(leftDown, true);
-                                break;
+                        switch (e.key) {
                             case 'Escape':
                                 reset();
                                 speedKey = 0;
                                 break;
-                            case 'KeyC':
+                            case 'c':
                                 connect();
                                 break;
-                            case 'KeyA':
+                            case 'r':
+                                connectRadio();
+                                break;
+                            case 'd':
+                                disconnectRadio();
+                                break;
+                            case 'a':
                                 setMode('A');
                                 break;
-                            case 'KeyB':
+                            case 'b':
                                 setMode('B');
                                 break;
-                            case 'KeyU':
+                            case 'u':
                                 setMode('U');
                                 break;
-                            case 'KeyM':
+                            case 'm':
                                 setMemory(true);
                                 break;
-                            case 'KeyN':
+                            case 'n':
                                 setMemory(false);
                                 break;
-                            case 'KeyT':
+                            case 't':
                                 mute(true);
                                 break;
-                            case 'KeyE':
+                            case 'e':
                                 mute(false);
                                 break;
-                            case 'KeyV':
+                            case 'v':
                                 startCamera();
                                 break;
-                            case 'KeyW':
+                            case 'w':
                                 stopCamera();
                                 break;
-                            case 'Digit0':
+                            case '0':
                                 processSpeedKey(0);
                                 break;
-                            case 'Digit1':
+                            case '1':
                                 processSpeedKey(1);
                                 break;
-                            case 'Digit2':
+                            case '2':
                                 processSpeedKey(2);
                                 break;
-                            case 'Digit3':
+                            case '3':
                                 processSpeedKey(3);
                                 break;
-                            case 'Digit4':
+                            case '4':
                                 processSpeedKey(4);
                                 break;
-                            case 'Digit5':
+                            case '5':
                                 processSpeedKey(5);
                                 break;
-                            case 'Digit6':
+                            case '6':
                                 processSpeedKey(6);
                                 break;
-                            case 'Digit7':
+                            case '7':
                                 processSpeedKey(7);
                                 break;
-                            case 'Digit8':
+                            case '8':
                                 processSpeedKey(8);
                                 break;
-                            case 'Digit9':
+                            case '9':
                                 processSpeedKey(9);
                                 break;
                         }
@@ -297,6 +428,7 @@
                 setTone(false);
                 setEnforceElements(true);
                 read();
+                readRadio();
                 drawKeyAndToneState();
             }
 
@@ -673,7 +805,7 @@
                 char = '';
                 updateDisplay();
                 var canvas = document.getElementById('canvas');
-                var ctx = canvas.getContext('2d');
+                var ctx = canvas.getContext('2d', { willReadFrequently: true });
                 ctx.fillStyle = '#000';
                 ctx.fillRect(0, 0, canvasWidth, canvasHeight);
                 cursor = 20;
@@ -761,10 +893,12 @@
             function copy(b) {
                 switch (b) {
                     case 46: // dit
+                        sendRadioDit();
                         dit(true);
                         updateBreaks(ditlen);
                         break;
                     case 45: // dah
+                        sendRadioDah();
                         dah(true);
                         updateBreaks(3 * ditlen);
                         break;
@@ -816,7 +950,7 @@
                 //if (now < wordBreak) {
                 if (now < letterBreak) {
                     var canvas = document.getElementById('canvas');
-                    var ctx = canvas.getContext('2d');
+                    var ctx = canvas.getContext('2d', { willReadFrequently: true });
                     audio();
                     cursor = 0;
                     for (var repeat = 0; repeat < 2; repeat++)
@@ -957,6 +1091,59 @@
                 }
             }
 
+            function readRadio() {
+                if (connectedRadioPort != null) {
+                    if (!radioConnected) {
+                        if (radioWrite != null) {
+                            radioWrite.releaseLock();
+                            radioWrite = null;
+                        }
+                        if (connectedRadioPort != null) {
+                            connectedRadioPort.close();
+                            connectedRadioPort = null;
+                            mute(false);
+                        }
+                        window.setTimeout(readRadio, 100);
+                        return;
+                    }
+                    // TODO: reader busy/locked https://stackoverflow.com/questions/65748344/how-can-i-interrupt-a-reader-when-it-hangs-need-a-timeout-on-reader-read
+                    const reader = connectedRadioPort.readable.getReader();
+                    reader.read().then(x =>
+                    {
+                        // 0xfd // end of message
+                        if (x.value[0] == 0xfe && x.value[1] == 0xfe) { // preamble
+                            if (x.value[2] == 0xe0) { // default controller address
+                                if (x.value[3] == 0xa4) { // transceiver address (default 0xa4 IC-705)
+                                    switch (x.value[4]) {
+                                        case 0x14: // setting
+                                            switch (x.value[5]) {
+                                                case 0x09: // CW pitch
+                                                    var d0 = x.value[6];
+                                                    var low = x.value[7];
+                                                    var d2 = low & 0xF;
+                                                    var d1 = (low & 0xF0) >> 4;
+                                                    var val = d0 * 100 + d1 * 10 + d2;
+                                                    var pitch = Math.round(((val - 1) / 253 * 600 + 300) / 5) * 5;
+                                                    //console.log("Pitch: " + pitch + " (" + val + ") " + "Hz");
+                                                    document.getElementById('pitch').innerText = pitch;
+                                                    break
+                                            }
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+                        //console.log(JSON.stringify(x));
+                        //for (var i in x.value) {
+                        //}
+                        reader.releaseLock();
+                        window.setTimeout(readRadio, 10);
+                    });
+                } else {
+                    window.setTimeout(readRadio, 10);
+                }
+            }
+
             function simulateKeys(keys) {
                 var next = (new Date()).getTime();
                 function updateKeyState() {
@@ -1039,14 +1226,82 @@
                 }
                 video.srcObject = null;
             }
+
+            var connectedRadioPort = null;
+            var radioConnected = false;
+            function connectRadio() {
+                navigator.serial.requestPort().then((port) => {
+                    port.open({ baudRate: 115200 }).then(() => {
+                        connectedRadioPort = port;
+                        radioConnected = true;
+                        mute(true);
+                        getRadioCWPitch();
+                    }).catch(e => {
+                        alert('ERROR OPENING: ' + e);
+                    });
+                }).catch((e) => {
+                    alert('ERROR NO PORT CHOSEN: ' + JSON.stringify(e));
+                });
+            }
+
+            function disconnectRadio() {
+                if (connectedRadioPort != null) {
+                    radioConnected = false; // reader will close
+                }
+            }
+
+            var radioWrite = null;
+            function sendRadioCommand(command, subcommand, data, transceiver, controller) {
+                if (connectedRadioPort != null) {
+                    var message = [0xfe, 0xfe]; // preamble
+                    message.push(transceiver || 0xa4); // transceiver address (default 0xa4, IC-705)
+                    message.push(controller || 0xe0); // default controller address
+                    message.push(command);
+                    if (subcommand) message.push(subcommand);
+                    if (data) message = message.concat(data);
+                    message.push(0xfd); // end of message
+                    if (!radioWrite) radioWrite = connectedRadioPort.writable.getWriter();
+                    radioWrite.write(new Uint8Array(message));
+                }
+            }
+
+            function sendRadioCW(message) {
+                var ascii = [];
+                for (var i in message) {
+                    ascii.push(message.charCodeAt(i));
+                }
+                sendRadioCommand(0x17 /* send CW */, null, ascii);
+            }
+
+            function getRadioCWPitch() {
+                if (connectedRadioPort != null) {
+                    sendRadioCommand(0x14, 0x09, null); //[128]);
+                    window.setTimeout(getRadioCWPitch, 100);
+                }
+            }
+
+            function sendRadioDit() {
+                sendRadioCW("^e");
+            }
+
+            function sendRadioDah() {
+                sendRadioCW("^t");
+            }
         </script>
     </head>
-    <body onload="load()">
-        <h5 id="mode" style="display:none">Ultimatic (with memory)</h5>
-        <h1 id="copy" style="border: 1px solid black; width: 960px; height: 100px; margin: 0; padding: 0; font-size: 90px; overflow: hidden;">&nbsp;</h1>
-        <canvas id="canvas" width="80px" height="440px" style="border: 1px solid black"></canvas>
-        <hr style="display:none" />
-        <textarea style="display:none" id="message" rows="2" cols="120"></textarea>
+    <body onload="init()">
+        <div id="intro" style="height: 100vh; text-align: center; vertical-align: middle;">
+            <h1>This is a demo</h1>
+            <a href="javascript:load()">Let's do it!</a>
+        </div>
+        <div id="main" style="display:none">
+            <h5 id="mode" style="display:none">Ultimatic (with memory)</h5>
+            <h1 id="copy" style="border: 1px solid black; width: 960px; height: 100px; margin: 0; padding: 0; font-size: 90px; overflow: hidden;">&nbsp;</h1>
+            <canvas id="canvas" width="80px" height="440px" style="border: 1px solid black"></canvas>
+            <hr style="display:none" />
+            <textarea style="display:none" id="message" rows="2" cols="120"></textarea>
+            <h1>Pitch: <span id="pitch">0</span>Hz</h1>
+        </div>
         <!--
         <hr />
         <button id="connect" onclick="connect()">Connect</button>
@@ -1104,9 +1359,7 @@
         <br />
         <button onclick="startCamera()">Start Cam</button>
         <button onclick="stopCamera()">Stop Cam</button>
-        -->
         <video id="camera" width="880" height="440" autoplay="autoplay" style="border: 1px solid darkgray"></video>
-        <!--
         <hr />
         <a href="javascript:practiceSending('ABCDEFGHIJKLMNOPQRSTUVWXYZ ZYXWVUTSRQPONMLKJIHGFEDCBA')">ABC</a>
         <a href="javascript:practiceSending('314159265358979323846')">NUM</a>
@@ -1162,187 +1415,6 @@
             The key itself is a simple pair of switches that don't directly make the tone.
             Instead they signal a "keyer" that produces the tones with correct timings, given a speed setting.
         </p>
-        -->
-        <!--
-            - Iambic B only on Icom
-            - No Ultimatic on KX2
-            - Supported by WinKeyer
-            - Poor support on Morserino (no memory)
-        -->
-        <table>
-            <tr>
-                <th></th>
-                <th>A</th>
-                <th>B</th>
-                <th>C</th>
-                <th>D</th>
-                <th>E</th>
-                <th>F</th>
-                <th>G</th>
-                <th>H</th>
-                <th>I</th>
-                <th>J</th>
-                <th>K</th>
-                <th>L</th>
-                <th>M</th>
-                <th>N</th>
-                <th>O</th>
-                <th>P</th>
-                <th>Q</th>
-                <th>R</th>
-                <th>S</th>
-                <th>T</th>
-                <th>U</th>
-                <th>V</th>
-                <th>W</th>
-                <th>X</th>
-                <th>Y</th>
-                <th>Z</th>
-                <th>0</th>
-                <th>1</th>
-                <th>2</th>
-                <th>3</th>
-                <th>4</th>
-                <th>5</th>
-                <th>6</th>
-                <th>7</th>
-                <th>8</th>
-                <th>9</th>
-                <th>?</th>
-                <th>/</th>
-                <th>BT</th>
-                <th>BK</th>
-            </tr>
-            <tr>
-                <td>Iambic A</td>
-                <td style="background-color: green"></td><!-- A -->
-                <td style="background-color: green"></td><!-- B -->
-                <td style="background-color: green"></td><!-- C -->
-                <td style="background-color: green"></td><!-- D -->
-                <td style="background-color: green"></td><!-- E -->
-                <td style="background-color: green"></td><!-- F -->
-                <td style="background-color: green"></td><!-- G -->
-                <td style="background-color: green"></td><!-- H -->
-                <td style="background-color: green"></td><!-- I -->
-                <td style="background-color: green"></td><!-- J -->
-                <td style="background-color: green"></td><!-- K -->
-                <td style="background-color: green"></td><!-- L -->
-                <td style="background-color: green"></td><!-- M -->
-                <td style="background-color: green"></td><!-- N -->
-                <td style="background-color: green"></td><!-- O -->
-                <td style="background-color: red"></td><!-- P -->
-                <td style="background-color: green"></td><!-- Q -->
-                <td style="background-color: green"></td><!-- R -->
-                <td style="background-color: green"></td><!-- S -->
-                <td style="background-color: green"></td><!-- T -->
-                <td style="background-color: green"></td><!-- U -->
-                <td style="background-color: green"></td><!-- V -->
-                <td style="background-color: green"></td><!-- W -->
-                <td style="background-color: red"></td><!-- X -->
-                <td style="background-color: green"></td><!-- Y -->
-                <td style="background-color: green"></td><!-- Z -->
-                <td style="background-color: green"></td><!-- 0 -->
-                <td style="background-color: green"></td><!-- 1 -->
-                <td style="background-color: green"></td><!-- 2 -->
-                <td style="background-color: green"></td><!-- 3 -->
-                <td style="background-color: green"></td><!-- 4 -->
-                <td style="background-color: green"></td><!-- 5 -->
-                <td style="background-color: green"></td><!-- 6 -->
-                <td style="background-color: green"></td><!-- 7 -->
-                <td style="background-color: green"></td><!-- 8 -->
-                <td style="background-color: green"></td><!-- 9 -->
-                <td style="background-color: red"></td><!-- ? -->
-                <td style="background-color: red"></td><!-- / -->
-                <td style="background-color: red"></td><!-- <BT> -->
-                <td style="background-color: red"></td><!-- <BK> -->
-            </tr>
-            <tr>
-                <td>Iambic B</td>
-                <td style="background-color: red"></td><!-- A -->
-                <td style="background-color: green"></td><!-- B -->
-                <td style="background-color: green"></td><!-- C -->
-                <td style="background-color: green"></td><!-- D -->
-                <td style="background-color: green"></td><!-- E -->
-                <td style="background-color: green"></td><!-- F -->
-                <td style="background-color: yellow"></td><!-- G -->
-                <td style="background-color: green"></td><!-- H -->
-                <td style="background-color: green"></td><!-- I -->
-                <td style="background-color: green"></td><!-- J -->
-                <td style="background-color: green"></td><!-- K -->
-                <td style="background-color: green"></td><!-- L -->
-                <td style="background-color: green"></td><!-- M -->
-                <td style="background-color: green"></td><!-- N -->
-                <td style="background-color: green"></td><!-- O -->
-                <td style="background-color: red"></td><!-- P -->
-                <td style="background-color: green"></td><!-- Q -->
-                <td style="background-color: green"></td><!-- R -->
-                <td style="background-color: green"></td><!-- S -->
-                <td style="background-color: green"></td><!-- T -->
-                <td style="background-color: red"></td><!-- U -->
-                <td style="background-color: red"></td><!-- V -->
-                <td style="background-color: green"></td><!-- W -->
-                <td style="background-color: red"></td><!-- X -->
-                <td style="background-color: green"></td><!-- Y -->
-                <td style="background-color: green"></td><!-- Z -->
-                <td style="background-color: green"></td><!-- 0 -->
-                <td style="background-color: green"></td><!-- 1 -->
-                <td style="background-color: green"></td><!-- 2 -->
-                <td style="background-color: green"></td><!-- 3 -->
-                <td style="background-color: red"></td><!-- 4 -->
-                <td style="background-color: green"></td><!-- 5 -->
-                <td style="background-color: green"></td><!-- 6 -->
-                <td style="background-color: green"></td><!-- 7 -->
-                <td style="background-color: green"></td><!-- 8 -->
-                <td style="background-color: yellow"></td><!-- 9 -->
-                <td style="background-color: red"></td><!-- ? -->
-                <td style="background-color: red"></td><!-- / -->
-                <td style="background-color: red"></td><!-- <BT> -->
-                <td style="background-color: red"></td><!-- <BK> -->
-            </tr>
-            <tr>
-                <td>Ultimatic</td>
-                <td style="background-color: green"></td><!-- A -->
-                <td style="background-color: green"></td><!-- B -->
-                <td style="background-color: red"></td><!-- C -->
-                <td style="background-color: green"></td><!-- D -->
-                <td style="background-color: green"></td><!-- E -->
-                <td style="background-color: green"></td><!-- F -->
-                <td style="background-color: green"></td><!-- G -->
-                <td style="background-color: green"></td><!-- H -->
-                <td style="background-color: green"></td><!-- I -->
-                <td style="background-color: green"></td><!-- J -->
-                <td style="background-color: green"></td><!-- K -->
-                <td style="background-color: green"></td><!-- L -->
-                <td style="background-color: green"></td><!-- M -->
-                <td style="background-color: green"></td><!-- N -->
-                <td style="background-color: green"></td><!-- O -->
-                <td style="background-color: green"></td><!-- P -->
-                <td style="background-color: green"></td><!-- Q -->
-                <td style="background-color: green"></td><!-- R -->
-                <td style="background-color: green"></td><!-- S -->
-                <td style="background-color: green"></td><!-- T -->
-                <td style="background-color: green"></td><!-- U -->
-                <td style="background-color: green"></td><!-- V -->
-                <td style="background-color: green"></td><!-- W -->
-                <td style="background-color: green"></td><!-- X -->
-                <td style="background-color: green"></td><!-- Y -->
-                <td style="background-color: green"></td><!-- Z -->
-                <td style="background-color: green"></td><!-- 0 -->
-                <td style="background-color: green"></td><!-- 1 -->
-                <td style="background-color: green"></td><!-- 2 -->
-                <td style="background-color: green"></td><!-- 3 -->
-                <td style="background-color: green"></td><!-- 4 -->
-                <td style="background-color: green"></td><!-- 5 -->
-                <td style="background-color: green"></td><!-- 6 -->
-                <td style="background-color: green"></td><!-- 7 -->
-                <td style="background-color: green"></td><!-- 8 -->
-                <td style="background-color: green"></td><!-- 9 -->
-                <td style="background-color: green"></td><!-- ? -->
-                <td style="background-color: green"></td><!-- / -->
-                <td style="background-color: green"></td><!-- <BT> -->
-                <td style="background-color: green"></td><!-- <BK> -->
-            </tr>
-        </table>
         <table>
             <tr>
                 <th>Single Lever</th>
@@ -1351,7 +1423,8 @@
                 <th>Curtis-B</th>
             </tr>
             <tr>
-                <td valign="top"><!-- single lever -->
+                <td valign="top">
+                    single lever
                     <ul>
                         <li><a href="javascript:simulateExamples(['L', 'LLLLLL', 'LLLLLLLLLL', 'LLLLLLLLLLLLLL', 'LLLLLLLLLLLLLLLLLL', 'R', 'RRRRRRRRRRRR', 'RRRRRRRRRRRRRRRRRRRR', 'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR'])">Repetitive elements</a></li>
                         <ul>
@@ -1388,7 +1461,8 @@
                         </ul>
                     </li>
                 </td>
-                <td valign="top"><!-- ultimatic -->
+                <td valign="top">
+                    ultimatic
                     <ul>
                         <li><a href="javascript:simulateExamples(['L', 'LLLLLL', 'LLLLLLLLLL', 'LLLLLLLLLLLLLL', 'LLLLLLLLLLLLLLLLLL', 'R', 'RRRRRRRRRRRR', 'RRRRRRRRRRRRRRRRRRRR', 'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR'])">Repetitive elements (same)</a></li>
                         <ul>
@@ -1425,7 +1499,8 @@
                         </ul>
                     </li>
                 </td>
-                <td valign="top"><!-- curtis-a -->
+                <td valign="top">
+                    curtis-a
                     <ul>
                         <li><a href="javascript:simulateExamples(['L', 'LLLLLL', 'LLLLLLLLLL', 'LLLLLLLLLLLLLL', 'LLLLLLLLLLLLLLLLLL', 'R', 'RRRRRRRRRRRR', 'RRRRRRRRRRRRRRRRRRRR', 'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR'])">Repetitive elements (same)</a></li>
                         <ul>
@@ -1462,7 +1537,8 @@
                         </ul>
                     </li>
                 </td>
-                <td valign="top"><!-- curtis-b -->
+                <td valign="top">
+                    curtis-b
                     <ul>
                         <li><a href="javascript:simulateExamples(['L', 'LLLLLL', 'LLLLLLLLLL', 'LLLLLLLLLLLLLL', 'LLLLLLLLLLLLLLLLLL', 'R', 'RRRRRRRRRRRR', 'RRRRRRRRRRRRRRRRRRRR', 'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR'])">Repetitive elements (same)</a></li>
                         <ul>
@@ -1501,5 +1577,6 @@
                 </td>
             </tr>
         </table>
+        -->
     </body>
 </html>
