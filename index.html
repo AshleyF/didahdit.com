@@ -1489,8 +1489,8 @@
                 }
                 canvas.ontouchend = function(e) { cancelRepeat(); };
                 canvas.onmouseup = function(e) { cancelRepeat(); }
-                resizeCanvas();
-                redraw();
+                resizeRedrawCanvas();
+                screen.orientation.addEventListener("change", resizeRedrawCanvas);
                 setSpeed(getSpeed());
                 setFarnsworth(getFarnsworth());
                 setWordsworth(getWordsworth());
@@ -1509,9 +1509,14 @@
                 }
             }
 
-            onresize = function() {
+            function resizeRedrawCanvas() {
                 resizeCanvas();
                 redraw();
+            }
+
+            onresize = function() {
+                resizeRedrawCanvas();
+                //setTimeout(resizeRedrawCanvas, 2000); // again because of browser timing bug!
             }
         </script>
     </head>
