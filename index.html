@@ -320,10 +320,9 @@
 
             function playDing() {
                 var c = audio();
-                t = c > t ? c : t;
-                dingGain.gain.linearRampToValueAtTime(0.2, t + 0.005);
-                t += 2.5;
-                dingGain.gain.exponentialRampToValueAtTime(0.000001, t);
+                var dingt = c > t ? c : t;
+                dingGain.gain.linearRampToValueAtTime(0.2, dingt + 0.005);
+                dingGain.gain.exponentialRampToValueAtTime(0.000001, dingt + 2.5);
             }
 
             var morse = "  ETIANMSURWDKGOHVFÜL PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
@@ -493,7 +492,11 @@
                                                         if (nextPhrase()) {
                                                             ui.count = 0;
                                                             var play = function() { playPhrase(getCurrentPhrase(), speakAndAdvance, false) };
-                                                            if (ui.progress) setTimeout(play, fditlen * 3 * 1000); else play();
+                                                            if (ui.progress) {
+                                                                continuationTimeout1 = setTimeout(play, fditlen * 3 * 1000);
+                                                            } else {
+                                                                play();
+                                                            }
                                                         } else {
                                                             say('lesson complete');
                                                             ui.playing = ui.hide = false;
