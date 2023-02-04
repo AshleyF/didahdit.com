@@ -1040,7 +1040,7 @@
                     drawUpDownControl('Pitch', 'pitch', getPitch(), 100, 900, top + padding * 5 + buttonSize * 4);
                     var scramble = getScramble();
                     var y = top + padding * 5 + buttonSize * 5;
-                    drawSwitch('scramble', 'ScramblE:', scramble ? 'on' : 'off', scramble, y);
+                    drawSwitch('scramble', 'Scramble:', scramble ? 'on' : 'off', scramble, y);
                     ui.buttons = buttons;
                 }
                 function drawMenu(len, fnGetId, fnGetName) {
@@ -1511,7 +1511,7 @@
 
             onresize = function() {
                 resizeRedrawCanvas();
-                setTimeout(resizeRedrawCanvas, 2000); // again because of browser timing bug!
+                setTimeout(resizeRedrawCanvas, 0); // again because of browser timing bug!
             }
         </script>
     </head>
