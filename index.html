@@ -780,7 +780,8 @@
 
                 drawButton(
                     'settings',
-                    '⁝',
+                    //'⁝',
+                    '1',
                     subduedButtonColor,
                     w - padding - buttonSize,
                     padding, buttonSize, buttonSize,
@@ -1511,7 +1512,7 @@
 
             onresize = function() {
                 resizeRedrawCanvas();
-                setTimeout(resizeRedrawCanvas, 0); // again because of browser timing bug!
+                setTimeout(resizeRedrawCanvas, 10); // again because of browser timing bug!
             }
         </script>
     </head>
