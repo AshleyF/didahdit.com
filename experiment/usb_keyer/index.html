@@ -107,10 +107,6 @@
                 }
             }
 
-            function sayMessage() {
-                say(document.getElementById('message').value, 0);
-            }
-
             const defaultPitch = 600;
 
             function audio() {
@@ -303,23 +299,28 @@
                 } else {
                     //alert('SERIAL UNAVAILABLE'); // The Web Serial API is supported.
                 }
-                document.getElementById('message').addEventListener('keypress', (e) => {
-                    if (e.charCode == 13 && connectedPort != null) {
-                        sendMessage();
-                        e.target.value = '';
-                        e.preventDefault();
-                    }
-                });
+                //document.getElementById('message').addEventListener('keypress', (e) => {
+                //    if (e.charCode == 13 && connectedPort != null) {
+                //        sendMessage();
+                //        e.target.value = '';
+                //        e.preventDefault();
+                //    }
+                //});
+                const debounceLimit = 10;
+                var leftActuallyDown = false;
+                var rightActuallyDown = false;
                 document.body.addEventListener('keydown', (e) => {
                     if (!e.repeat) {
                         switch (e.code) {
                             case 'Comma':
                             case 'ControlLeft':
-                                keyUpdateLeft(true);
+                                if (!leftActuallyDown) keyUpdateLeft(true);
+                                leftActuallyDown = true;
                                 break;
                             case 'Period':
                             case 'ControlRight':
-                                keyUpdateRight(true);
+                                if (!rightActuallyDown) keyUpdateRight(true);
+                                rightActuallyDown = true;
                                 break;
                         }
                     }
@@ -329,11 +330,13 @@
                         switch (e.code) {
                             case 'Comma':
                             case 'ControlLeft':
-                                keyUpdateLeft(false);
+                                leftActuallyDown = false;
+                                setTimeout(function () { if (!leftActuallyDown) keyUpdateLeft(false); }, debounceLimit);
                                 break;
                             case 'Period':
                             case 'ControlRight':
-                                keyUpdateRight(false);
+                                rightActuallyDown = false;
+                                setTimeout(function () { if (!rightActuallyDown) keyUpdateRight(false); }, debounceLimit);
                                 break;
                         }
                     }
@@ -383,12 +386,6 @@
                                 break;
                             case 'e':
                                 mute(false);
-                                break;
-                            case 'v':
-                                startCamera();
-                                break;
-                            case 'w':
-                                stopCamera();
                                 break;
                             case '0':
                                 processSpeedKey(0);
@@ -574,7 +571,7 @@
             }
 
             function train(message) {
-                document.getElementById('message').value = message; // TODO: display phrases w/o |
+                //document.getElementById('message').value = message; // TODO: display phrases w/o |
                 var prosign = false;
                 var words = message.split('|');
                 var startTime = audio();
@@ -615,6 +612,7 @@
             }
 
             function practiceSending(message) {
+                clearMessage();
                 sending += message;
                 updateDisplay();
             }
@@ -665,15 +663,15 @@
                 }
             }
 
-            function sendMessage() {
-                if (connectedPort != null) {
-                    send(document.getElementById('message').value);
-                }
-            }
+            //function sendMessage() {
+            //    if (connectedPort != null) {
+            //        send(document.getElementById('message').value);
+            //    }
+            //}
 
-            function sendTraining() {
-                train(document.getElementById('message').value);
-            }
+            //function sendTraining() {
+            //    train(document.getElementById('message').value);
+            //}
 
             var initQso = {
                 kind: 'disabled',
@@ -788,7 +786,6 @@
                     }
                     if (qso.send) {
                         var captureSend = qso.send;
-                        clearNextMessage = true;
                         send(captureSend, false);
                         qso.send = null;
                     }
@@ -806,7 +803,10 @@
                     sending.startsWith(' ') && sending.length > 1 && sending.substring(1).startsWith(char) ?
                     sending.substring(char.length + 1) :
                     sending;
-                document.getElementById('copy').innerHTML = messageDisplay + "<span style='color:#555'>" + escape(char) + "</span><span style='border-left: 1px solid #777'>&nbsp;</span><span style='color:#555'>" + escape(temp) + "</span>";
+                var copy = document.getElementById('copy');
+                copy.innerHTML = messageDisplay + "<span style='color:#555'>" + escape(char) + "</span><span id='cursor' style='border-left: 1px solid #777'>&nbsp;</span><span style='color:#555'>" + escape(temp) + "</span>";
+                var cursor = document.getElementById('cursor');
+                copy.scrollLeft = cursor.offsetLeft - copy.clientWidth / 2;
             }
 
             function reset() {
@@ -926,7 +926,6 @@
             var farnsworthWordBreak = 0;
             var lastGain = 0;
             var clearNextKeyState = false;
-            var clearNextMessage = false;
 
             var straightKeyTone = false;
             var lastStraightKeyToneChange = 0;
@@ -954,6 +953,12 @@
                 }
             }
 
+            function clearMessage() {
+                message = '';
+                messageDisplay = '&nbsp;';
+                updateDisplay();
+            }
+
             function drawKeyAndToneState() {
                 if (straightDown) updateBreaks(0);
                 if (mode == 'S') handleStraightKey();
@@ -978,12 +983,6 @@
                             var imgData = ctx.getImageData(0, 0, canvasWidth, canvas.height - 1);
                             ctx.putImageData(imgData, 0, 1); // scroll down
                             ctx.fillRect(0, 0, canvasWidth, 1);
-                        }
-                        if (clearNextMessage) {
-                            message = '';
-                            messageDisplay = '&nbsp;';
-                            updateDisplay();
-                            clearNextMessage = false;
                         }
                         var currentGain = gain.gain.value;
                         if ((lastGain < 0.5 && currentGain > 0.5) || (lastGain > 0.5 && currentGain < 0.5)) {
@@ -1030,14 +1029,14 @@
                             message += char;
                             messageDisplay += escape(char);
                         } else {
-                            if (char == 'E') {
-                                messageDisplay += "<span style='color:#777'>·</span>";
-                                char = '';
-                            }
-                            else {
+                            //if (char == 'E') {
+                            //    messageDisplay += "<span style='color:#777'>·</span>";
+                            //    char = '';
+                            //}
+                            //else {
                                 message += char;
                                 messageDisplay += "<span style='color:#f00'>" + escape(char) + "</span>";
-                            }
+                            //}
                         }
                         simulateQso(message);
                         char = '';
@@ -1051,9 +1050,9 @@
                         if (sending.startsWith(' ')) {
                             sending = sending.substring(1);
                             messageDisplay += ' ';
-                        } else {
-                            messageDisplay += "<span style='color:#00f'>…</span>"; // extra space
-                        }
+                        } //else {
+                            //messageDisplay += "<span style='color:#00f'>…</span>"; // extra space
+                        //}
                     }
                     else
                     {
@@ -1064,9 +1063,6 @@
                 }
                 if (now - wordBreak > ditlen * 14.0) {
                     clearNextKeyState = true;
-                }
-                if (now - wordBreak > ditlen * 50) {
-                    clearNextMessage = true;
                 }
 
                 window.setTimeout(drawKeyAndToneState, 1);
@@ -1211,28 +1207,6 @@
                 }
             }
 
-            function startCamera() {
-                var video = document.getElementById('camera');
-                var vendorUrl = window.URL || window.webkitURL;
-                if (navigator.mediaDevices.getUserMedia) {
-                    navigator.mediaDevices.getUserMedia({ video: true })
-                        .then(function (stream) {
-                            navigator.mediaDevices.enumerateDevices().then(function (devices)
-                            {
-                                devices.forEach(d => {
-                                    if (d.kind === 'videoinput') {
-                                        var id = d.deviceId;
-                                        var label = d.label || "Camera Foo";
-                                    }
-                                });
-                            });
-                            video.srcObject = stream;
-                        }).catch(function (error) {
-                            console.log("Something went wrong!");
-                        });
-                }
-            }
-
             function stopCamera() {
                 var stream = video.srcObject;
                 var tracks = stream.getTracks();
@@ -1317,6 +1291,8 @@
             function resize() {
                 var canvas = document.getElementById('canvas');
                 canvas.height = window.innerHeight - 100;
+                var copy = document.getElementById('copy');
+                copy.style.width = window.innerWidth;
             }
 
             onresize = resize;
@@ -1332,28 +1308,60 @@
     </head>
     <body onload="init()">
         <div id="intro" style="height: 100vh; text-align: center; vertical-align: middle; padding: 3em">
-            <h1>This is a demo</h1>
-            <a href="javascript:load()">Let's do it!</a>
+            <h1>This is messy prototype still in development.</h1>
+            <p>It uses the <a href="https://hamradio.solutions/vband/">USB paddle interface from Ham Radio Solutions</a> ("Store" tab).</p>
+            <p>It's a keyer that can be used for practice with a nifty visualization of paddle state (currently doesn't support straight keys).</p>
+            <p>It may also be connected to a radio over USB/Bluetooth and will act as a proper keyer.</p>
+            <button onclick="load()">Let's do it!</button>
         </div>
         <div id="main" style="height: 100vh; display:none">
             <table style="width: 100%; height: 100%;">
                 <tr>
                     <td colspan="2" style="width: 100%; height: 100px;">
-                        <h1 id="copy" style="border: 1px solid black; width: 100%; height: 100px; margin: 0; padding: 0; font-size: 90px; overflow: hidden;">&nbsp;</h1>
+                        <h1 id="copy" style="border: 1px solid black; width: 100%; height: 100px; margin: 0; padding: 0; font-size: 90px; overflow-y: hidden; overflow-x: scroll; white-space: nowrap;">&nbsp;</h1>
                     </td>
                 </tr>
                 <tr>
                     <td style="width: 80px; height: 100%;">
                         <canvas id="canvas" width="80px" height="10" style="width: 80px"></canvas>
                     </td>
-                    <td style="width: 100%; height: 100px; text-align: center">
-                        <textarea style="display:none" id="message" rows="2" cols="120"></textarea>
-                        <h1>Mode: <select id="mode">
-                            <option value="U">Ultimatic</option>
-                            <option value="A">Iambic-A</option>
-                            <option value="B" selected="true">Iambic-B</option>
-                        </select></h1>
-                        <h1>Pitch: <select id="pitch"></select></h1>
+                    <td style="width: 100%; height: 100px;">
+                        <table>
+                            <tr>
+                                <td>Mode:</td>
+                                <td width="100%">
+                                    <select id="mode">
+                                        <option value="U">Ultimatic</option>
+                                        <option value="A">Iambic-A</option>
+                                        <option value="B" selected="true">Iambic-B</option>
+                                    </select>
+                                </td>
+                            </tr>
+                                <td>Pitch:</td>
+                                <td width="100%">
+                                    <select id="pitch"></select></h1>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    <hr />
+                                    <a href="javascript:practiceSending('E T A N EEE TTT AAA NNN EEEEE TTTTT AAAAA NNNNN AN AT ANN ANT ATE EAT ETA NET TAN TAT TEA TEE TEN ANNA ANNE ANTE NATE NEAT TATE TEAT TEEN TENT EATEN TENET TENANT ANNETTE ANTENNA')">ETAN</a>
+                                    <a href="javascript:practiceSending('O I S 1 4 OOO III SSS 111 444 TTT EEE AAA NNN OOOOO IIIII SSSSS 11111 44444 TTTTT EEEEE AAAAA NNNNN AS IN IT NO ON TO SIN ST ITS SIT SON TOO OASIS SOON SITS SOOT SOTA IAN ASIA TOSS AT SEA INN OAT ONE SEE TAO TIE NIT SAT TIN TOE SINE SONIA NOT SET INTO NOON NOSE SANS SITE NOISE OASES ONION TOT ONTO TOES NOOSE SNOT TOOT SNOOT ASSESS ASSIST INSIST EASE ASIAN ANTI NINE SANE SEAN TINA EAST N1AS N4ON S41T NO1S AI1E IT4O EA1ON ES4IT 14 41 44 11 441 141 114 411')">OIS14</a>
+                                    <a href="javascript:practiceSending('R H D L 2 5 RRR HHH DDD LLL 222 555 OOO III SSS RRRRR HHHHH DDDDD LLLLL 22222 55555 OOOOO IIIII SSSSS DR RD DID DO HI HID ODD OH LID OLD ILL ROD DILL HOLD DOLL HILL ADD DAD LORD HAD DRILL HE ROLL ALL HIS OIL RED SOD DISH HARD HELD HOOD IDOL ODDS HER DELL HALL HERD LARD LIDS SLID SIR DOOR HELL ODOR SOLD AID LORI SILL ADO DIED DROOL SHILL DOE SAD DADS DIAL HIDE LAID HORRID AIR ASH DON HAS LIE NOD DASH DELI HAIL HIND IDLE LIED LOAD RAID DOT LEO SHE DOLE DORA HAIR HALO HASH OHIO RIDE HELLO AND HAILSTONE ISOLATION LOADSTONE TRADITION NINETEENTH 142 451 1425 DL1AT HH5H HS1TD ND2T NA4T')">RHDL25</a>
+                                    <a href="javascript:practiceSending('U C UUU CCC RRR HHH DDD LLL 111 444 UUUUU CCCCC RRRRR HHHHH DDDDD LLLLL 11111 44444 UH UR DUD DUH HUH CRUD CURD CULL US DULL HULL CHI HURL LULL LOU CHIC OUCH SCUD LURCH CHURCH CA EU OUR SUCH COUCH CUE LOUD LUCID OCCUR CAD DUE CLOD COLD HUSH CLOUD COULD HUE CORD HOUR LUSH RICH RUSH UCLA CAR RCA CLUE DUCT DUDE SLUR CHILD CRUSH SCULL CROUCH RUN URN CHAD CURE DUAL LURID CLAD CULT CUSS DUEL HAUL HULA CHILL CHORD CARD CURT RUDE THUD ARCH CALL COIL DOCS LUIS CRUDE CURED DUTCH HUNCH HURLS ICE CARL CELL COOL LURE NULL RICO RULE TURD CURIO HUTCH LUNCH INC USE AUDI HURT OURS RUTH SOUR THRU 4241 1452 NC5A NA2T CU1LL CO5NO NU4R CT1AC CE1NI')">UC</a>
+                                    <a href="javascript:practiceSending('M W 3 6 ? MMM WWW 333 666 ??? UUU CCC 222 555 MMMMM WWWWW 33333 66666 ????? UUUUU CCCCC 22222 55555 UM MUM CW MR MUD HUM MOM MS MOW RUM WOW AM ME MAW CHUM MUCH WE COM MEW SUM MUMS COW DIM MID SWUM HIM MOD DOW MIL OHM DRUM WHIM HOW MIR RIM WHO MULL WHOM CAM EMU LOW MAC OWL CAW MRS ROW WORM DAM MAD SCUM HAM DEW WED WHAM ARM AWL ELM HEW LAW MEL MOO RAM HUMS MUSH MULCH RAW WAR WOO CHOW MOMS SLUM SWIM WARM WHEW MILD CROW MOLD WILD WOWS AIM MIA DORM MILL ALUM AMMO HOWL MACH MAUL MIME WILL WORD MIMIC MOMMA MOE SAM CALM CLAM MEMO MULE HUMUS HW? W3AA N3AM DM5RA W6AM N2AT RW5L ON4UN 335 1432 6122')">MW36?</a>
+                                    <a href="javascript:practiceSending('F Y FFF YYY MMM WWW 333 666 FFFFF YYYYY MMMMM WWWWW 33333 66666 FM MY MUFF HF YUM FLY FRY YUMMY WHY IF CUFF MUMMY OF OFF YO DUFF HUFF MIFF DUFFY FLU FLUFF HUFFY FUR RUFF FLUFFY CRY DRY DUMMY AMY MAY YAM FEW ICY WAY YAW YOU LYLY MOMMY COY YEW RUMMY EMMY HOFF MUFFS FIR LUCY RIFF COMFY FOR SHY WRYLY FUN ROY SLY DULY FILM WHIFF FAD FIRM FULL HOMY RUDY MUDDY DAY FED FLOW FORM FOWL FROM FUME FURL WILY WOLF DAFFY FULLY WOLFF MUMMIFY DYE HAY DEFY MACY CHUMMY ELF FAR HEY LAY CUFFS FURRY SCUFF FER RAY REF FRAY CRUMMY RYE SOY FREY CODY FARM FLAW FOUL CLIFF HW? F5IN YO1AR HH5H NO3M AA3U S52R 1512 3316')">FY</a>
+                                    <a href="javascript:practiceSending('P G 7 9 / PPP GGG 777 999 /// FFF YYY 333 666 PPPPP GGGGG 77777 99999 ///// FFFFF YYYYY 33333 66666 GYP PM UP GYM PUG PUP GUY YUP GUM MUG GUPPY PYGMY GIG UMP PUPPY GO PIG PUMP PIP GUFF PLY PUFF PRY FIG GAG MUGGY YUPPY CUP EGG FOG GAP DUG PEG YIP PIGGY HUG MIG PEP UGH LUG SPY WIG PUFFY RUG GULP PIMP PLUG POPPY POMP PULP GAY PHD PAY YAP FOGGY YEP GUMMY PEGGY AMP GEM MAP MEG PAM WAG GULF PUDGY COG GUS PAW UGLY GYPSY PEPPY PIGMY DIG PEW DUMP DIP DOG GOD GLUM HUMP PUPS HIP HOG POD LUMP PLUM WIMP HOP LIP LOG RIG RUMP PLUMP LOP POL RIP GRIP GLYPH GUN PRO PLOP PUPA 7423 14253679 G4AN/3 N1AR/5 W9UCA/9 W3/PY2AA F6/N6AM 2N2222')">PG79/</a>
+                                    <a href="javascript:practiceSending('B V BBB VVV 777 999 BBBBB VVVVV 77777 99999 ///// BY BUG PUB BMW BIB BUY BOB BUM BIG BOG GOB BOP BUMP BUGGY BE BUFF BAG CUB FIB GAB BEG FOB BOY BUD DUB IVY BOBBY HUB MOB VIM BOMB BULB BOW BUR RUB VOW BAY ABBY BABY BUMPY BYE BLVD GRUB BEVY BURP BUFFY GABBY BUS SUB VIC WEB COBB BID FLUB BAGGY HUBBY DUMB VAMP BUBBLY RIB BLOB BURY PUBS RUBY FLYBY CAB ORB ROB BUN NUB GLIB WOMB BAD BUT TUB BLIP BLOG RUGBY GRUBBY BED BLAB BUOY PLUMB BAR BOO BRA VAL BARB BUSY BUYS WAVY HUBBUB BLUFF BODY CLUB COMB VERB BRAG CURB GARB GRAB DIVVY HOBBY GUMBO LOBBY 6146 5514 BV2AA BA1RO WB2AE N6RB/4 W2/VE1AR VE2/W2LE')">BV</a>
+                                    <a href="javascript:practiceSending('J K 8 0 &lt;BT&gt; JJJ KKK 888 000 &lt;BT&gt;&lt;BT&gt;&lt;BT&gt; BBB VVV JJJJJ KKKKK 88888 00000 &lt;BT&gt;&lt;BT&gt;&lt;BT&gt;&lt;BT&gt;&lt;BT&gt; BBBBB VVVVV JR JUG OK JIB JOB JIG JOG KIP JAB JAG JOY KEG JUMP JIM JUL KIM SKY BUCK JAY KAY YAK JAM KEY JAW BULK PUCK JEW JOCK KICK KID JAMB YUCK JACK JUDY KIRK JUMPY JUNK MUCK JED GAWK JUGS JULY JURY PICK JAR JEFF ARK ELK SKI BACK BUNK FUJI JERK BULKY BALK PACK PORK PUKE IKE JOE OAK BARK BOOK DUCK JOBS PECK PUNK YOCK YUKS ASK INK JON KIN HUCK JODY JOKE JUDD MICK KOJAK JOT KIT KINK LUCK MOCK MUSK WICK JIFFY FOLK FORK PARK SKIP YOLK BIKE FUNK HULK JIVE MILK PERK YACK YORK JACKY JUMBO SWITCH DIPOLE VERTICAL OHMS HOME TEST 807 3500 4250A K1JD N1AR W2TT K2UMU N2NW VE3NE VA3KP K4BAI N5KO')">JK80 &lt;BT&gt;</a>
+                                    <a href="javascript:practiceSending('X Q Z &lt;BK&gt; XXX QQQ ZZZ &lt;BK&gt;&lt;BK&gt;&lt;BK&gt; KKK JJJ 888 000 XXXXX QQQQQ ZZZZZ &lt;BK&gt;&lt;BK&gt;&lt;BK&gt;&lt;BK&gt;&lt;BK&gt; KKKKK JJJJJ 88888 00000 HZ KHZ BUZZ BOX FUZZ JAZZ ZIP MHZ FIX FOX ZAP MIX FIZZ WIZ FAX MAX UZI WAX QUIZ COX FUZZY JAZZY LIZ TUX HEX FOXY SIX QUIP REX SOX ZOO FLUX FIZZY ZIGGY SAX ZOE ZIPPY ZIT WAXY BOZO COZY JINX SUZY AXE ZULU CRUX KNOX QUAY TAX CRUZ DIZZY ZEN AJAX FUZE ROXY WHIZ FRIZZ LIZZY WHIZZ FLEX HAZY EXPO LAZY ZING LYNX ZAPS PIZZA QUICK MARX ZOOM PIZAZZ QUAD APEX GAZE PIZZAZZ QUIRK ONYX QUACK XMAS PROXY CZAR BOOZY FAZE OXBOW QUARK ZIGZAG EXAM COAX MAZE QUIT GIZMO FRIZZY ZEUS ZINC KLUTZ AQUA HOAX IRAQ EPOXY QUIPS EXEC ZERO AFFIX XEROX BUZZER QRX QRZ QTH QRS QRO QRP WX QRM 8044 7400 73 ZL2TT VK4OM JE1TRV BA1CW KH6LC AL2A AA3B')">XQZ &lt;BK&gt;</a>
+                                    <br />
+                                    <a href="javascript:practiceSending('EEEEE TTTTT IIIII MMMMM SSSSS OOOOO HHHHH 00000 55555 AAAAA NNNNN UUUUU DDDDD VVVVV BBBBB 44444 66666 ABCDEF GHIJK LMNOP QRSTU VWXYZ 12345 67890 / , . ? &lt;SK&gt; &lt;AR&gt; &lt;BT&gt; THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9')">Warmup</a>
+                                    <a href="javascript:practiceSending('AAAAA BBBBB CCCCC DDDDD EEEEE FFFFF GGGGG HHHHH IIIII JJJJJ KKKKK LLLLL MMMMM NNNNN OOOOO PPPPP QQQQQ RRRRR SSSSS TTTTT UUUUU VVVVV WWWWW XXXXX YYYYY ZZZZZ 11111 22222 33333 44444 55555 66666 77777 88888 99999 00000')">Exercise</a>
+                                    <a href="javascript:practiceSending('THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9 THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9 BENS BEST BENT WIRE/5 BENS BEST BENT WIRE/5 BENS BEST BENT WIRE/5 / / / / / , , , , , . . . . . ? ? ? ? ? &lt;SK&gt; &lt;SK&gt; &lt;SK&gt; &lt;SK&gt; &lt;SK&gt; &lt;AR&gt; &lt;AR&gt; &lt;AR&gt; &lt;AR&gt; &lt;AR&gt; &lt;BT&gt; &lt;BT&gt; &lt;BT&gt; &lt;BT&gt; &lt;BT&gt;')">Drill</a>
+                                </td>
+                            </tr>
+                        </table>
                     </td>
                 </tr>
             </table>
