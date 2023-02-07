@@ -1329,6 +1329,7 @@
                                     return;
                                 case 'playPause':
                                     cancelRepeat();
+                                    ui.hide = !(!ui.hide || ui.progress); // show if already unhidden or in progress
                                     ui.progress = false;
                                     ui.count = 0;
                                     stopPhrase();
