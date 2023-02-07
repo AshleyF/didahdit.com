@@ -339,7 +339,7 @@
             var shuffleCache = {};
             function randomPhrase(index, len) {
                 if (getScramble()) {
-                    var id = 'shuffle_' + getContent().id;
+                    var id = 'rx_shuffle_' + getContent().id;
                     var shuffle = shuffleCache[id];
                     if (shuffle == null)
                     {
@@ -528,38 +528,38 @@
             }
 
             function getContent() {
-                var id = localStorage.getItem('content');
+                var id = localStorage.getItem('rx_content');
                 var content = library.find(c => c.id == id);
                 if (content) return content;
                 var dflt = library[0];
-                localStorage.setItem('content', dflt.id);
+                localStorage.setItem('rx_content', dflt.id);
                 return dflt;
             }
 
             function setContent(id) {
-                localStorage.setItem('content', id);
+                localStorage.setItem('rx_content', id);
             }
 
             function getLessonNum() {
                 var content = getContent();
-                var id = localStorage.getItem('lesson_' + content.id);
+                var id = localStorage.getItem('rx_lesson_' + content.id);
                 if (id) {
                     for (var i = 0; i < content.lessons.length; i++) {
                         if (content.lessons[i].id == id) return i;
                     }
                     trace('Missing lesson: ' + id);
-                    localStorage.setItem('lesson_' + content.id, content.lessons[0].id);
+                    localStorage.setItem('rx_lesson_' + content.id, content.lessons[0].id);
                 }
                 return 0;
             }
 
             function setLessonNum(num) {
                 var content = getContent();
-                var key = 'lesson_' + content.id;
+                var key = 'rx_lesson_' + content.id;
                 var id = content.lessons[num].id;
                 if (localStorage.getItem(key) != id) {
                     localStorage.setItem(key, id);
-                    localStorage.removeItem('shuffle_' + content.id); // force rescramble
+                    localStorage.removeItem('rx_shuffle_' + content.id); // force rescramble
                 }
             }
 
@@ -584,24 +584,24 @@
 
             function getPhraseNum() {
                 var content = getContent();
-                var phrase = getIntSetting('phrase_' + content.id, 0);
+                var phrase = getIntSetting('rx_phrase_' + content.id, 0);
                 if (phrase >= 0 && phrase < content.lessons[getLessonNum()].phrases.length) return phrase;
                 trace('Missing phrase: ' + phrase);
-                localStorage.setItem('phrase_' + content.id, 0);
+                localStorage.setItem('rx_phrase_' + content.id, 0);
                 return 0;
             }
 
             function setPhraseNum(num) {
                 var content = getContent();
-                localStorage.setItem('phrase_' + content.id, num);
+                localStorage.setItem('rx_phrase_' + content.id, num);
             }
 
             function getDarkMode() {
-                return (localStorage.getItem('mode') || 'dark') == 'dark';
+                return (localStorage.getItem('rx_mode') || 'dark') == 'dark';
             }
 
             function setDarkMode(dark) {
-                localStorage.setItem('mode', dark ? 'dark' : 'light');
+                localStorage.setItem('rx_mode', dark ? 'dark' : 'light');
             }
 
             var ditlen;
@@ -618,71 +618,71 @@
                 var farnsworth = getFarnsworth();
                 if (wpm < farnsworth || speed == farnsworth)
                 {
-                    localStorage.setItem('farnsworth', wpm); // farnsworth should track (when equal) and never be faster
+                    localStorage.setItem('rx_farnsworth', wpm); // farnsworth should track (when equal) and never be faster
                 }
                 var wordsworth = getWordsworth();
                 if (wpm < wordsworth || speed == wordsworth)
                 {
-                    localStorage.setItem('wordsworth', wpm); // wordssworth should track (when equal) and never be faster
+                    localStorage.setItem('rx_wordsworth', wpm); // wordssworth should track (when equal) and never be faster
                 }
-                localStorage.setItem('speed', wpm);
+                localStorage.setItem('rx_speed', wpm);
                 computeSpeedVariables(wpm, getFarnsworth(), getWordsworth());
             }
 
             function getSpeed() {
-                return getIntSetting('speed', 25);
+                return getIntSetting('rx_speed', 25);
             }
 
             function setFarnsworth(farnsworthWpm) {
                 if (farnsworthWpm > getSpeed())
                 {
-                    localStorage.setItem('speed', farnsworthWpm); // farnsworth cannot be faster than WPM
+                    localStorage.setItem('rx_speed', farnsworthWpm); // farnsworth cannot be faster than WPM
                 }
                 var wordsworth = getWordsworth();
                 if (farnsworthWpm < wordsworth || getFarnsworth() == wordsworth)
                 {
-                    localStorage.setItem('wordsworth', farnsworthWpm); // wordssworth should track (when equal) and never be faster
+                    localStorage.setItem('rx_wordsworth', farnsworthWpm); // wordssworth should track (when equal) and never be faster
                 }
-                localStorage.setItem('farnsworth', farnsworthWpm);
+                localStorage.setItem('rx_farnsworth', farnsworthWpm);
                 computeSpeedVariables(getSpeed(), farnsworthWpm, getWordsworth());
             }
 
             function getFarnsworth() {
-                return getIntSetting('farnsworth', 5);
+                return getIntSetting('rx_farnsworth', 5);
             }
 
             function setWordsworth(wordsworthWpm) {
                 if (wordsworthWpm > getSpeed())
                 {
-                    localStorage.setItem('speed', wordsworthWpm); // wordsworth cannot be faster than WPM
+                    localStorage.setItem('rx_speed', wordsworthWpm); // wordsworth cannot be faster than WPM
                 }
                 if (wordsworthWpm > getFarnsworth())
                 {
-                    localStorage.setItem('farnsworth', wordsworthWpm); // wordsworth cannot be faster than farnsworth
+                    localStorage.setItem('rx_farnsworth', wordsworthWpm); // wordsworth cannot be faster than farnsworth
                 }
-                localStorage.setItem('wordsworth', wordsworthWpm);
+                localStorage.setItem('rx_wordsworth', wordsworthWpm);
                 computeSpeedVariables(getSpeed(), getFarnsworth(), wordsworthWpm);
             }
 
             function getWordsworth() {
-                return getIntSetting('wordsworth', 5);
+                return getIntSetting('rx_wordsworth', 5);
             }
 
             function setPitch(hz) {
-                localStorage.setItem('pitch', hz);
+                localStorage.setItem('rx_pitch', hz);
                 if (audioStarted) toneOscillator.frequency.value = hz;
             }
 
             function getPitch() {
-                return getIntSetting('pitch', 650);
+                return getIntSetting('rx_pitch', 650);
             }
 
             function setScramble(scramble) {
-                localStorage.setItem('scramble', scramble);
+                localStorage.setItem('rx_scramble', scramble);
             }
 
             function getScramble() {
-                return getBoolSetting('scramble', false);
+                return getBoolSetting('rx_scramble', false);
             }
 
             function resizeCanvas() {
@@ -1363,32 +1363,45 @@
                         localStorage.setItem('lesson_CWOPS', library.find(c => c.id == 'CWOPS').lessons[lessonNum].id);
                         localStorage.removeItem('phrase');
                         localStorage.setItem('phrase_CWOPS', phraseNum);
-                        localStorage.setItem('version', 1);
                     }
+                    localStorage.setItem('version', 1);
                 }
                 function migrateV1toV2() {
                     // v1 had words/phrases/calls which were collapsed to a single 'practice'
                     var lesson = localStorage.getItem('lesson_CWOPS');
-                    if (lesson.endsWith('P') || lesson.endsWith('CC') || lesson.endsWith('DC')) {
+                    if (lesson && (lesson.endsWith('P') || lesson.endsWith('CC') || lesson.endsWith('DC'))) {
                         var migrate = lesson[0] + 'BW';
                         localStorage.setItem('lesson_CWOPS', migrate); // migrate lesson
                         localStorage.setItem('phrase_CWOPS', 0); // reset phrase within (sorry)
-                        localStorage.setItem('version', 2);
                     }
+                    localStorage.setItem('version', 2);
                 }
                 function migrateV2toV3() {
                     // v2 had characters/practice which were collapsed to a single lesson
                     var lesson = localStorage.getItem('lesson_CWOPS');
-                    var migrate = 'CWOB' + (lesson[0] || '1');
-                    if (lesson[1] == '0') migrate += '0';
-                    localStorage.setItem('lesson_CWOPS', migrate); // migrate lesson
-                    localStorage.setItem('phrase_CWOPS', 0); // reset phrase within (sorry)
+                    if (lesson) {
+                        var migrate = 'CWOB' + (lesson[0] || '1');
+                        if (lesson[1] == '0') migrate += '0';
+                        localStorage.setItem('lesson_CWOPS', migrate); // migrate lesson
+                        localStorage.setItem('phrase_CWOPS', 0); // reset phrase within (sorry)
+                    }
                     localStorage.setItem('version', 3);
                 }
                 function migrateV3toV4() {
                     // v3 had no wordsworth setting
-                    localStorage.setItem('wordsworth', localStorage.getItem('farnsworth')); // default wordsworth to match farnsworth
+                    var farnsworth = localStorage.getItem('farnsworth');
+                    if (farnsworth) localStorage.setItem('wordsworth', farnsworth); // default wordsworth to match farnsworth
                     localStorage.setItem('version', 4);
+                }
+                function migrateV4toV5() {
+                    // v4 used old local storage names (migrate to foo -> rx_foo)
+                    for (var n in localStorage) {
+                        if (!n.startsWith('rx_')) {
+                            localStorage.setItem('rx_' + n, localStorage.getItem(n));
+                            localStorage.removeItem(n);
+                        }
+                    }
+                    localStorage.setItem('rx_version', 5);
                 }
                 try
                 {
@@ -1396,6 +1409,8 @@
                     if ((localStorage.getItem('version') || '0') == '1') migrateV1toV2()
                     if ((localStorage.getItem('version') || '0') == '2') migrateV2toV3()
                     if ((localStorage.getItem('version') || '0') == '3') migrateV3toV4()
+                    if ((localStorage.getItem('version') || '0') == '4') migrateV4toV5()
+                    // rx_version hereafter
                 } catch (e) {
                     trace('Settings migration error: ' + e);
                     localStorage.clear();
@@ -1442,9 +1457,9 @@
                           { id: 'CUST0',
                             name: 'Custom',
                             phrases: phrases}]});
-                    if (localStorage.getItem('lasthash') != hash) {
-                        localStorage.setItem('lasthash', hash);
-                        localStorage.setItem('content', '_dynamic');
+                    if (localStorage.getItem('rx_lasthash') != hash) {
+                        localStorage.setItem('rx_lasthash', hash);
+                        localStorage.setItem('rx_content', '_dynamic');
                     }
                 }
                 if (location.search == '?clear-settings') localStorage.clear();
@@ -1529,5 +1544,17 @@
         - Phrase picker?
         - Keyboard control for desktop
         - FavIcon
+
+        Local Storage:
+        - 'content'
+        - 'lesson_<ID>' (within content)
+        - 'phrase_<ID>' (within lesson)
+        - 'mode' ('light'/'dark')
+        - 'speed'
+        - 'farnsworth'
+        - 'wordsworth'
+        - 'pitch'
+        - 'scramble'
+        - 'shuffle_<ID>' (within lesson)
     -->
 </html>
