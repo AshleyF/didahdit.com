@@ -597,11 +597,13 @@
             }
 
             function getDarkMode() {
-                return (localStorage.getItem('rx_mode') || 'dark') == 'dark';
+                return (localStorage.getItem('rx_ui_mode') || 'dark') == 'dark';
             }
 
             function setDarkMode(dark) {
-                localStorage.setItem('rx_mode', dark ? 'dark' : 'light');
+                var val = dark ? 'dark' : 'light';
+                localStorage.setItem('rx_ui_mode', val);
+                localStorage.setItem('rx_ui_mode_default', val);
             }
 
             var ditlen;
@@ -619,13 +621,16 @@
                 if (wpm < farnsworth || speed == farnsworth)
                 {
                     localStorage.setItem('rx_farnsworth', wpm); // farnsworth should track (when equal) and never be faster
+                    localStorage.setItem('rx_farnsworth_default', wpm);
                 }
                 var wordsworth = getWordsworth();
                 if (wpm < wordsworth || speed == wordsworth)
                 {
                     localStorage.setItem('rx_wordsworth', wpm); // wordssworth should track (when equal) and never be faster
+                    localStorage.setItem('rx_wordsworth_default', wpm);
                 }
                 localStorage.setItem('rx_speed', wpm);
+                localStorage.setItem('rx_speed_default', wpm);
                 computeSpeedVariables(wpm, getFarnsworth(), getWordsworth());
             }
 
@@ -637,13 +642,16 @@
                 if (farnsworthWpm > getSpeed())
                 {
                     localStorage.setItem('rx_speed', farnsworthWpm); // farnsworth cannot be faster than WPM
+                    localStorage.setItem('rx_speed_default', farnsworthWpm);
                 }
                 var wordsworth = getWordsworth();
                 if (farnsworthWpm < wordsworth || getFarnsworth() == wordsworth)
                 {
                     localStorage.setItem('rx_wordsworth', farnsworthWpm); // wordssworth should track (when equal) and never be faster
+                    localStorage.setItem('rx_wordsworth_default', farnsworthWpm);
                 }
                 localStorage.setItem('rx_farnsworth', farnsworthWpm);
+                localStorage.setItem('rx_farnsworth_default', farnsworthWpm);
                 computeSpeedVariables(getSpeed(), farnsworthWpm, getWordsworth());
             }
 
@@ -655,12 +663,15 @@
                 if (wordsworthWpm > getSpeed())
                 {
                     localStorage.setItem('rx_speed', wordsworthWpm); // wordsworth cannot be faster than WPM
+                    localStorage.setItem('rx_speed_default', wordsworthWpm);
                 }
                 if (wordsworthWpm > getFarnsworth())
                 {
                     localStorage.setItem('rx_farnsworth', wordsworthWpm); // wordsworth cannot be faster than farnsworth
+                    localStorage.setItem('rx_farnsworth_default', wordsworthWpm);
                 }
                 localStorage.setItem('rx_wordsworth', wordsworthWpm);
+                localStorage.setItem('rx_wordsworth_default', wordsworthWpm);
                 computeSpeedVariables(getSpeed(), getFarnsworth(), wordsworthWpm);
             }
 
@@ -670,6 +681,7 @@
 
             function setPitch(hz) {
                 localStorage.setItem('rx_pitch', hz);
+                localStorage.setItem('rx_pitch_default', hz);
                 if (audioStarted) toneOscillator.frequency.value = hz;
             }
 
@@ -1395,7 +1407,8 @@
                 }
                 function migrateV4toV5() {
                     // v4 used old local storage names (migrate to foo -> rx_foo)
-                    for (var n in localStorage) {
+                    for (var i = 0; i < localStorage.length; i++){
+                        var n = localStorage.key(i);
                         if (!n.startsWith('rx_')) {
                             localStorage.setItem('rx_' + n, localStorage.getItem(n));
                             localStorage.removeItem(n);
@@ -1403,14 +1416,21 @@
                     }
                     localStorage.setItem('rx_version', 5);
                 }
+                function migrateV5toV6() {
+                    // v5 didn't have defaults set (plus rx_mode rename)
+                    var mode = localStorage.getItem('rx_mode');
+                    if (mode) localStorage.setItem('rx_ui_mode', mode);
+                    localStorage.removeItem('rx_mode');
+                    localStorage.setItem('rx_version', 6);
+                }
                 try
                 {
-                    if ((localStorage.getItem('version') || '0') == '0') migrateV0toV1()
-                    if ((localStorage.getItem('version') || '0') == '1') migrateV1toV2()
-                    if ((localStorage.getItem('version') || '0') == '2') migrateV2toV3()
-                    if ((localStorage.getItem('version') || '0') == '3') migrateV3toV4()
-                    if ((localStorage.getItem('version') || '0') == '4') migrateV4toV5()
-                    // rx_version hereafter
+                    if ((localStorage.getItem('version') || '0') == '0') migrateV0toV1();
+                    if ((localStorage.getItem('version') || '0') == '1') migrateV1toV2();
+                    if ((localStorage.getItem('version') || '0') == '2') migrateV2toV3();
+                    if ((localStorage.getItem('version') || '0') == '3') migrateV3toV4();
+                    if ((localStorage.getItem('version') || '0') == '4') migrateV4toV5();
+                    if ((localStorage.getItem('rx_version') || '0') == '5') migrateV5toV6();
                 } catch (e) {
                     trace('Settings migration error: ' + e);
                     localStorage.clear();
@@ -1505,6 +1525,7 @@
                 canvas.ontouchend = function(e) { cancelRepeat(); };
                 canvas.onmouseup = function(e) { cancelRepeat(); }
                 resizeRedrawCanvas();
+                setDarkMode(getDarkMode());
                 setSpeed(getSpeed());
                 setFarnsworth(getFarnsworth());
                 setWordsworth(getWordsworth());
@@ -1546,14 +1567,19 @@
         - FavIcon
 
         Local Storage:
-        - 'content'
-        - 'lesson_<ID>' (within content)
-        - 'phrase_<ID>' (within lesson)
-        - 'mode' ('light'/'dark')
-        - 'speed'
-        - 'farnsworth'
-        - 'wordsworth'
-        - 'pitch'
+        - 'rx_content'
+        - 'rx_lesson_<ID>' (within content)
+        - 'rx_phrase_<ID>' (within lesson)
+        - 'rx_ui.mode' ('light'/'dark')
+        - 'rx_ui.mode_default' ('light'/'dark')
+        - 'rx_speed'
+        - 'rx_speed_default'
+        - 'rx_farnsworth'
+        - 'rx_farnsworth_default'
+        - 'rx_wordsworth'
+        - 'rx_wordsworth_default'
+        - 'rx_pitch'
+        - 'rx_pitch_default'
         - 'scramble'
         - 'shuffle_<ID>' (within lesson)
     -->
