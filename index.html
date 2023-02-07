@@ -155,7 +155,7 @@
             var ui = {
                 dialog: null,
                 playing: false,
-                hide: false,
+                hide: (getBoolSetting('rx_hide_phrase', false)),
                 progress: false,
                 count: 0,
                 buttons: [],
@@ -444,6 +444,10 @@
                 redraw();
             }
 
+            function saveHideState() {
+                localStorage.setItem('rx_hide_phrase', ui.hide);
+            }
+
             function playPhrase(phrase, speakAndAdvance) {
                 function codeMilliseconds(code) {
                     var s = 0;
@@ -467,6 +471,7 @@
                 }
                 if (speakAndAdvance && !ui.hide) {
                     ui.hide = true;
+                    saveHideState();
                     redraw();
                 }
                 var code = encodePhrase(convertPhrase(phrase));
@@ -483,6 +488,7 @@
                                     function () {
                                         if (ui.playing) {
                                             ui.hide = false;
+                                            saveHideState();
                                             redraw();
                                             var utter = convertUtterance(getCurrentPhrase());
                                             say(utter);
@@ -500,6 +506,7 @@
                                                         } else {
                                                             say('lesson complete');
                                                             ui.playing = ui.hide = false;
+                                                            saveHideState();
                                                             noSleep.disable();
                                                             nextLesson();
                                                         }
@@ -1278,6 +1285,7 @@
                                     cancelRepeat();
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
+                                    saveHideState();
                                     noSleep.disable();
                                     ui.show = 'content';
                                     redraw();
@@ -1286,6 +1294,7 @@
                                     cancelRepeat();
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
+                                    saveHideState();
                                     noSleep.disable();
                                     ui.show = 'lesson';
                                     redraw();
@@ -1294,6 +1303,7 @@
                                     cancelRepeat();
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
+                                    saveHideState();
                                     noSleep.disable();
                                     ui.show = 'phrase';
                                     redraw();
@@ -1305,6 +1315,7 @@
                                     } else {
                                         if (ui.hide) {
                                             ui.hide = false;
+                                            saveHideState();
                                         } else {
                                             stopPhrase();
                                             ui.playing = true;
@@ -1332,6 +1343,7 @@
                                     cancelRepeat();
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
+                                    saveHideState();
                                     noSleep.disable();
                                     prevLesson();
                                     redraw();
@@ -1340,6 +1352,7 @@
                                     cancelRepeat();
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
+                                    saveHideState();
                                     noSleep.disable();
                                     nextLesson();
                                     redraw();
@@ -1347,6 +1360,7 @@
                                 case 'prevPhrase':
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
+                                    saveHideState();
                                     noSleep.disable();
                                     prevPhrase();
                                     redraw();
@@ -1354,6 +1368,7 @@
                                 case 'nextPhrase':
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
+                                    saveHideState();
                                     noSleep.disable();
                                     nextPhrase();
                                     redraw();
