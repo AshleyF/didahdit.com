@@ -444,7 +444,7 @@
                 redraw();
             }
 
-            function saveHideState() {
+            function saveHiddenState() {
                 localStorage.setItem('rx_hide_phrase', ui.hide);
             }
 
@@ -471,7 +471,7 @@
                 }
                 if (speakAndAdvance && !ui.hide) {
                     ui.hide = true;
-                    saveHideState();
+                    saveHiddenState();
                     redraw();
                 }
                 var code = encodePhrase(convertPhrase(phrase));
@@ -488,7 +488,7 @@
                                     function () {
                                         if (ui.playing) {
                                             ui.hide = false;
-                                            saveHideState();
+                                            saveHiddenState();
                                             redraw();
                                             var utter = convertUtterance(getCurrentPhrase());
                                             say(utter);
@@ -506,7 +506,7 @@
                                                         } else {
                                                             say('lesson complete');
                                                             ui.playing = ui.hide = false;
-                                                            saveHideState();
+                                                            saveHiddenState();
                                                             noSleep.disable();
                                                             nextLesson();
                                                         }
@@ -1285,7 +1285,7 @@
                                     cancelRepeat();
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
-                                    saveHideState();
+                                    saveHiddenState();
                                     noSleep.disable();
                                     ui.show = 'content';
                                     redraw();
@@ -1294,7 +1294,7 @@
                                     cancelRepeat();
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
-                                    saveHideState();
+                                    saveHiddenState();
                                     noSleep.disable();
                                     ui.show = 'lesson';
                                     redraw();
@@ -1303,7 +1303,7 @@
                                     cancelRepeat();
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
-                                    saveHideState();
+                                    saveHiddenState();
                                     noSleep.disable();
                                     ui.show = 'phrase';
                                     redraw();
@@ -1315,7 +1315,7 @@
                                     } else {
                                         if (ui.hide) {
                                             ui.hide = false;
-                                            saveHideState();
+                                            saveHiddenState();
                                         } else {
                                             stopPhrase();
                                             ui.playing = true;
@@ -1330,6 +1330,7 @@
                                 case 'playPause':
                                     cancelRepeat();
                                     ui.hide = !(!ui.hide || ui.progress); // show if already unhidden or in progress
+                                    saveHiddenState();
                                     ui.progress = false;
                                     ui.count = 0;
                                     stopPhrase();
@@ -1344,7 +1345,7 @@
                                     cancelRepeat();
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
-                                    saveHideState();
+                                    saveHiddenState();
                                     noSleep.disable();
                                     prevLesson();
                                     redraw();
@@ -1353,7 +1354,7 @@
                                     cancelRepeat();
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
-                                    saveHideState();
+                                    saveHiddenState();
                                     noSleep.disable();
                                     nextLesson();
                                     redraw();
@@ -1361,7 +1362,7 @@
                                 case 'prevPhrase':
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
-                                    saveHideState();
+                                    saveHiddenState();
                                     noSleep.disable();
                                     prevPhrase();
                                     redraw();
@@ -1369,7 +1370,7 @@
                                 case 'nextPhrase':
                                     stopPhrase();
                                     ui.playing = ui.hide = false;
-                                    saveHideState();
+                                    saveHiddenState();
                                     noSleep.disable();
                                     nextPhrase();
                                     redraw();
