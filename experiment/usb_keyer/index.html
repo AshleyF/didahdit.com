@@ -19,8 +19,7 @@
             select { font-size: larger; background-color: black; color: white; }
         </style>
         <script>
-            const defaultSpeed = 25;
-            const defaultFarnsworth = 14; // dits
+            const defaultFarnsworth = 7; // dits
             const canvasWidth = 80;
 
             var farnsworth = defaultFarnsworth; // dits
@@ -108,6 +107,7 @@
             }
 
             const defaultPitch = 600;
+            const defaultSpeed = 25;
 
             function audio() {
                 if (!audioStarted) {
@@ -275,9 +275,17 @@
             function load() {
                 loaded = true;
                 document.getElementById('mode').addEventListener('change', modeChange);
+                var speed = document.getElementById('speed');
+                speed.addEventListener('change', speedChange);
+                for (var s = 48; s >= 6; s--) {
+                    var opt = document.createElement('option');
+                    opt.value = opt.innerHTML = s;
+                    if (s == defaultSpeed) opt.selected = true;
+                    speed.appendChild(opt);
+                }
                 var pitch = document.getElementById('pitch');
                 pitch.addEventListener('change', pitchChange);
-                for (var p = 300; p <= 900; p += 5) {
+                for (var p = 900; p >= 300; p -= 5) {
                     var opt = document.createElement('option');
                     opt.value = opt.innerHTML = p;
                     if (p == defaultPitch) opt.selected = true;
@@ -346,14 +354,14 @@
                     if (speedKey == 0) {
                         speedKey = i * 10;
                     } else {
-                        setSpeed(speedKey + i);
+                        setSpeed(speedKey + i, true, true);
                         speedKey = 0;
                     }
                 }
                 document.body.addEventListener('keydown', (e) => {
                     if (!e.repeat && e.srcElement.id != 'message') {
                         switch (e.key) {
-                            case 'Escape':
+                            case ' ':
                                 reset();
                                 speedKey = 0;
                                 break;
@@ -433,9 +441,10 @@
                     }
                 });
                 reset();
-                setSpeed(defaultSpeed);
+                setSpeed(localStorage.getItem('tx_speed') || 25, true, true);
                 setFarnsworth(defaultFarnsworth);
-                setMode('B');
+                setPitch(localStorage.getItem('tx_pitch') || 600, true, true);
+                setMode(localStorage.getItem('tx_keyer') || 'B', true, true);
                 setMemory(true);
                 setTone(false);
                 setEnforceElements(true);
@@ -500,9 +509,22 @@
             }
 
             function setMode(m) {
+                localStorage.setItem('tx_keyer', m);
                 mode = m;
                 sendByte(getModeByte(mode));
                 document.getElementById('mode').value = m;
+            }
+
+            var currentSpeed = defaultSpeed;
+            function setSpeed(wpm, sendToRadio, updateMenu) {
+                speed = wpm;
+                ditlen = 1.2 / speed;
+                sendByte(getSpeedByte(wpm));
+                if (currentSpeed == wpm) return;
+                currentSpeed = wpm;
+                if (updateMenu) document.getElementById('speed').value = wpm; 
+                if (sendToRadio) setRadioCWSpeed(wpm);
+                localStorage.setItem('tx_speed', wpm);
             }
 
             var currentPitch = defaultPitch;
@@ -513,6 +535,7 @@
                 oscillator.frequency.value = p;
                 if (updateMenu) document.getElementById('pitch').value = p; 
                 if (sendToRadio) setRadioCWPitch(p);
+                localStorage.setItem('tx_pitch', p);
             }
 
             function getMemoryByte(mem) {
@@ -547,12 +570,6 @@
 
             function getSpeedByte(wpm) {
                 return Math.min(255, Math.round(wpm) + 200);
-            }
-
-            function setSpeed(wpm) {
-                speed = wpm;
-                ditlen = 1.2 / speed;
-                sendByte(getSpeedByte(wpm));
             }
 
             function setFarnsworth(dits) {
@@ -613,7 +630,7 @@
 
             function practiceSending(message) {
                 clearMessage();
-                sending += message;
+                sending = message;
                 updateDisplay();
             }
 
@@ -622,16 +639,16 @@
                 if (connectedPort != null) {
                     sending += message.toUpperCase() + ' ';
                     updateDisplay();
-                    var data = [];
+                    //var data = [];
                     var letter = [];
                     var prosign = false;
                     for (var i in message) {
                         var m = message[i];
                         if (m == ' ') { // word break
                             for (var i = 0; i < farnsworth / 3; i++) {
-                                data.push(32); // extra letter-break
+                                //data.push(32); // extra letter-break
                             }
-                            data.push(47);
+                            //data.push(47);
                         } else {
                             if (m == '<') prosign = true;
                             if (m == '>') prosign = false;
@@ -645,21 +662,21 @@
                                     j = (j - 1) / 2;
                                 }
                             }
-                            data = data.concat(letter.reverse());
+                            //data = data.concat(letter.reverse());
                             letter = [];
                             if (!prosign) {
                                 for (var i = 0; i < farnsworth / 3; i++) {
-                                    data.push(32); // letter-break
+                                    //data.push(32); // letter-break
                                 }
-                                data.push(32); // letter-break
+                                //data.push(32); // letter-break
                             }
                         }
                     }
-                    data.push(47); // final word break
-                    const writer = connectedPort.writable.getWriter();
-                    writer.write(new Uint8Array(data)).then(() => {
-                        writer.releaseLock();
-                    });
+                    //data.push(47); // final word break
+                    //const writer = connectedPort.writable.getWriter();
+                    //writer.write(new Uint8Array(data)).then(() => {
+                    //    writer.releaseLock();
+                    //});
                 }
             }
 
@@ -1225,6 +1242,7 @@
                         connectedRadioPort = port;
                         radioConnected = true;
                         mute(true);
+                        setRadioCWSpeed(parseInt(document.getElementById('speed').value));
                         setRadioCWPitch(parseInt(document.getElementById('pitch').value));
                     }).catch(e => {
                         alert('ERROR OPENING: ' + e);
@@ -1267,6 +1285,12 @@
                 sendRadioCommand(0x14, 0x09, null);
             }
 
+            function setRadioCWSpeed(s) {
+                if (connectedRadioPort != null) {
+                    // TODO sendRadioCommand(0x14, 0x09, [d0, low]);
+                }
+            }
+
             function setRadioCWPitch(p) {
                 if (connectedRadioPort != null) {
                     p = Math.round((p - 300) / 600 * 253 + 0.5) + 1;
@@ -1304,6 +1328,10 @@
             function pitchChange(e) {
                 setPitch(parseInt(e.target.value), true, false);
             }
+
+            function speedChange(e) {
+                setSpeed(parseInt(e.target.value), true, false);
+            }
         </script>
     </head>
     <body onload="init()">
@@ -1311,7 +1339,7 @@
             <h1>This is messy prototype still in development.</h1>
             <p>It uses the <a href="https://hamradio.solutions/vband/">USB paddle interface from Ham Radio Solutions</a> ("Store" tab).</p>
             <p>It's a keyer that can be used for practice with a nifty visualization of paddle state (currently doesn't support straight keys).</p>
-            <p>It may also be connected to a radio over USB/Bluetooth and will act as a proper keyer.</p>
+            <p>In the future it will also connect to a radio over USB/Bluetooth and will act as a proper keyer.</p>
             <button onclick="load()">Let's do it!</button>
         </div>
         <div id="main" style="height: 100vh; display:none">
@@ -1337,6 +1365,13 @@
                                     </select>
                                 </td>
                             </tr>
+                            <tr>
+                                <td>Speed:</td>
+                                <td width="100%">
+                                    <select id="speed"></select></h1>
+                                </td>
+                            </tr>
+                            <tr>
                                 <td>Pitch:</td>
                                 <td width="100%">
                                     <select id="pitch"></select></h1>
@@ -1344,6 +1379,17 @@
                             </tr>
                             <tr>
                                 <td colspan="2">
+                                    <h3 style="margin-top: 3em">Usage tips:</h3>
+                                    <ul>
+                                        <li>Works with this <a href="https://hamradio.solutions/vband/">USB paddle interface</a></li>
+                                        <li>Press SPACE to clear.</li>
+                                        <li>Press U, A or B to choose keying mode.</li>
+                                    </ul>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    <h3 style="margin-top: 3em">Practice sending (choose a lesson below and key it):</h3>
                                     <hr />
                                     <a href="javascript:practiceSending('E T A N EEE TTT AAA NNN EEEEE TTTTT AAAAA NNNNN AN AT ANN ANT ATE EAT ETA NET TAN TAT TEA TEE TEN ANNA ANNE ANTE NATE NEAT TATE TEAT TEEN TENT EATEN TENET TENANT ANNETTE ANTENNA')">ETAN</a>
                                     <a href="javascript:practiceSending('O I S 1 4 OOO III SSS 111 444 TTT EEE AAA NNN OOOOO IIIII SSSSS 11111 44444 TTTTT EEEEE AAAAA NNNNN AS IN IT NO ON TO SIN ST ITS SIT SON TOO OASIS SOON SITS SOOT SOTA IAN ASIA TOSS AT SEA INN OAT ONE SEE TAO TIE NIT SAT TIN TOE SINE SONIA NOT SET INTO NOON NOSE SANS SITE NOISE OASES ONION TOT ONTO TOES NOOSE SNOT TOOT SNOOT ASSESS ASSIST INSIST EASE ASIAN ANTI NINE SANE SEAN TINA EAST N1AS N4ON S41T NO1S AI1E IT4O EA1ON ES4IT 14 41 44 11 441 141 114 411')">OIS14</a>
@@ -1359,6 +1405,8 @@
                                     <a href="javascript:practiceSending('EEEEE TTTTT IIIII MMMMM SSSSS OOOOO HHHHH 00000 55555 AAAAA NNNNN UUUUU DDDDD VVVVV BBBBB 44444 66666 ABCDEF GHIJK LMNOP QRSTU VWXYZ 12345 67890 / , . ? &lt;SK&gt; &lt;AR&gt; &lt;BT&gt; THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9')">Warmup</a>
                                     <a href="javascript:practiceSending('AAAAA BBBBB CCCCC DDDDD EEEEE FFFFF GGGGG HHHHH IIIII JJJJJ KKKKK LLLLL MMMMM NNNNN OOOOO PPPPP QQQQQ RRRRR SSSSS TTTTT UUUUU VVVVV WWWWW XXXXX YYYYY ZZZZZ 11111 22222 33333 44444 55555 66666 77777 88888 99999 00000')">Exercise</a>
                                     <a href="javascript:practiceSending('THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9 THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9 BENS BEST BENT WIRE/5 BENS BEST BENT WIRE/5 BENS BEST BENT WIRE/5 / / / / / , , , , , . . . . . ? ? ? ? ? &lt;SK&gt; &lt;SK&gt; &lt;SK&gt; &lt;SK&gt; &lt;SK&gt; &lt;AR&gt; &lt;AR&gt; &lt;AR&gt; &lt;AR&gt; &lt;AR&gt; &lt;BT&gt; &lt;BT&gt; &lt;BT&gt; &lt;BT&gt; &lt;BT&gt;')">Drill</a>
+                                    <br />
+                                    <a href="javascript:practiceSending('BE TO OF IN IT ON HE AS DO AT BY WE OR AN MY SO UP IF GO')">Two-letter words</a>
                                 </td>
                             </tr>
                         </table>
