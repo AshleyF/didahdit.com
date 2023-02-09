@@ -17,6 +17,7 @@
             tr { background-color: #555; }
             td { background-color: black; }
             select { font-size: larger; background-color: black; color: white; }
+            ::-webkit-scrollbar { width: 0px; }
         </style>
         <script>
             const defaultFarnsworth = 7; // dits
@@ -1324,9 +1325,9 @@
 
             function resize() {
                 var canvas = document.getElementById('canvas');
-                canvas.height = window.innerHeight - 100;
+                canvas.height = window.scrollHeight - 100;
                 var copy = document.getElementById('copy');
-                copy.style.width = window.innerWidth;
+                copy.style.width = window.scrollWidth;
             }
 
             onresize = resize;
