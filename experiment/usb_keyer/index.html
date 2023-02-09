@@ -176,16 +176,18 @@
             mostRecentPaddle = 'none';
             lastSent = null;
 
-            function pushDit() {
-                buffer.push(true); // dit
-                sendRadioDit();
-                lastSent = true;
+            function pushLeft() {
+                var ditdah = currentPolarity == 'ditdah';
+                buffer.push(ditdah); // dit
+                sendRadioDitDah(ditdah);
+                lastSent = ditdah;
             }
 
-            function pushDah() {
-                buffer.push(false); // dah
-                sendRadioDah();
-                lastSent = false;
+            function pushRight() {
+                var ditdah = !(currentPolarity == 'ditdah');
+                buffer.push(ditdah); // dah
+                sendRadioDitDah(ditdah);
+                lastSent = ditdah;
             }
 
             var endedWithSqueeze = false;
@@ -207,30 +209,30 @@
                         switch (mode) {
                             case 'U': // ultimatic
                                 if (mostRecentPaddle == 'left') {
-                                    pushDit();
+                                    pushLeft();
                                     keyerLoop();
                                 } else if (mostRecentPaddle == 'right') {
-                                    pushDah();
+                                    pushRight();
                                     keyerLoop();
                                 }
                                 break;
                             case 'A': // iambic A
                             case 'B': // iambic B
-                                if (lastSent != null && lastSent) pushDah(); else pushDit(); // opposite
+                                if (lastSent != null && lastSent) pushRight(); else pushLeft(); // opposite
                                 keyerLoop();
                                 break;
                             default:
                                 throw "Unsupported mode: " + mode;
                         }
                     } else if (leftDown) {
-                        pushDit();
+                        pushLeft();
                         keyerLoop();
                     } else if (rightDown) {
-                        pushDah();
+                        pushRight();
                         keyerLoop();
                     } else {
                         if (mode == 'B' && endedWithSqueeze) {
-                            if (lastSent != null && lastSent) pushDah(); else pushDit(); // opposite
+                            if (lastSent != null && lastSent) pushRight(); else pushLeft(); // opposite
                             endedWithSqueeze = false;
                             keyerLoop();
                         } else {
@@ -248,7 +250,7 @@
                     leftDown = state;
                     if (leftDown) {
                         mostRecentPaddle = 'left';
-                        pushDit();
+                        pushLeft();
                     }
                 }
             }
@@ -259,7 +261,7 @@
                     rightDown = state;
                     if (rightDown) {
                         mostRecentPaddle = 'right';
-                        pushDah();
+                        pushRight();
                     }
                 }
             }
@@ -291,6 +293,8 @@
                     if (p == defaultPitch) opt.selected = true;
                     pitch.appendChild(opt);
                 }
+                var polarity = document.getElementById('polarity');
+                polarity.addEventListener('change', polarityChange);
                 document.getElementById("intro").style.display = 'none';
                 document.getElementById("main").style.display = '';
                 keyerLoop();
@@ -444,6 +448,7 @@
                 setSpeed(localStorage.getItem('tx_speed') || 25, true, true);
                 setFarnsworth(defaultFarnsworth);
                 setPitch(localStorage.getItem('tx_pitch') || 600, true, true);
+                setPolarity(localStorage.getItem('tx_polarity') || "ditdah", true, true);
                 setMode(localStorage.getItem('tx_keyer') || 'B', true, true);
                 setMemory(true);
                 setTone(false);
@@ -536,6 +541,15 @@
                 if (updateMenu) document.getElementById('pitch').value = p; 
                 if (sendToRadio) setRadioCWPitch(p);
                 localStorage.setItem('tx_pitch', p);
+            }
+
+            var currentPolarity = 'ditdah';
+            function setPolarity(p, sendToRadio, updateMenu) {
+                if (currentPolarity == p) return;
+                currentPolarity = p;
+                if (updateMenu) document.getElementById('polarity').value = p; 
+                // if (sendToRadio) setRadioPaddlePolarity(p);
+                localStorage.setItem('tx_polarity', p);
             }
 
             function getMemoryByte(mem) {
@@ -922,12 +936,12 @@
             function copy(b) {
                 switch (b) {
                     case 46: // dit
-                        sendRadioDit();
+                        sendRadioDitDah(true);
                         dit(true);
                         updateBreaks(ditlen);
                         break;
                     case 45: // dah
-                        sendRadioDah();
+                        sendRadioDitDah(false);
                         dah(true);
                         updateBreaks(3 * ditlen);
                         break;
@@ -1304,12 +1318,8 @@
                 }
             }
 
-            function sendRadioDit() {
-                sendRadioCW("^e");
-            }
-
-            function sendRadioDah() {
-                sendRadioCW("^t");
+            function sendRadioDitDah(dit) {
+                sendRadioCW(dit ? '^e' : '^t');
             }
 
             function resize() {
@@ -1327,6 +1337,10 @@
 
             function pitchChange(e) {
                 setPitch(parseInt(e.target.value), true, false);
+            }
+
+            function polarityChange(e) {
+                setPolarity(e.target.value, true, false);
             }
 
             function speedChange(e) {
@@ -1368,13 +1382,22 @@
                             <tr>
                                 <td>Speed:</td>
                                 <td width="100%">
-                                    <select id="speed"></select></h1>
+                                    <select id="speed"></select>wpm</h1>
                                 </td>
                             </tr>
                             <tr>
                                 <td>Pitch:</td>
                                 <td width="100%">
-                                    <select id="pitch"></select></h1>
+                                    <select id="pitch"></select>Hz</h1>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Polarity:</td>
+                                <td width="100%">
+                                    <select id="polarity">
+                                        <option value="ditdah">Normal</option>
+                                        <option value="dahdit">Reverse</option>
+                                    </select></h1>
                                 </td>
                             </tr>
                             <tr>
