@@ -195,17 +195,30 @@
             }
 
             var endedWithSqueeze = false;
+            var expectLoop = 0;
+            var future = false;
+            var avg = 0;
             function keyerLoop() {
+                if (future) {
+                    var delay = Date.now() - expectLoop;
+                    avg = (avg + delay) / 2;
+                    document.getElementById('debug').innerText = 'Loop ' + delay + ' (' + avg + ')';
+                    future = false;
+                }
                 if (buffer.length > 0) {
                     endedWithSqueeze = (leftDown && rightDown);
                     var element = buffer.shift();
                     if (element) { // dit?
                         dit(true);
                         updateBreaks(ditlen);
+                        expectLoop = Date.now() + (2 * ditlen * 1000);
+                        future = true;
                         setTimeout(keyerLoop, 2 * ditlen * 1000);
                     } else {
                         dah(true);
                         updateBreaks(3 * ditlen);
+                        expectLoop = Date.now() + (4 * ditlen * 1000);
+                        future = true;
                         setTimeout(keyerLoop, 4 * ditlen * 1000);
                     }
                 } else {
@@ -214,15 +227,18 @@
                             case 'U': // ultimatic
                                 if (mostRecentPaddle == 'left') {
                                     pushLeft();
+                                    //expectLoop = Date.now();
                                     keyerLoop();
                                 } else if (mostRecentPaddle == 'right') {
                                     pushRight();
+                                    //expectLoop = Date.now();
                                     keyerLoop();
                                 }
                                 break;
                             case 'A': // iambic A
                             case 'B': // iambic B
                                 if (lastSent != null && lastSent) pushRight(); else pushLeft(); // opposite
+                                //expectLoop = Date.now();
                                 keyerLoop();
                                 break;
                             default:
@@ -230,17 +246,22 @@
                         }
                     } else if (leftDown) {
                         pushLeft();
+                        //expectLoop = Date.now();
                         keyerLoop();
                     } else if (rightDown) {
                         pushRight();
+                        //expectLoop = Date.now();
                         keyerLoop();
                     } else {
                         if (mode == 'B' && endedWithSqueeze) {
                             if (lastSent != null && lastSent) pushRight(); else pushLeft(); // opposite
                             endedWithSqueeze = false;
+                            //expectLoop = Date.now();
                             keyerLoop();
                         } else {
                             endedWithSqueeze = false;
+                            //expectLoop = Date.now() + 10;
+                            //future = true;
                             setTimeout(keyerLoop, 10);
                         }
                     }
@@ -1440,6 +1461,10 @@
                                         <option value="dahdit">Right Dit</option>
                                     </select></h1>
                                 </td>
+                            </tr>
+                            <tr>
+                                <td>Debug:</td>
+                                <td id="debug" width="100%"></td>
                             </tr>
                             <tr>
                                 <td colspan="2">
