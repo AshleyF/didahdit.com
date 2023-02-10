@@ -197,11 +197,15 @@
             var endedWithSqueeze = false;
             var expectLoop = 0;
             var future = false;
+            var sliding = [];
             var avg = 0;
             function keyerLoop() {
                 if (future) {
                     var delay = Date.now() - expectLoop;
-                    avg = (avg + delay) / 2;
+                    sliding.push(delay);
+                    if (sliding.length > 100) sliding.shift();
+                    var sum = sliding.reduce((x, y) => x + y);
+                    avg = Math.round(sum / sliding.length + 0.5);
                     document.getElementById('debug').innerText = 'Loop ' + delay + ' (' + avg + ')';
                     future = false;
                 }
