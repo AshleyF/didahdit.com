@@ -1,6 +1,7 @@
 <html>
     <head>
         <title>USB Keyer</title>
+        <meta name="viewport" content="width=device-width" />
         <style>
             body {
                 margin: 0;
@@ -318,7 +319,7 @@
                 //        e.preventDefault();
                 //    }
                 //});
-                const debounceLimit = 10;
+                const debounceLimit = 20;
                 var leftActuallyDown = false;
                 var rightActuallyDown = false;
                 document.body.addEventListener('keydown', (e) => {
@@ -1131,7 +1132,9 @@
             }
 
             var lastPitch = defaultPitch;
+            var lastSpeed = defaultSpeed;
             var loopCount = 0;
+            var timeout = null;
             function readRadio() {
                 if (connectedRadioPort != null) {
                     if (!radioConnected) {
@@ -1173,13 +1176,33 @@
                                                         }
                                                     }
                                                     break
+                                                case 0x0c: // CW speed
+                                                    if (x.value.length >= 8) // TODO: truncated, should be state machine!
+                                                    {
+                                                        var d0 = x.value[6];
+                                                        var low = x.value[7];
+                                                        var d2 = low & 0xF;
+                                                        var d1 = (low & 0xF0) >> 4;
+                                                        var val = d0 * 100 + d1 * 10 + d2;
+                                                        var speed = Math.round((val - 1) / 255 * 42 + 6.5);
+                                                        if (speed != lastSpeed) {
+                                                            lastSpeed = speed;
+                                                            setSpeed(speed, false, true);
+                                                        }
+                                                    }
+                                                    break
                                             }
                                             break;
                                     }
                                 }
                             }
                         }
-                        getRadioCWPitch(); // again, again!
+                        if (timeout) clearTimeout(timeout);
+                        timeout = setTimeout(function() {
+                            timeout = null;
+                            getRadioCWPitch();
+                            getRadioCWSpeed();
+                        }, 50); // throttle radio settings updates
                         reader.releaseLock();
                         window.setTimeout(readRadio, 1);
                     });
@@ -1189,7 +1212,7 @@
             }
 
             function simulateKeys(keys) {
-                var next = (new Date()).getTime();
+                var next = Date.now();
                 function updateKeyState() {
                     if (keys.length > 0) {
                         var k = keys[0];
@@ -1295,14 +1318,21 @@
                 sendRadioCommand(0x17 /* send CW */, null, ascii);
             }
 
-            function getRadioCWPitch() {
-                sendRadioCommand(0x14, 0x09, null);
-            }
-
             function setRadioCWSpeed(s) {
                 if (connectedRadioPort != null) {
-                    // TODO sendRadioCommand(0x14, 0x09, [d0, low]);
+                    s = Math.round((s - 6) / 42 * 254 + 0.5);
+                    var d2 = (s % 10) & 0xff;
+                    s /= 10;
+                    var d1 = (s % 10) & 0xff;
+                    s /= 10;
+                    var d0 = (s % 10) & 0xff;
+                    var low = d1 << 4 | d2;
+                    sendRadioCommand(0x14, 0x0c, [d0, low]);
                 }
+            }
+
+            function getRadioCWSpeed() {
+                sendRadioCommand(0x14, 0x0c, null);
             }
 
             function setRadioCWPitch(p) {
@@ -1316,6 +1346,10 @@
                     var low = d1 << 4 | d2;
                     sendRadioCommand(0x14, 0x09, [d0, low]);
                 }
+            }
+
+            function getRadioCWPitch() {
+                sendRadioCommand(0x14, 0x09, null);
             }
 
             function sendRadioDitDah(dit) {
@@ -1345,6 +1379,10 @@
 
             function speedChange(e) {
                 setSpeed(parseInt(e.target.value), true, false);
+            }
+
+            function test() {
+                sendRadioCW("test");
             }
         </script>
     </head>

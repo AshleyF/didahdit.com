@@ -19,6 +19,7 @@ Here are some ideas and nice sites and apps out there:
 - [*G4FON*](http://www.g4fon.net/) A nice site and a set of interesting (old) apps.
 - [Morse Code Ninja](https://morsecode.ninja/).
 - [Morse Code World](https://morsecode.world/).
+- [Learn CW Online](https://lcwo.net/).
 - [Slow Speed [Con]test](http://www.k1usn.com/sst).
 - [Contest Calendar](http://contestcalendar.com).
 - [Parks on the Air](http://pota.app).
@@ -28,6 +29,12 @@ Here are some ideas and nice sites and apps out there:
 - [Reverse Beacon Network](https://www.reversebeacon.net/).
 - [QRPer](https://qrper.com).
 - [APRS](http://aprs.fi).
+- [3830 Scores](https://www.3830scores.com/).
+- [Ham Radio Solutions](https://hamradio.solutions/) (VBand, CW Hotline, ...).
+- [Progagation Maps](https://prop.kc2g.com/).
+- [FCC Licence Manager](https://wireless2.fcc.gov/UlsEntry/licManager/login.jsp).
+- [Callsign Query Tool](https://www.ae7q.com).
+- [Solar Conditions](https://solar.w5mmw.net/).
 
 ## Apps
 
