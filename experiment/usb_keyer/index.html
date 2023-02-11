@@ -264,9 +264,9 @@
                             keyerLoop();
                         } else {
                             endedWithSqueeze = false;
-                            //expectLoop = Date.now() + 10;
-                            //future = true;
-                            setTimeout(keyerLoop, 10);
+                            expectLoop = Date.now() + 20;
+                            future = true;
+                            setTimeout(keyerLoop, 20);
                         }
                     }
                 }
@@ -284,7 +284,6 @@
                 }
             }
 
-            var lastRightReleaseTime = 0;
             function keyUpdateRight(state) {
                 if (rightDown != state) {
                     rightDown = state;
@@ -1152,10 +1151,10 @@
                             }
                         }
                         reader.releaseLock();
-                        window.setTimeout(read, 10);
+                        window.setTimeout(read, 20);
                     });
                 } else {
-                    window.setTimeout(read, 10);
+                    window.setTimeout(read, 20);
                 }
             }
 
