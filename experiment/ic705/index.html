@@ -1,167 +1,153 @@
 <html>
     <head>
-        <title>Icom 705 CI-V Test</title>
-        <style>
-            body {
-                background-color: black;
-                color: white;
-                font-family: sans-serif;
-                cursor: hand }
-            a { color: #eee; }
-            button { background-color: #555; color: #eee; }
-            textarea { background-color: #555; color: #eee; }
-            h5 { color: #555; }
-            hr { color: #555; }
-        </style>
+        <title>IC-705</title>
+        <style>body { margin: 0; padding: 0; }</style>
+        <meta name="viewport" content="width=device-width" />
         <link rel="shortcut icon" href="beta.png"> 
         <link rel="apple-touch-icon" href="beta.png">
         <script>
-            var connectedPort = null;
+            var canvas;
 
-            function load() {
-                if ('serial' in navigator) {
-                    navigator.serial.addEventListener('connect', (e) => {
-                        // Connect to `e.target` or add it to a list of available ports.
-                        //alert('Connected: ' + JSON.stringify(e));
-                    });
-                    navigator.serial.addEventListener('disconnect', (e) => {
-                        // Remove `e.target` from the list of available ports.
-                        //alert('Disconnected: ' + JSON.stringify(e));
-                    });
-                } else {
-                    alert('SERIAL UNAVAILABLE'); // The Web Serial API is supported.
+            function resizeCanvas() {
+                var w = window.innerWidth;
+                var h = window.innerHeight;
+                canvas.width = w;
+                canvas.height = h;
+                canvas.style.width = w + 'px';
+                canvas.style.height = h + 'px';
+            }
+
+            var bgColor = '#f00';
+
+            function redraw() {
+                var ctx = canvas.getContext('2d');
+                ctx.scale(1, 1);
+                var w = canvas.width;
+                var h = canvas.height;
+
+                var backgroundColor = '#000';
+                ctx.fillStyle = backgroundColor;
+                ctx.fillRect(0, 0, w, h);
+                document.body.style.backgroundColor = backgroundColor;
+
+                function fillRoundedRect(left, top, right, bottom, radius, color) {
+                    ctx.beginPath();
+                    ctx.moveTo(left + radius, top);
+                    ctx.lineTo(right - radius, top);
+                    ctx.arcTo(right, top, right, top + radius, radius);
+                    ctx.lineTo(right, bottom - radius);
+                    ctx.arcTo(right, bottom, right - radius, bottom, radius);
+                    ctx.lineTo(left + radius, bottom);
+                    ctx.arcTo(left, bottom, left, bottom - radius, radius);
+                    ctx.lineTo(left, top + radius);
+                    ctx.arcTo(left, top, left + radius, top, radius);
+                    ctx.closePath();
+                    ctx.fillStyle = color;
+                    ctx.fill();
                 }
-                document.body.addEventListener('keydown', (e) => {
-                    if (!e.repeat && e.srcElement.id != 'message') {
-                        switch (e.code) {
-                            case 'KeyC':
-                                connect();
-                                break;
-                        }
+
+                fillRoundedRect(30, 30, w - 30, h - 30, 30, bgColor);
+            }
+
+            function touch(x, y) {
+                switch (bgColor) {
+                    case '#f00':
+                        bgColor = '#0f0';
+                        break;
+                    case '#0f0':
+                        bgColor = '#00f';
+                        break;
+                    case '#00f':
+                        bgColor = '#f00';
+                        break;
+                }
+                redraw();
+            }
+
+            var audioCtx;
+            var toneGain;
+            var toneOscillator;
+            var audioStarted = false;
+            function audio() {
+                if (!audioStarted) {
+                    audioCtx = new (AudioContext || webkitAudioContext)();
+                    toneOscillator = audioCtx.createOscillator();
+                    toneOscillator.frequency.value = 650; // getPitch();
+                    toneGain = audioCtx.createGain();
+                    toneGain.gain.value = 0;
+                    toneOscillator.connect(toneGain);
+                    toneGain.connect(audioCtx.destination);
+                    toneOscillator.start(0);
+                    audioStarted = true;
+                }
+                return audioCtx.currentTime;
+            }
+            var repeatTimer = null;
+            function cancelRepeat() {
+                if (repeatTimer != null) clearTimeout(repeatTimer);
+            }
+
+            onload = function() {
+                canvas = document.getElementById('canvas');
+                var firstPress = true;
+                var noTouch = true; // until first event
+                function repeatTouch(x, y) {
+                    cancelRepeat(); // in case touchend was lost somehow
+                    repeatTimer = setTimeout(function() {
+                        repeatTimer = setInterval(function() { touch(x, y); }, 150);
+                    }, 350);
+                    touch(x, y);
+                }
+                canvas.ontouchstart = function(e) {
+                    noTouch = false;
+                    if (!firstPress) {
+                        e.preventDefault();
+                        var p = e.touches[0];
+                        repeatTouch(p.pageX, p.pageY);
                     }
-                });
-                read();
-            }
-
-            function connect() {
-                // const port = await navigator.serial.requestPort();
-                //const usbVendorId = 0xABCD;
-                //navigator.serial.requestPort({ filters: [{ usbVendorId }]}).then((port) => {
-                navigator.serial.requestPort().then((port) => {
-                    // Connect to `port` or add it to the list of available ports.
-                    port.open({ baudRate: 115200 }).then(() => {
-                        connectedPort = port;
-                    }).catch(e => {
-                        alert('ERROR OPENING: ' + e);
-                    });
-                    //navigator.serial.getPorts().then((ports) => {
-                    //    // Initialize the list of available ports with `ports` on page load.
-                    //    alert('Ports: ' + JSON.stringify(ports));
-                    //});
-                }).catch((e) => {
-                    // The user didn't select a port.
-                    alert('ERROR NO PORT CHOSEN: ' + JSON.stringify(e));
-                });
-            }
-            
-            //function disconnect() {
-            //    if (connectedPort != null) {
-            //        connectedPort.close();
-            //        connectedPort = null;
-            //        // TODO: reader busy/locked https://stackoverflow.com/questions/65748344/how-can-i-interrupt-a-reader-when-it-hangs-need-a-timeout-on-reader-read
-            //    }
-            //}
-
-            function log(message) {
-                document.getElementById('log').innerHTML += '<br />' + message;
-            }
-
-            function read() {
-                if (connectedPort != null) {
-                    const reader = connectedPort.readable.getReader();
-                    reader.read().then(x =>
+                };
+                canvas.onmousedown = function(e) {
+                    // audio and speech must be enabled during first user interaction
+                    // and ontouchstart doesn't seem to count, so first touch does this
+                    // and repeating doesn't work. Thereafter, ontouchstart takes over.
+                    if (firstPress) {
+                        firstPress = false;
+                        audio();
+                        repeatTouch(e.x, e.y);
+                        return;
+                    }
+                    if (noTouch)
                     {
-                        var msg = "Read: ";
-                        for (var i in x.value) {
-                            var v = x.value[i];
-                            msg += v + " ";
-                        }
-                        log(msg);
-                        reader.releaseLock();
-                        window.setTimeout(read, 10);
-                    });
-                } else {
-                    window.setTimeout(read, 10);
+                        repeatTouch(e.x, e.y);
+                    }
+                }
+                canvas.ontouchend = function(e) { cancelRepeat(); };
+                canvas.onmouseup = function(e) { cancelRepeat(); }
+                resizeRedrawCanvas();
+                document.onvisibilitychange = function(e) {
+                    if (document.hidden) {
+                        cancelRepeat();
+                    }
+                };
+                window.onblur = function(e) {
+                    cancelRepeat();
                 }
             }
 
-            var writer = null;
-            function sendCommand(command, subcommand, data, transceiver, controller) {
-                if (connectedPort != null) {
-                    var message = [0xfe, 0xfe]; // preamble
-                    message.push(transceiver || 0xa4); // transceiver address (default 0xa4, IC-705)
-                    message.push(controller || 0xe0); // default controller address
-                    message.push(command);
-                    if (subcommand) message.push(subcommand);
-                    if (data) message = message.concat(data);
-                    message.push(0xfd); // end of message
-                    if (!writer) writer = connectedPort.writable.getWriter();
-                    //const writer = connectedPort.writable.getWriter();
-                    writer.write(new Uint8Array(message));
-                    //writer.write(new Uint8Array(message)).then(() => { writer.releaseLock(); });
+            function resizeRedrawCanvas() {
+                resizeCanvas();
+                redraw();
+            }
+
+            onresize = function() {
+                resizeRedrawCanvas();
+                for (var i = 0; i < 500; i += 50) {
+                    setTimeout(resizeRedrawCanvas, i); // repeatedly because of browser timing bug! (https://bugs.webkit.org/show_bug.cgi?id=185886)
                 }
-            }
-
-            function speakMode() {
-                sendCommand(0x13 /* speak */, 0x02 /* mode */);
-            }
-
-            function setMode(mode) {
-                sendCommand(0x01 /* send mode data */, mode);
-            }
-
-            function setModeCW() {
-                setMode(0x03 /* CW */);
-            }
-
-            function setModeLSB() {
-                setMode(0x00 /* LSB */);
-            }
-
-            function setModeUSB() {
-                setMode(0x01 /* USB */);
-            }
-
-            function sendCW(message) {
-                var ascii = [];
-                for (var i in message) {
-                    ascii.push(message.charCodeAt(i));
-                }
-                sendCommand(0x17 /* send CW */, null, ascii);
-            }
-
-            function test() {
-                log("Testing");
-                sendCW("^e");
-                sendCW("^e");
-                sendCW("^t");
-                sendCW("^t");
-                sendCW("^e");
-                sendCW("^e ");
-                sendCW("?");
-                //sendCW("cq pota");
-                //sendCW(" kk7hxu");
-                //sendCW(" ^kn test");
-                //sendCW("I love you Tracey");
-                //sendCW("Ann");
             }
         </script>
     </head>
-    <body onload="load()">
-        <h5 id="log"></h5>
-        <a href="javascript:setModeCW()">CW</a>
-        <a href="javascript:setModeUSB()">USB</a>
-        <a href="javascript:setModeLSB()">LSB</a>
-        <a href="javascript:test()">Test</a>
+    <body class="dark">
+        <canvas id="canvas"></canvas>
     </body>
 </html>
