@@ -364,12 +364,12 @@
                         switch (e.code) {
                             case 'Comma':
                             case 'ControlLeft':
-                                if (!leftDown) keyUpdateLeft(true);
+                                if (!leftActuallyDown) keyUpdateLeft(true);
                                 leftActuallyDown = true;
                                 break;
                             case 'Period':
                             case 'ControlRight':
-                                if (!rightDown) keyUpdateRight(true);
+                                if (!rightActuallyDown) keyUpdateRight(true);
                                 rightActuallyDown = true;
                                 break;
                         }
