@@ -113,6 +113,7 @@
             const defaultPitch = 600;
             const defaultSpeed = 25;
             const defaultDebounce = 10;
+            const defaultGain = 100;
 
             function audio() {
                 if (!audioStarted) {
@@ -332,6 +333,8 @@
                     if (d == defaultDebounce) opt.selected = true;
                     debounce.appendChild(opt);
                 }
+                var gain = document.getElementById('gain');
+                gain.addEventListener('change', gainChange);
                 var polarity = document.getElementById('polarity');
                 polarity.addEventListener('change', polarityChange);
                 document.getElementById("intro").style.display = 'none';
@@ -362,12 +365,12 @@
                 document.body.addEventListener('keydown', (e) => {
                     if (!e.repeat) {
                         switch (e.code) {
-                            case 'Comma':
+                            case 'BracketLeft':
                             case 'ControlLeft':
                                 if (!leftActuallyDown) keyUpdateLeft(true);
                                 leftActuallyDown = true;
                                 break;
-                            case 'Period':
+                            case 'BracketRight':
                             case 'ControlRight':
                                 if (!rightActuallyDown) keyUpdateRight(true);
                                 rightActuallyDown = true;
@@ -378,12 +381,12 @@
                 document.body.addEventListener('keyup', (e) => {
                     if (!e.repeat) {
                         switch (e.code) {
-                            case 'Comma':
+                            case 'BracketLeft':
                             case 'ControlLeft':
                                 leftActuallyDown = false;
                                 setTimeout(function () { if (!leftActuallyDown) keyUpdateLeft(false); }, currentDebounce);
                                 break;
-                            case 'Period':
+                            case 'BracketRight':
                             case 'ControlRight':
                                 rightActuallyDown = false;
                                 setTimeout(function () { if (!rightActuallyDown) keyUpdateRight(false); }, currentDebounce);
@@ -403,7 +406,7 @@
                 document.body.addEventListener('keydown', (e) => {
                     if (!e.repeat && e.srcElement.id != 'message') {
                         switch (e.key) {
-                            case ' ':
+                            case 'Backspace':
                                 reset();
                                 speedKey = 0;
                                 break;
@@ -487,6 +490,7 @@
                 setFarnsworth(defaultFarnsworth);
                 setPitch(parseInt(localStorage.getItem('tx_pitch')) || defaultPitch, true, true);
                 setDebounce(parseInt(localStorage.getItem('tx_debounce')) || defaultDebounce, true, true);
+                setGain(parseInt(localStorage.getItem('tx_gain')) || defaultGain, true, true);
                 setPolarity(localStorage.getItem('tx_polarity') || "ditdah", true, true);
                 setMode(localStorage.getItem('tx_keyer') || 'B', true, true);
                 setMemory(true);
@@ -588,6 +592,17 @@
                 currentDebounce = d;
                 document.getElementById('debounce').value = d; 
                 localStorage.setItem('tx_debounce', d);
+            }
+
+            var currentGain = defaultGain;
+            function setGain(g) {
+                if (currentGain == g) return;
+                currentGain = g;
+                audio();
+                volume.gain.value = g / 100;
+                document.getElementById('gain').value = g; 
+                document.getElementById('gainval').innerText = g + '%'; 
+                localStorage.setItem('tx_gain', g);
             }
 
             var currentPolarity = 'ditdah';
@@ -914,8 +929,7 @@
             }
 
             function mute(m) {
-                audio();
-                volume.gain.value = m ? 0 : 1;
+                setGain(m ? 0 : 1);
             }
 
             function updateCharacter() {
@@ -1423,6 +1437,10 @@
                 setDebounce(parseInt(e.target.value), true, false);
             }
 
+            function gainChange(e) {
+                setGain(parseInt(e.target.value), true, false);
+            }
+
             function polarityChange(e) {
                 setPolarity(e.target.value, true, false);
             }
@@ -1499,11 +1517,19 @@
                                 </td>
                             </tr>
                             <tr>
+                                <td>Volume:</td>
+                                <td width="100%">
+                                    <input type="range" min="0" max="100" value="100" class="slider" id="gain" />
+                                    <span id="gainval">100%</span>
+                                </td>
+                            </tr>
+                            <tr>
                                 <td colspan="2">
                                     <h3 style="margin-top: 3em">Usage tips:</h3>
                                     <ul>
                                         <li>Works with this <a href="https://hamradio.solutions/vband/">USB paddle interface</a></li>
-                                        <li>Press SPACE to clear.</li>
+                                        <li>Or press left/right CTRL or square brackets to send.</li>
+                                        <li>Press BACKSPACE to clear.</li>
                                         <li>Press U, A or B to choose keying mode.</li>
                                     </ul>
                                 </td>
