@@ -335,6 +335,7 @@
                 }
                 var gain = document.getElementById('gain');
                 gain.addEventListener('change', gainChange);
+                gain.addEventListener('input', gainChange);
                 var polarity = document.getElementById('polarity');
                 polarity.addEventListener('change', polarityChange);
                 document.getElementById("intro").style.display = 'none';
