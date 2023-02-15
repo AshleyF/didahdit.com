@@ -13,7 +13,7 @@
                 font-family: sans-serif;
                 cursor: hand }
             a { color: #eee; }
-            button { background-color: #555; color: #eee; }
+            button { background-color: #000; color: #fff; }
             textarea { background-color: #555; color: #eee; }
             h5 { color: #555; }
             hr { color: #555; }
@@ -113,6 +113,7 @@
             const defaultPitch = 600;
             const defaultSpeed = 25;
             const defaultDebounce = 10;
+            const defaultMute = false;
             const defaultGain = 100;
 
             function audio() {
@@ -307,6 +308,7 @@
             }
 
             function load() {
+                resize();
                 loaded = true;
                 document.getElementById('mode').addEventListener('change', modeChange);
                 var speed = document.getElementById('speed');
@@ -333,6 +335,8 @@
                     if (d == defaultDebounce) opt.selected = true;
                     debounce.appendChild(opt);
                 }
+                var mute = document.getElementById('mute');
+                mute.addEventListener('change', muteChange);
                 var gain = document.getElementById('gain');
                 gain.addEventListener('change', gainChange);
                 gain.addEventListener('input', gainChange);
@@ -411,65 +415,33 @@
                                 reset();
                                 speedKey = 0;
                                 break;
-                            case 'c':
-                                connect();
-                                break;
-                            case 'r':
-                                connectRadio();
-                                break;
-                            case 'd':
-                                disconnectRadio();
-                                break;
                             case 'a':
-                                setMode('A');
-                                break;
                             case 'b':
-                                setMode('B');
-                                break;
-                            case 'u':
-                                setMode('U');
-                                break;
-                            case 'm':
-                                setMemory(true);
-                                break;
-                            case 'n':
-                                setMemory(false);
-                                break;
-                            case 't':
-                                mute(true);
-                                break;
+                            case 'c':
+                            case 'd':
                             case 'e':
-                                mute(false);
-                                break;
-                            case '0':
-                                processSpeedKey(0);
-                                break;
-                            case '1':
-                                processSpeedKey(1);
-                                break;
-                            case '2':
-                                processSpeedKey(2);
-                                break;
-                            case '3':
-                                processSpeedKey(3);
-                                break;
-                            case '4':
-                                processSpeedKey(4);
-                                break;
-                            case '5':
-                                processSpeedKey(5);
-                                break;
-                            case '6':
-                                processSpeedKey(6);
-                                break;
-                            case '7':
-                                processSpeedKey(7);
-                                break;
-                            case '8':
-                                processSpeedKey(8);
-                                break;
-                            case '9':
-                                processSpeedKey(9);
+                            case 'f':
+                            case 'g':
+                            case 'h':
+                            case 'i':
+                            case 'j':
+                            case 'k':
+                            case 'l':
+                            case 'm':
+                            case 'n':
+                            case 'o':
+                            case 'p':
+                            case 'q':
+                            case 'r':
+                            case 's':
+                            case 't':
+                            case 'u':
+                            case 'v':
+                            case 'w':
+                            case 'x':
+                            case 'y':
+                            case 'z':
+                                //keyboard(e.key);
                                 break;
                         }
                     }
@@ -491,6 +463,7 @@
                 setFarnsworth(defaultFarnsworth);
                 setPitch(parseInt(localStorage.getItem('tx_pitch')) || defaultPitch, true, true);
                 setDebounce(parseInt(localStorage.getItem('tx_debounce')) || defaultDebounce, true, true);
+                setMute((localStorage.getItem('tx_mute') == 'true') || defaultMute, true, true);
                 setGain(parseInt(localStorage.getItem('tx_gain')) || defaultGain, true, true);
                 setPolarity(localStorage.getItem('tx_polarity') || "ditdah", true, true);
                 setMode(localStorage.getItem('tx_keyer') || 'B', true, true);
@@ -498,7 +471,6 @@
                 setTone(false);
                 setEnforceElements(true);
                 read();
-                readRadio();
                 drawKeyAndToneState();
             }
 
@@ -523,7 +495,7 @@
                     //});
                 }).catch((e) => {
                     // The user didn't select a port.
-                    alert('ERROR NO PORT CHOSEN: ' + JSON.stringify(e));
+                    // alert('ERROR NO PORT CHOSEN: ' + JSON.stringify(e));
                 });
             }
             
@@ -593,6 +565,17 @@
                 currentDebounce = d;
                 document.getElementById('debounce').value = d; 
                 localStorage.setItem('tx_debounce', d);
+            }
+
+            var currentMute = defaultMute;
+            function setMute(m) {
+                if (currentMute == m) return;
+                currentMute = m;
+                audio();
+                volume.gain.value = m ? 0 : currentGain / 100;
+                document.getElementById('mute').checked = !m; 
+                document.getElementById('gain').disabled = m; 
+                localStorage.setItem('tx_mute', m);
             }
 
             var currentGain = defaultGain;
@@ -709,6 +692,12 @@
                 clearMessage();
                 sending = message;
                 updateDisplay();
+            }
+
+            function keyboard(key) {
+                sending += key.toUpperCase();
+                updateDisplay();
+                sendRadioCW(key);
             }
 
             function send(message, manual = true) {
@@ -930,7 +919,7 @@
             }
 
             function mute(m) {
-                setGain(m ? 0 : 1);
+                setMute(m);
             }
 
             function updateCharacter() {
@@ -1077,10 +1066,10 @@
                             ctx.putImageData(imgData, 0, 1); // scroll down
                             ctx.fillRect(0, 0, canvasWidth, 1);
                         }
-                        var currentGain = gain.gain.value;
-                        if ((lastGain < 0.5 && currentGain > 0.5) || (lastGain > 0.5 && currentGain < 0.5)) {
+                        var gainVal = gain.gain.value;
+                        if ((lastGain < 0.5 && gainVal > 0.5) || (lastGain > 0.5 && gainVal < 0.5)) {
                             ctx.fillStyle = '#555'; // mark tone boundaries
-                            lastGain = currentGain;
+                            lastGain = gainVal;
                         } else {
                             ctx.fillStyle = '#000'; // erase cursor
                         }
@@ -1097,7 +1086,7 @@
                             ctx.fillStyle = '#00F';
                             ctx.fillRect(ribbon * 7, cursor, ribbon, 1);
                         }
-                    if (currentGain > 0.5) {
+                        if (gainVal > 0.5) {
                             ctx.fillStyle = '#fff';
                             ctx.fillRect(ribbon * 3, cursor, ribbon * 3, 1);
                         }
@@ -1196,24 +1185,12 @@
             var lastSpeed = defaultSpeed;
             var loopCount = 0;
             var timeout = null;
+            var radioRead = null;
             function readRadio() {
-                if (connectedRadioPort != null) {
-                    if (!radioConnected) {
-                        if (radioWrite != null) {
-                            radioWrite.releaseLock();
-                            radioWrite = null;
-                        }
-                        if (connectedRadioPort != null) {
-                            connectedRadioPort.close();
-                            connectedRadioPort = null;
-                            mute(false);
-                        }
-                        window.setTimeout(readRadio, 100);
-                        return;
-                    }
+                if (connectedRadioPort != null && radioConnected) {
                     // TODO: reader busy/locked https://stackoverflow.com/questions/65748344/how-can-i-interrupt-a-reader-when-it-hangs-need-a-timeout-on-reader-read
-                    const reader = connectedRadioPort.readable.getReader();
-                    reader.read().then(x =>
+                    if (radioRead == null) radioRead = connectedRadioPort.readable.getReader();
+                    radioRead.read().then(x =>
                     {
                         // 0xfd // end of message
                         if (x.value[0] == 0xfe && x.value[1] == 0xfe) { // preamble
@@ -1264,7 +1241,6 @@
                             getRadioCWPitch();
                             getRadioCWSpeed();
                         }, 50); // throttle radio settings updates
-                        reader.releaseLock();
                         window.setTimeout(readRadio, 1);
                     });
                 } else {
@@ -1339,21 +1315,45 @@
                     port.open({ baudRate: 115200 }).then(() => {
                         connectedRadioPort = port;
                         radioConnected = true;
+                        updateConnectDisconnectButton();
                         mute(true);
                         setRadioCWSpeed(parseInt(document.getElementById('speed').value));
                         setRadioCWPitch(parseInt(document.getElementById('pitch').value));
+                        readRadio();
                     }).catch(e => {
                         alert('ERROR OPENING: ' + e);
                     });
                 }).catch((e) => {
-                    alert('ERROR NO PORT CHOSEN: ' + JSON.stringify(e));
+                    //alert('ERROR NO PORT CHOSEN: ' + JSON.stringify(e));
                 });
             }
 
             function disconnectRadio() {
                 if (connectedRadioPort != null) {
                     radioConnected = false; // reader will close
+                    if (radioRead != null) {
+                        radioRead.releaseLock();
+                        radioRead = null;
+                    }
+                    if (radioWrite != null) {
+                        radioWrite.releaseLock();
+                        radioWrite = null;
+                    }
+                    if (connectedRadioPort != null) {
+                        connectedRadioPort.close();
+                        connectedRadioPort = null;
+                        mute(false);
+                    }
+                    updateConnectDisconnectButton();
                 }
+            }
+
+            function updateConnectDisconnectButton() {
+                document.getElementById('connect').innerText = (radioConnected ? 'Disconnect' : 'Connect');
+            }
+
+            function connectDisconnectRadio() {
+                if (radioConnected) disconnectRadio(); else connectRadio();
             }
 
             var radioWrite = null;
@@ -1438,6 +1438,10 @@
                 setDebounce(parseInt(e.target.value), true, false);
             }
 
+            function muteChange(e) {
+                setMute(!e.target.checked, true, false);
+            }
+
             function gainChange(e) {
                 setGain(parseInt(e.target.value), true, false);
             }
@@ -1460,19 +1464,19 @@
             <h1>This is messy prototype still in development.</h1>
             <p>It uses the <a href="https://hamradio.solutions/vband/">USB paddle interface from Ham Radio Solutions</a> ("Store" tab).</p>
             <p>It's a keyer that can be used for practice with a nifty visualization of paddle state (currently doesn't support straight keys).</p>
-            <p>In the future it will also connect to a radio over USB/Bluetooth and will act as a proper keyer.</p>
+            <p>It will also connect to a radio over USB/Bluetooth and will act as a proper keyer.</p>
             <button onclick="load()">Let's do it!</button>
         </div>
         <div id="main" style="height: 100vh; display:none">
             <table style="width: 100%; height: 100%;">
                 <tr>
                     <td colspan="2">
-                        <h1 id="copy" style="border: 1px solid black; width: 100%; height: 120px; margin: 0; padding: 0; font-size: 90px; overflow-y: hidden; overflow-x: scroll; white-space: nowrap;">&nbsp;</h1>
+                        <h1 id="copy" style="border: 1px solid black; width: 100%; height: 100px; margin: 0; padding: 0; font-size: 72; overflow-y: hidden; overflow-x: scroll; white-space: nowrap;">&nbsp;</h1>
                     </td>
                 </tr>
                 <tr>
-                    <td style="width: 80px; height: 100%;">
-                        <canvas id="canvas" width="80px" height="10" style="width: 80px"></canvas>
+                    <td valign="top" style="width: 80px; height: 100%">
+                        <canvas id="canvas" width="80px" style="width: 80px"></canvas>
                     </td>
                     <td style="width: 100%">
                         <table>
@@ -1520,8 +1524,15 @@
                             <tr>
                                 <td>Volume:</td>
                                 <td width="100%">
+                                    <input type="checkbox" id="mute" name="mute" checked="true"><!--label for="mute">mute</label-->
                                     <input type="range" min="0" max="100" value="100" class="slider" id="gain" />
                                     <span id="gainval">100%</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Radio:</td>
+                                <td width="100%">
+                                    <button id="connect" onclick="connectDisconnectRadio()">Connect</button>
                                 </td>
                             </tr>
                             <tr>
@@ -1531,7 +1542,6 @@
                                         <li>Works with this <a href="https://hamradio.solutions/vband/">USB paddle interface</a></li>
                                         <li>Or press left/right CTRL or square brackets to send.</li>
                                         <li>Press BACKSPACE to clear.</li>
-                                        <li>Press U, A or B to choose keying mode.</li>
                                     </ul>
                                 </td>
                             </tr>

@@ -35,6 +35,7 @@ Here are some ideas and nice sites and apps out there:
 - [Callsign Query Tool](https://www.ae7q.com).
 - [Progagation Maps](https://prop.kc2g.com/).
 - [Solar Conditions](https://solar.w5mmw.net/).
+- [Morse Code News](https://morse.mdp.im/news/).
 
 ## Apps
 
