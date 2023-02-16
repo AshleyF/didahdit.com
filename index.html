@@ -744,11 +744,11 @@
                 ctx.fillRect(0, 0, w, h);
                 document.body.style.backgroundColor = backgroundColor;
 
-                function drawFittedText(txt, font, color, x, y, width, height, weight, actual, align, progress, count, overlay) {
+                function drawFittedText(txt, color, x, y, width, height, weight, actual, align, progress, count, overlay) {
                     txt = overscoreProsigns(txt.toString());
                     ctx.fillStyle = color;
-                    ctx.letterSpacing = "-0.02em"
-                    function setFont(size) { ctx.font = weight + ' ' + size + 'px ' + font }; // Tahoma'; }
+                    //ctx.letterSpacing = "-0.02em"
+                    function setFont(size) { ctx.font = weight + ' ' + size + 'px sans-serif' };
                     const sampleSize = 100;
                     setFont(sampleSize);
                     var size = ctx.measureText(txt);
@@ -789,8 +789,8 @@
                 var padding = Math.min(canvas.width / 24, canvas.height / 24);
 
                 var buttons = [];
-                function drawButton(name, label, font, color, x, y, width, height, align, actual = true) {
-                    drawFittedText(label, font, color, x, y, width, height, 'normal', actual, align);
+                function drawButton(name, label, color, x, y, width, height, align, actual = true) {
+                    drawFittedText(label, color, x, y, width, height, 'normal', actual, align);
                     var p = padding / 2;
                     buttons.push({
                         name: name,
@@ -812,7 +812,6 @@
                 drawButton(
                     'settings',
                     '⁝',
-                    'sans-serif',
                     subduedButtonColor,
                     w - padding - buttonSize,
                     padding, buttonSize, buttonSize,
@@ -820,7 +819,6 @@
                 drawButton(
                     'prevLesson',
                     '⇤',
-                    'sans-serif',
                     lessonNum > 0 ? subduedButtonColor : disabledButtonColor,
                     padding * 1 + buttonWidth * 0,
                     h - padding - buttonSize,
@@ -829,7 +827,6 @@
                 drawButton(
                     'prevPhrase',
                     '⟲',
-                    'sans-serif',
                     phraseNum > 0 ? subduedButtonColor : disabledButtonColor,
                     padding * 2 + buttonWidth * 1,
                     h - padding - buttonSize,
@@ -839,7 +836,6 @@
                 drawButton(
                     'nextPhrase',
                     '⟳',
-                    'sans-serif',
                     phraseNum < content.lessons[lessonNum].phrases.length - 1 ? subduedButtonColor : disabledButtonColor,
                     padding * 4 + buttonWidth * 2 + buttonWidth * largeButton,
                     h - padding - buttonSize,
@@ -849,7 +845,6 @@
                 drawButton(
                     'nextLesson',
                     '⇥',
-                    'sans-serif',
                     lessonNum < content.lessons.length - 1 ? subduedButtonColor : disabledButtonColor,
                     padding * 5 + buttonWidth * 3 + buttonWidth * largeButton,
                     h - padding - buttonSize,
@@ -859,7 +854,6 @@
                 drawButton(
                     'playPause',
                     ui.playing ? 'II' : '▸',
-                    'sans-serif',
                     foregroundColor,
                     padding * 3 + buttonWidth * 2,
                     h - padding - buttonSize * largeButton,
@@ -881,7 +875,6 @@
                 drawButton(
                     'content',
                     '☰',
-                    'sans-serif',
                     subduedButtonColor,
                     padding / 2,
                     padding + progressHeight,
@@ -891,7 +884,6 @@
                 drawButton(
                     'lesson',
                     content.lessons[lessonNum].name,
-                    'Lucida,Monaco,Menlo,monospace',
                     lessonTextColor,
                     padding * 2 + buttonSize,
                     padding + progressHeight,
@@ -901,7 +893,6 @@
                 drawButton(
                     'phraseNum',
                     phraseCount - phraseNum,
-                    'sans-serif',
                     phraseNumTextColor,
                     w - padding * 2 - buttonSize * 2,
                     padding + progressHeight,
@@ -920,7 +911,6 @@
                     }
                     drawFittedText(
                         phrase,
-                        'Lucida,Monaco,Menlo,monospace',
                         disabledButtonColor,
                         phraseX,
                         phraseY,
@@ -935,7 +925,6 @@
                 } else {
                     drawFittedText(
                         ui.hide && !ui.progress ? '?' : phrase, 
-                        ui.hide && !ui.progress ? 'sans-serif' : 'Lucida,Monaco,Menlo,monospace', 
                         ui.hide && !ui.progress ? disabledButtonColor : phraseTextColor,
                         phraseX,
                         phraseY,
@@ -970,7 +959,6 @@
                     function drawSwitch(name, label, switchText, on, top) {
                         drawFittedText(
                             label,
-                            'sans-serif',
                             subduedButtonColor,
                             left + padding,
                             top + padding,
@@ -1002,7 +990,6 @@
                         var margin = buttonSize / 4;
                         drawFittedText(
                             switchText,
-                            'sans-serif',
                             subduedButtonColor,
                             (on ? right - padding * 2 - buttonSize : controlLeft + padding) + margin,
                             top + padding + margin,
@@ -1023,7 +1010,6 @@
                     function drawUpDownControl(label, name, val, min, max, row) {
                         drawFittedText(
                             label,
-                            'sans-serif',
                             subduedButtonColor,
                             left + padding,
                             row,
@@ -1035,7 +1021,6 @@
                         const arrowScale = 0.5;
                         drawFittedText(
                             '❰',
-                            'sans-serif',
                             val <= min ? disabledButtonColor : subduedButtonColor,
                             controlLeft,
                             row + (buttonSize * arrowScale / 2),
@@ -1056,7 +1041,6 @@
                         drawButton(
                             name,
                             val,
-                            'sans-serif',
                             subduedButtonColor,
                             controlLeft + buttonSize,
                             row,
@@ -1065,7 +1049,6 @@
                             'center')
                         drawFittedText(
                             '❱',
-                            'sans-serif',
                             val >= max ? disabledButtonColor : subduedButtonColor,
                             controlLeft + buttonSize * 2 + buttonSize * arrowScale,
                             row + (buttonSize * arrowScale / 2),
@@ -1116,7 +1099,6 @@
                         drawButton(
                             'menu_' + fnGetId(i),
                             fnGetName(i),
-                            'Lucida,Monaco,Menlo,monospace',
                             color,
                             left + padding,
                             top + padding + rowHeight * i,
