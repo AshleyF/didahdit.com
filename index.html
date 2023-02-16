@@ -920,7 +920,7 @@
                     }
                     drawFittedText(
                         phrase,
-                        'Monaco',
+                        'Lucida,Monaco,Menlo,monospace',
                         disabledButtonColor,
                         phraseX,
                         phraseY,
@@ -935,7 +935,7 @@
                 } else {
                     drawFittedText(
                         ui.hide && !ui.progress ? '?' : phrase, 
-                        ui.hide && !ui.progress ? 'sans-serif' : 'Monaco', 
+                        ui.hide && !ui.progress ? 'sans-serif' : 'Lucida,Monaco,Menlo,monospace', 
                         ui.hide && !ui.progress ? disabledButtonColor : phraseTextColor,
                         phraseX,
                         phraseY,
@@ -1116,7 +1116,7 @@
                         drawButton(
                             'menu_' + fnGetId(i),
                             fnGetName(i),
-                            'Monaco',
+                            'Lucida,Monaco,Menlo,monospace',
                             color,
                             left + padding,
                             top + padding + rowHeight * i,
