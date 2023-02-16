@@ -16,8 +16,7 @@
                       phrases: ['E', 'T', 'A', 'N', 'EEE', 'TTT', 'AAA', 'NNN', 'an', 'at', 'ann', 'ant', 'ate', 'eat', 'ETA|estimated time of arival', 'net', 'tan', 'tat', 'tea', 'tee', 'ten', 'anna', 'anne', 'ante', 'nate', 'neat', 'tate', 'teat', 'teen', 'tent', 'eaten', 'tenet', 'tenant', 'annette', 'antenna', 'a tan', 'an ant', 'anna ate', 'eat at ten', 'ate at ten', 'at tee', 'a neat tent'] },
                     { id: 'CWOB2',
                       name: 'O I S 1 4',
-                          phrases: ['O', 'I', 'S', '1', '4', 'OOO', 'III', 'SSS', '111', '444', 'TTT', 'EEE', 'AAA', 'NNN', 'as', 'in', 'it', 'no', 'on', 'to', 'sin', 'st', 'its', 'sit', 'son', 'too', 'oasis', 'soon', 'sits', 'soot', 'SOTA|sohtah, summits on the air', 'ian', 'asia', 'toss', 'at', 'sea', 'inn', 'oat', 'one', 'see', 'tao', 'tie', 'nit', 'sat', 'tin', 'toe', 'sine', 'sonia', 'not', 'set', 'into', 'noon', 'nose', 'sans', 'site', 'noise', 'oases', 'onion', 'tot', 'onto', 'toes', 'noose', 'snot', 'toot', 'snoot', 'assess', 'assist', 'insist', 'ease', 'asian', 'anti', 'nine', 'sane', 'sean', 'tina', 'east', 'one neat note', 'no noise', 'tie it', '#1 ton stone', 'N1AS', 'N4ON', 'S41T', 'NO1S', 'AI1E', 'IT4O', 'EA1ON', 'ES4IT', '#14', '#41', '#44', '#11', '#441', '#141', '#114', '#411']
-                      },
+                      phrases: ['O', 'I', 'S', '1', '4', 'OOO', 'III', 'SSS', '111', '444', 'TTT', 'EEE', 'AAA', 'NNN', 'as', 'in', 'it', 'no', 'on', 'to', 'sin', 'st', 'its', 'sit', 'son', 'too', 'oasis', 'soon', 'sits', 'soot', 'SOTA|sohtah, summits on the air', 'ian', 'asia', 'toss', 'at', 'sea', 'inn', 'oat', 'one', 'see', 'tao', 'tie', 'nit', 'sat', 'tin', 'toe', 'sine', 'sonia', 'not', 'set', 'into', 'noon', 'nose', 'sans', 'site', 'noise', 'oases', 'onion', 'tot', 'onto', 'toes', 'noose', 'snot', 'toot', 'snoot', 'assess', 'assist', 'insist', 'ease', 'asian', 'anti', 'nine', 'sane', 'sean', 'tina', 'east', 'one neat note', 'no noise', 'tie it', '#1 ton stone', 'N1AS', 'N4ON', 'S41T', 'NO1S', 'AI1E', 'IT4O', 'EA1ON', 'ES4IT', '#14', '#41', '#44', '#11', '#441', '#141', '#114', '#411'] },
                     { id: 'CWOB3',
                       name: 'R H D L 2 5',
                       phrases: ['R', 'H', 'D', 'L', '2', '5', 'RRR|wherefore art thou romeo?', 'HHH', 'DDD', 'LLL', '222', '555', 'OOO', 'III', 'SSS', 'dr', 'rd', 'did', 'do', 'hi', 'hid', 'odd', 'oh', 'lid', 'old', 'ill', 'rod', 'dill', 'hold', 'doll', 'hill', 'add', 'dad', 'lord', 'had', 'drill', 'he', 'roll', 'all', 'his', 'oil', 'red', 'sod', 'dish', 'hard', 'held', 'hood', 'idol', 'odds', 'her', 'dell', 'hall', 'herd', 'lard', 'lids', 'slid', 'sir', 'door', 'hell', 'odor', 'sold', 'aid', 'lori', 'sill', 'ado', 'died', 'drool', 'shill', 'doe', 'sad', 'dads', 'dial', 'hide', 'laid', 'horrid', 'air', 'ash', 'don', 'has', 'lie', 'nod', 'dash', 'deli', 'hail', 'hind', 'idle', 'lied', 'load', 'raid', 'dot', 'leo', 'she', 'dole', 'dora', 'hair', 'halo', 'hash', 'ohio', 'ride', 'hello', 'and', 'hailstone', 'isolation', 'loadstone', 'tradition', 'nineteenth', '#142', '#451', '#1425', 'a tall hill', 'she is here', 'he is late', '#4 sheds', '#12 hills', 'DL1AT', 'HH5H', 'HS1TD', 'ND2T', 'NA4T'] },
@@ -226,6 +225,10 @@
             function convertPhrase(phrase) {
                 var split = phrase.split('|');
                 return split[0].replace(/#/g, '');
+            }
+
+            function overscoreProsigns(phrase) {
+                return phrase.replace(/\<(.)/g, '$1̅').replace(/\>/g, '̅');
             }
 
             function convertUtterance(utterance) {
@@ -742,8 +745,10 @@
                 document.body.style.backgroundColor = backgroundColor;
 
                 function drawFittedText(txt, color, x, y, width, height, weight, actual, align, progress, count, overlay) {
+                    txt = overscoreProsigns(txt.toString());
                     ctx.fillStyle = color;
-                    function setFont(size) { ctx.font = weight + ' ' + size + 'px sans-serif'; }
+                    //ctx.letterSpacing = "-0.065em"
+                    function setFont(size) { ctx.font = weight + ' ' + size + 'px Monaco' }; // Tahoma'; }
                     const sampleSize = 100;
                     setFont(sampleSize);
                     var size = ctx.measureText(txt);
@@ -899,7 +904,7 @@
                 var phraseWidth = w - padding * 2;
                 var phraseHeight = h - padding * 4 - progressHeight - buttonSize - buttonSize * largeButton;
                 var phraseIndex = randomPhrase(phraseNum, content.lessons[lessonNum].phrases.length);
-                var phrase = convertPhrase(content.lessons[lessonNum].phrases[phraseIndex]); 
+                var phrase = convertPhrase(content.lessons[lessonNum].phrases[phraseIndex]);
                 if (ui.playing && ui.progress && phrase.length > ui.count) {
                     if (phrase[ui.count - 1] == '<' || phrase[ui.count - 2] == '<') {
                         while (phrase[ui.count++] != '>');
