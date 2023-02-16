@@ -859,7 +859,8 @@
 
                 const progressHeight = Math.max(2, padding / 4);
                 var lessonPercent = lessonNum/ content.lessons.length;
-                var phrasePercent = phraseNum / Math.max(1, content.lessons[lessonNum].phrases.length - 1);
+                var phraseCount = content.lessons[lessonNum].phrases.length;
+                var phrasePercent = phraseNum / Math.max(1, phraseCount - 1);
                 var lessonWidth = w * lessonPercent;
                 ctx.fillStyle = lessonTextColor;
                 ctx.fillRect(0, 0, lessonWidth, progressHeight);
@@ -886,7 +887,7 @@
                     'left');
                 drawButton(
                     'phraseNum',
-                    phraseNum + 1,
+                    phraseCount - phraseNum,
                     phraseNumTextColor,
                     w - padding * 2 - buttonSize * 2,
                     padding + progressHeight,
@@ -1069,7 +1070,7 @@
                     drawSwitch('scramble', 'Scramble:', scramble ? 'on' : 'off', scramble, y);
                     ui.buttons = buttons;
                 }
-                function drawMenu(len, fnGetId, fnGetName) {
+                function drawMenu(len, fnGetId, fnGetName, color) {
                     ctx.fillStyle = dimColor;
                     ctx.fillRect(0, 0, w, h);
                     var left = padding * (w > h ? 4 : 1);
@@ -1093,7 +1094,7 @@
                         drawButton(
                             'menu_' + fnGetId(i),
                             fnGetName(i),
-                            subduedButtonColor,
+                            color,
                             left + padding,
                             top + padding + rowHeight * i,
                             rowWidth,
@@ -1104,11 +1105,11 @@
                 }
                 switch (ui.show) {
                     case 'content':
-                        drawMenu(library.length, i => library[i].id, i => library[i].name);
+                        drawMenu(library.length, i => library[i].id, i => library[i].name, subduedButtonColor);
                         break;
                     case 'lesson':
                         var lessons = content.lessons;
-                        drawMenu(lessons.length, i => lessons[i].id, i => lessons[i].name);
+                        drawMenu(lessons.length, i => lessons[i].id, i => lessons[i].name, lessonTextColor);
                         break;
                     case 'phrase':
                         //var phrases = content.lessons[lessonNum].phrases;
