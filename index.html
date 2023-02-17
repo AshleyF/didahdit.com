@@ -1390,98 +1390,6 @@
                 }
             }
 
-            function migrateSettings() {
-                function migrateV0toV1() {
-                    // v0 had only CWOPS content (no 'content' setting) and a single 'lesson'/'phrase'
-                    var lessonNum = localStorage.getItem('lesson');
-                    var phraseNum = localStorage.getItem('phrase');
-                    if (lessonNum && phraseNum) {
-                        localStorage.setItem('content', 'CWOPS');
-                        localStorage.removeItem('lesson');
-                        localStorage.setItem('lesson_CWOPS', library.find(c => c.id == 'CWOPS').lessons[lessonNum].id);
-                        localStorage.removeItem('phrase');
-                        localStorage.setItem('phrase_CWOPS', phraseNum);
-                    }
-                    localStorage.setItem('version', 1);
-                }
-                function migrateV1toV2() {
-                    // v1 had words/phrases/calls which were collapsed to a single 'practice'
-                    var lesson = localStorage.getItem('lesson_CWOPS');
-                    if (lesson && (lesson.endsWith('P') || lesson.endsWith('CC') || lesson.endsWith('DC'))) {
-                        var migrate = lesson[0] + 'BW';
-                        localStorage.setItem('lesson_CWOPS', migrate); // migrate lesson
-                        localStorage.setItem('phrase_CWOPS', 0); // reset phrase within (sorry)
-                    }
-                    localStorage.setItem('version', 2);
-                }
-                function migrateV2toV3() {
-                    // v2 had characters/practice which were collapsed to a single lesson
-                    var lesson = localStorage.getItem('lesson_CWOPS');
-                    if (lesson) {
-                        var migrate = 'CWOB' + (lesson[0] || '1');
-                        if (lesson[1] == '0') migrate += '0';
-                        localStorage.setItem('lesson_CWOPS', migrate); // migrate lesson
-                        localStorage.setItem('phrase_CWOPS', 0); // reset phrase within (sorry)
-                    }
-                    localStorage.setItem('version', 3);
-                }
-                function migrateV3toV4() {
-                    // v3 had no wordsworth setting
-                    var farnsworth = localStorage.getItem('farnsworth');
-                    if (farnsworth) localStorage.setItem('wordsworth', farnsworth); // default wordsworth to match farnsworth
-                    localStorage.setItem('version', 4);
-                }
-                function migrateV4toV5() {
-                    // v4 used old local storage names (migrate to foo -> rx_foo)
-                    for (var i = 0; i < localStorage.length; i++){
-                        var n = localStorage.key(i);
-                        if (!n.startsWith('rx_')) {
-                            localStorage.setItem('rx_' + n, localStorage.getItem(n));
-                            localStorage.removeItem(n);
-                        }
-                    }
-                    localStorage.setItem('rx_version', 5);
-                }
-                function migrateV5toV6() {
-                    // v5 didn't have defaults set (plus rx_mode rename)
-                    var mode = localStorage.getItem('rx_mode');
-                    if (mode) localStorage.setItem('rx_ui_mode', mode);
-                    localStorage.removeItem('rx_mode');
-                    localStorage.setItem('rx_version', 6);
-                }
-                try
-                {
-                    if ((localStorage.getItem('version') || '0') == '0') migrateV0toV1();
-                    if ((localStorage.getItem('version') || '0') == '1') migrateV1toV2();
-                    if ((localStorage.getItem('version') || '0') == '2') migrateV2toV3();
-                    if ((localStorage.getItem('version') || '0') == '3') migrateV3toV4();
-                    if ((localStorage.getItem('version') || '0') == '4') migrateV4toV5();
-                    if ((localStorage.getItem('rx_version') || '0') == '5') migrateV5toV6();
-                } catch (e) {
-                    trace('Settings migration error: ' + e);
-                    localStorage.clear();
-                }
-            }
-
-            function testMigration() {
-                localStorage.removeItem('version'); // v0 -> v1
-                localStorage.setItem('lesson', 3);
-                localStorage.setItem('phrase', 4);
-                migrateSettings();
-                localStorage.setItem('version', 1); // v1 -> v2
-                localStorage.setItem('lesson_CWOPS', '3CC');
-                localStorage.setItem('phrase_CWOPS', 4);
-                migrateSettings();
-                localStorage.setItem('version', 2); // v2 -> v3
-                localStorage.setItem('lesson_CWOPS', '3CC');
-                localStorage.setItem('phrase_CWOPS', 4);
-                migrateSettings();
-                localStorage.setItem('version', 3); // v3 -> v4
-                localStorage.setItem('farnsworth', 10);
-                localStorage.removeItem('wordsworth');
-                migrateSettings();
-            }
-
             var repeatTimer = null;
             function cancelRepeat() {
                 if (repeatTimer != null) clearTimeout(repeatTimer);
@@ -1509,8 +1417,6 @@
                     }
                 }
                 if (location.search == '?clear-settings') localStorage.clear();
-                //testMigration();
-                migrateSettings();
                 var ratio = 1; // devicePixelRatio;
                 canvas = document.getElementById('canvas');
                 var firstPress = true;
