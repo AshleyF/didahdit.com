@@ -182,12 +182,12 @@
             var buffer = [];
             mostRecentPaddle = 'none';
             lastSent = null;
-
             function pushLeft() {
                 var ditdah = currentPolarity == 'ditdah';
                 buffer.push(ditdah); // dit
                 sendRadioDitDah(ditdah);
                 lastSent = ditdah;
+                if (!pending) keyerProcessBuffer();
             }
 
             function pushRight() {
@@ -195,92 +195,55 @@
                 buffer.push(ditdah); // dah
                 sendRadioDitDah(ditdah);
                 lastSent = ditdah;
+                if (!pending) keyerProcessBuffer();
             }
 
             var endedWithSqueeze = false;
-            var expectLoop = 0;
-            var future = false;
-            var sliding = [];
-            var avg = 0;
-            function keyerLoop() {
-                if (future) {
-                    var delay = Date.now() - expectLoop;
-                    sliding.push(delay);
-                    if (sliding.length > 100) sliding.shift();
-                    var sum = sliding.reduce((x, y) => x + y);
-                    avg = Math.round(sum / sliding.length + 0.5);
-                    document.getElementById('debug').innerText = 'Loop ' + delay + ' (' + avg + ')';
-                    future = false;
-                }
-                if (buffer.length > 0) {
+            var pending = false;
+            function keyerProcessBuffer() {
+                console.log("KEY " + Date.now());
+                pending = buffer.length > 0;
+                if (pending) {
                     endedWithSqueeze = (leftDown && rightDown);
                     var element = buffer.shift();
                     if (element) { // dit?
                         dit(true);
                         updateBreaks(ditlen);
-                        expectLoop = Date.now() + (2 * ditlen * 1000);
-                        future = true;
-                        setTimeout(keyerLoop, 2 * ditlen * 1000);
+                        setTimeout(keyerProcessBuffer, 2 * ditlen * 1000);
                     } else {
                         dah(true);
                         updateBreaks(3 * ditlen);
-                        expectLoop = Date.now() + (4 * ditlen * 1000);
-                        future = true;
-                        setTimeout(keyerLoop, 4 * ditlen * 1000);
+                        setTimeout(keyerProcessBuffer, 4 * ditlen * 1000);
                     }
                 } else {
                     if (leftDown && rightDown) { // squeeze?
                         switch (mode) {
                             case 'U': // ultimatic
-                                if (mostRecentPaddle == 'left') {
-                                    pushLeft();
-                                    //expectLoop = Date.now();
-                                    keyerLoop();
-                                } else if (mostRecentPaddle == 'right') {
-                                    pushRight();
-                                    //expectLoop = Date.now();
-                                    keyerLoop();
-                                }
+                                if (mostRecentPaddle == 'left') { pushLeft(); }
+                                else if (mostRecentPaddle == 'right') { pushRight(); }
                                 break;
                             case 'A': // iambic A
                             case 'B': // iambic B
                                 if (lastSent != null && lastSent) pushRight(); else pushLeft(); // opposite
-                                //expectLoop = Date.now();
-                                keyerLoop();
                                 break;
                             default:
                                 throw "Unsupported mode: " + mode;
                         }
-                    } else if (leftDown) {
-                        pushLeft();
-                        //expectLoop = Date.now();
-                        keyerLoop();
-                    } else if (rightDown) {
-                        pushRight();
-                        //expectLoop = Date.now();
-                        keyerLoop();
-                    } else {
+                    }
+                    else if (leftDown) { pushLeft(); }
+                    else if (rightDown) { pushRight(); }
+                    else {
                         if (mode == 'B' && endedWithSqueeze) {
                             if (lastSent != null && lastSent) pushRight(); else pushLeft(); // opposite
-                            endedWithSqueeze = false;
-                            //expectLoop = Date.now();
-                            keyerLoop();
-                        } else {
-                            endedWithSqueeze = false;
-                            expectLoop = Date.now() + 20;
-                            future = true;
-                            setTimeout(keyerLoop, 20);
                         }
+                        endedWithSqueeze = false;
                     }
                 }
             }
 
-            const SQUEEZE = 200; // max milliseconds between releases
-
             function keyUpdateLeft(state) {
                 if (leftDown != state) {
                     leftDown = state;
-                    console.log("Left " + state + " " + Date.now());
                     if (leftDown) {
                         mostRecentPaddle = 'left';
                         pushLeft();
@@ -291,7 +254,6 @@
             function keyUpdateRight(state) {
                 if (rightDown != state) {
                     rightDown = state;
-                    console.log("Right " + state + " " + Date.now());
                     if (rightDown) {
                         mostRecentPaddle = 'right';
                         pushRight();
@@ -344,7 +306,6 @@
                 polarity.addEventListener('change', polarityChange);
                 document.getElementById("intro").style.display = 'none';
                 document.getElementById("main").style.display = '';
-                keyerLoop();
                 testQsoLoop();
                 if ('serial' in navigator) {
                     navigator.serial.addEventListener('connect', (e) => {
@@ -470,7 +431,6 @@
                 setMemory(true);
                 setTone(false);
                 setEnforceElements(true);
-                read();
                 drawKeyAndToneState();
             }
 
@@ -1147,7 +1107,7 @@
                     clearNextKeyState = true;
                 }
 
-                window.setTimeout(drawKeyAndToneState, 1);
+                window.setTimeout(drawKeyAndToneState, 5);
             }
 
             var lastStraightKey = false;
@@ -1510,10 +1470,6 @@
                                         <option value="dahdit">Right Dit</option>
                                     </select></h1>
                                 </td>
-                            </tr>
-                            <tr>
-                                <td>Debug:</td>
-                                <td id="debug" width="100%"></td>
                             </tr>
                             <tr>
                                 <td>Debounce:</td>
