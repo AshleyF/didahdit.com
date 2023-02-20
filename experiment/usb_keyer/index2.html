@@ -1,0 +1,1510 @@
+<html>
+    <head>
+        <title>USB Keyer</title>
+        <meta name="viewport" content="width=device-width" />
+        <link rel="shortcut icon" href="beta.png"> 
+        <link rel="apple-touch-icon" href="beta.png">
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: black;
+                color: white;
+                font-family: sans-serif;
+                cursor: hand }
+            a { color: #eee; }
+            button { background-color: #000; color: #fff; }
+            textarea { background-color: #555; color: #eee; }
+            h5 { color: #555; }
+            hr { color: #555; }
+            tr { background-color: #555; }
+            td { background-color: black; }
+            select { font-size: larger; background-color: black; color: white; }
+            ::-webkit-scrollbar { width: 0px; }
+        </style>
+        <script src="../../utility/keyer.js"></script>
+        <script>
+            const defaultFarnsworth = 7; // dits
+            const canvasWidth = 80;
+
+            var keyer = Keyer(elementQueuedCallback, elementCallback);
+
+            var farnsworth = defaultFarnsworth; // dits
+            var trainingSpeechPause = 2;
+
+            var connectedPort = null;
+            var morse = "  ETIANMSURWDKGOHVFÜL PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
+            var p = 1;
+            var message = '';
+            var messageDisplay = '&nbsp;';
+            var sending = '';
+            var char = '';
+
+            var audioStarted = false;
+            var audioCtx;
+            var oscillator;
+            var gain;
+            var volume;
+
+            var traceLog = '';
+            var lastTrace = Date.now();
+            function trace(message, primary) {
+                var now = Date.now();
+                if (traceLog.endsWith('.')) traceLog += '<br />';
+                traceLog += (primary ? '' : '&nbsp;&nbsp;&nbsp;') + message + ' ' + (now - lastTrace) + '<br />';
+                lastTrace = now;
+                document.getElementById('trace').innerHTML = traceLog;
+            }
+
+            function clearTrace() {
+                traceLog = '';
+            }
+
+            function say(utterance, delay) {
+                var utter = '';
+                for (var i in utterance) {
+                    var c = utterance[i];
+                    if (c == c.toUpperCase()) {
+                        var spell = {
+                            'A': 'ay',
+                            'B': 'bee',
+                            'C': 'cee',
+                            'D': 'dee',
+                            'E': 'ee',
+                            'F': 'ef',
+                            'G': 'gee',
+                            'H': 'aych',
+                            'I': 'eye',
+                            'J': 'jay',
+                            'K': 'kay',
+                            'L': 'el',
+                            'M': 'em',
+                            'N': 'in',
+                            'O': 'oh',
+                            'P': 'pee',
+                            'Q': 'cue',
+                            'R': 'ar',
+                            'S': 'ess',
+                            'T': 'tee',
+                            'U': 'you',
+                            'V': 'vee',
+                            'W': 'double you',
+                            'X': 'ex',
+                            'Y': 'wye',
+                            'Z': 'zee',
+                            '?': 'question mark',
+                            '.': 'full stop',
+                            ',': 'comma',
+                            ':': 'colon',
+                            '-': 'dash',
+                            ';': 'semicolon',
+                            '!': 'exclamation point',
+                            '/': 'slash',
+                            "'": 'apostrophe',
+                            '"': 'quotation mark',
+                            '_': 'underscore',
+                            // also <BT> '=': 'double dash',
+                            '&': 'ampersand',
+                            '$': 'dollar sign',
+                            '(': 'left parenthesis',
+                            ')': 'right parenthesis',
+                            '+': 'plus',
+                            '@': 'at sign',
+                            '<': ' ', // nothing
+                            '>': 'prosign',
+                        }[c];
+                        utter += ' ' + (spell || c) + ' ';
+                    } else {
+                        utter += c;
+                    }
+                }
+                if ('speechSynthesis' in window) {
+                    window.setTimeout(function() {
+                        window.speechSynthesis.speak(
+                            new SpeechSynthesisUtterance(utter)
+                        )
+                    }, delay * 1000);
+                }
+            }
+
+            const defaultPitch = 600;
+            const defaultSpeed = 25;
+            const defaultDebounce = 10;
+            const defaultMute = false;
+            const defaultGain = 100;
+
+            function audio() {
+                if (!audioStarted) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    oscillator = audioCtx.createOscillator();
+                    oscillator.frequency.value = defaultPitch;
+                    volume = audioCtx.createGain();
+                    volume.gain.value = 1;
+                    gain = audioCtx.createGain();
+                    gain.gain.value = 0;
+                    oscillator.connect(gain);
+                    gain.connect(volume);
+                    volume.connect(audioCtx.destination);
+                    oscillator.start(0);
+                    audioStarted = true;
+                }
+                return audioCtx.currentTime;
+            }
+
+            var mode;
+            var memory;
+            var tone;
+            var enforce;
+            var speed;
+            var ditlen;
+
+            var t = 0;
+            const ramp = 0.01;
+            function makeTone(on) {
+                var c = audio();
+                t = c > t ? c : t;
+                gain.gain.setTargetAtTime(on ? 1 : 0, t, ramp);
+            }
+
+            function playTone(len) {
+                makeTone(true);
+                t += len;
+                gain.gain.setTargetAtTime(0, t, ramp);
+                t += ditlen;
+            }
+
+            function silence(len) {
+                t += len;
+            }
+            
+            function updateBreaks(len) {
+                var end = (new Date()).getTime() / 1000 + len;
+                letterBreak = end + (ditlen * 3);
+                wordBreak = end + (ditlen * 7);
+                farnsworthWordBreak = wordBreak + (ditlen * farnsworth);
+            }
+
+            function dit(tone) {
+                trace('DIT');
+                p *= 2;
+                updateCharacter();
+                if (tone) playTone(ditlen)
+            }
+
+            function dah(tone) {
+                trace('DAH');
+                p = p * 2 + 1;
+                updateCharacter();
+                if (tone) playTone(3 * ditlen);
+            }
+
+            function elementQueuedCallback(element) {
+                sendRadioDitDah(element == 'dit');
+            }
+
+            function elementCallback(element) {
+                if (element == 'dit') dit(true); else dah(true);
+                updateBreaks(element == 'dit' ? ditlen : 3 * ditlen);
+            }
+
+            function keyUpdateLeft(state) {
+                trace('UPDATE Left ' + state);
+                keyer.key(currentPolarity == 'ditdah' ? 'dit' : 'dah', state);
+                if (leftDown != state) leftDown = state;
+            }
+
+            function keyUpdateRight(state) {
+                trace('UPDATE Right ' + state);
+                keyer.key(currentPolarity == 'dahdit' ? 'dit' : 'dah', state);
+                if (rightDown != state) rightDown = state;
+            }
+
+            var loaded = false;
+            function init() {
+                resize();
+                document.body.addEventListener('keydown', (e) => {
+                    if (!loaded && e.key == 'Enter') load();
+                });
+            }
+
+            function load() {
+                resize();
+                loaded = true;
+                document.getElementById('mode').addEventListener('change', modeChange);
+                var speed = document.getElementById('speed');
+                speed.addEventListener('change', speedChange);
+                for (var s = 48; s >= 6; s--) {
+                    var opt = document.createElement('option');
+                    opt.value = opt.innerHTML = s;
+                    if (s == defaultSpeed) opt.selected = true;
+                    speed.appendChild(opt);
+                }
+                var pitch = document.getElementById('pitch');
+                pitch.addEventListener('change', pitchChange);
+                for (var p = 900; p >= 300; p -= 5) {
+                    var opt = document.createElement('option');
+                    opt.value = opt.innerHTML = p;
+                    if (p == defaultPitch) opt.selected = true;
+                    pitch.appendChild(opt);
+                }
+                var debounce = document.getElementById('debounce');
+                debounce.addEventListener('change', debounceChange);
+                for (var d = 50; d >= 0; d -= 1) {
+                    var opt = document.createElement('option');
+                    opt.value = opt.innerHTML = d;
+                    if (d == defaultDebounce) opt.selected = true;
+                    debounce.appendChild(opt);
+                }
+                var mute = document.getElementById('mute');
+                mute.addEventListener('change', muteChange);
+                var gain = document.getElementById('gain');
+                gain.addEventListener('change', gainChange);
+                gain.addEventListener('input', gainChange);
+                var polarity = document.getElementById('polarity');
+                polarity.addEventListener('change', polarityChange);
+                document.getElementById("intro").style.display = 'none';
+                document.getElementById("main").style.display = '';
+                testQsoLoop();
+                if ('serial' in navigator) {
+                    navigator.serial.addEventListener('connect', (e) => {
+                        // Connect to `e.target` or add it to a list of available ports.
+                        //alert('Connected: ' + JSON.stringify(e));
+                    });
+                    navigator.serial.addEventListener('disconnect', (e) => {
+                        // Remove `e.target` from the list of available ports.
+                        //alert('Disconnected: ' + JSON.stringify(e));
+                    });
+                } else {
+                    //alert('SERIAL UNAVAILABLE'); // The Web Serial API is supported.
+                }
+                //document.getElementById('message').addEventListener('keypress', (e) => {
+                //    if (e.charCode == 13 && connectedPort != null) {
+                //        sendMessage();
+                //        e.target.value = '';
+                //        e.preventDefault();
+                //    }
+                //});
+                var leftActuallyDown = false;
+                var rightActuallyDown = false;
+                document.body.addEventListener('keydown', (e) => {
+                    if (!e.repeat) {
+                        switch (e.code) {
+                            case 'BracketLeft':
+                            case 'ControlLeft':
+                                trace('Left DOWN', true);
+                                if (!leftActuallyDown) keyUpdateLeft(true);
+                                leftActuallyDown = true;
+                                break;
+                            case 'BracketRight':
+                            case 'ControlRight':
+                                trace('Right DOWN', true);
+                                if (!rightActuallyDown) keyUpdateRight(true);
+                                rightActuallyDown = true;
+                                break;
+                        }
+                    }
+                });
+                document.body.addEventListener('keyup', (e) => {
+                    if (!e.repeat) {
+                        switch (e.code) {
+                            case 'BracketLeft':
+                            case 'ControlLeft':
+                                trace('Left UP', true);
+                                leftActuallyDown = false;
+                                setTimeout(function () { if (!leftActuallyDown) keyUpdateLeft(false); }, currentDebounce);
+                                break;
+                            case 'BracketRight':
+                            case 'ControlRight':
+                                trace('Right UP', true);
+                                leftActuallyDown = false;
+                                rightActuallyDown = false;
+                                setTimeout(function () { if (!rightActuallyDown) keyUpdateRight(false); }, currentDebounce);
+                                break;
+                        }
+                    }
+                });
+                var speedKey = 0;
+                function processSpeedKey(i) {
+                    if (speedKey == 0) {
+                        speedKey = i * 10;
+                    } else {
+                        setSpeed(speedKey + i, true, true);
+                        speedKey = 0;
+                    }
+                }
+                document.body.addEventListener('keydown', (e) => {
+                    if (!e.repeat && e.srcElement.id != 'message') {
+                        switch (e.key) {
+                            case 'Backspace':
+                                reset();
+                                speedKey = 0;
+                                break;
+                            case 'a':
+                            case 'b':
+                            case 'c':
+                            case 'd':
+                            case 'e':
+                            case 'f':
+                            case 'g':
+                            case 'h':
+                            case 'i':
+                            case 'j':
+                            case 'k':
+                            case 'l':
+                            case 'm':
+                            case 'n':
+                            case 'o':
+                            case 'p':
+                            case 'q':
+                            case 'r':
+                            case 's':
+                            case 't':
+                            case 'u':
+                            case 'v':
+                            case 'w':
+                            case 'x':
+                            case 'y':
+                            case 'z':
+                                //keyboard(e.key);
+                                break;
+                        }
+                    }
+                });
+                document.body.addEventListener('keyup', (e) => {
+                    if (e.srcElement.id != 'message') {
+                        switch (e.code) {
+                            case 'Comma':
+                                //setKeys(false, rightDown);
+                                break;
+                            case 'Period':
+                                //setKeys(leftDown, false);
+                                break;
+                        }
+                    }
+                });
+                reset();
+                setSpeed(parseInt(localStorage.getItem('tx_speed')) || defaultSpeed, true, true);
+                setFarnsworth(defaultFarnsworth);
+                setPitch(parseInt(localStorage.getItem('tx_pitch')) || defaultPitch, true, true);
+                setDebounce(parseInt(localStorage.getItem('tx_debounce')) || defaultDebounce, true, true);
+                setMute((localStorage.getItem('tx_mute') == 'true') || defaultMute, true, true);
+                setGain(parseInt(localStorage.getItem('tx_gain')) || defaultGain, true, true);
+                setPolarity(localStorage.getItem('tx_polarity') || "ditdah", true, true);
+                setMode(localStorage.getItem('tx_keyer') || 'B', true, true);
+                setMemory(true);
+                setTone(false);
+                setEnforceElements(true);
+                drawKeyAndToneState();
+            }
+
+            function connect() {
+                // const port = await navigator.serial.requestPort();
+                //const usbVendorId = 0xABCD;
+                //navigator.serial.requestPort({ filters: [{ usbVendorId }]}).then((port) => {
+                navigator.serial.requestPort().then((port) => {
+                    // Connect to `port` or add it to the list of available ports.
+                    port.open({ baudRate: 115200 }).then(() => {
+                        connectedPort = port;
+                        const writer = connectedPort.writable.getWriter();
+                        writer.write(new Uint8Array([getSpeedByte(speed), getModeByte(mode), getMemoryByte(memory), getToneByte(tone), getKeyboardByte(false)])).then(() => {
+                            writer.releaseLock();
+                        });
+                    }).catch(e => {
+                        alert('ERROR OPENING: ' + e);
+                    });
+                    //navigator.serial.getPorts().then((ports) => {
+                    //    // Initialize the list of available ports with `ports` on page load.
+                    //    alert('Ports: ' + JSON.stringify(ports));
+                    //});
+                }).catch((e) => {
+                    // The user didn't select a port.
+                    // alert('ERROR NO PORT CHOSEN: ' + JSON.stringify(e));
+                });
+            }
+            
+            function disconnect() {
+                if (connectedPort != null) {
+                    connectedPort.close();
+                    connectedPort = null;
+                    // TODO: reader busy/locked https://stackoverflow.com/questions/65748344/how-can-i-interrupt-a-reader-when-it-hangs-need-a-timeout-on-reader-read
+                }
+            }
+
+            function sendByte(b) {
+                if (connectedPort != null) {
+                    const writer = connectedPort.writable.getWriter();
+                    writer.write(new Uint8Array([b])).then(() => {
+                        writer.releaseLock();
+                    });
+                }
+            }
+
+            function getModeByte(m) {
+                switch (mode) {
+                    case 'A':
+                        return 65;
+                    case 'B':
+                        return 66;
+                    case 'U':
+                        return 85;
+                    case 'S':
+                        return 83;
+                }
+            }
+
+            function setMode(m) {
+                localStorage.setItem('tx_keyer', m);
+                mode = m;
+                keyer.setMode(mode);
+                sendByte(getModeByte(mode));
+                document.getElementById('mode').value = m;
+            }
+
+            var currentSpeed = defaultSpeed;
+            function setSpeed(wpm, sendToRadio, updateMenu) {
+                keyer.setSpeed(wpm);
+                speed = wpm;
+                ditlen = 1.2 / speed;
+                sendByte(getSpeedByte(wpm));
+                if (currentSpeed == wpm) return;
+                currentSpeed = wpm;
+                if (updateMenu) document.getElementById('speed').value = wpm; 
+                if (sendToRadio) setRadioCWSpeed(wpm);
+                localStorage.setItem('tx_speed', wpm);
+            }
+
+            var currentPitch = defaultPitch;
+            function setPitch(p, sendToRadio, updateMenu) {
+                audio();
+                if (currentPitch == p) return;
+                currentPitch = p;
+                oscillator.frequency.value = p;
+                if (updateMenu) document.getElementById('pitch').value = p; 
+                if (sendToRadio) setRadioCWPitch(p);
+                localStorage.setItem('tx_pitch', p);
+            }
+
+            var currentDebounce = defaultDebounce;
+            function setDebounce(d) {
+                if (currentDebounce == d) return;
+                currentDebounce = d;
+                document.getElementById('debounce').value = d; 
+                localStorage.setItem('tx_debounce', d);
+            }
+
+            var currentMute = defaultMute;
+            function setMute(m) {
+                if (currentMute == m) return;
+                currentMute = m;
+                audio();
+                volume.gain.value = m ? 0 : currentGain / 100;
+                document.getElementById('mute').checked = !m; 
+                document.getElementById('gain').disabled = m; 
+                localStorage.setItem('tx_mute', m);
+            }
+
+            var currentGain = defaultGain;
+            function setGain(g) {
+                if (currentGain == g) return;
+                currentGain = g;
+                audio();
+                volume.gain.value = g / 100;
+                document.getElementById('gain').value = g; 
+                document.getElementById('gainval').innerText = g + '%'; 
+                localStorage.setItem('tx_gain', g);
+            }
+
+            var currentPolarity = 'ditdah';
+            function setPolarity(p, sendToRadio, updateMenu) {
+                if (currentPolarity == p) return;
+                currentPolarity = p;
+                if (updateMenu) document.getElementById('polarity').value = p; 
+                // if (sendToRadio) setRadioPaddlePolarity(p);
+                localStorage.setItem('tx_polarity', p);
+            }
+
+            function getMemoryByte(mem) {
+                return 77 + (mem ? 0 : 32); // M/m
+            }
+
+            function getToneByte(t) {
+                return 84 + (t ? 0 : 32); // T/t
+            }
+
+            function getKeyboardByte(k) {
+                return 75 + (k ? 0 : 32); // K/k
+            }
+
+            function setMemory(mem) {
+                memory = mem;
+                sendByte(getMemoryByte(memory));
+            }
+
+            function setTone(t) {
+                tone = t;
+                sendByte(getToneByte(t));
+            }
+
+            function setEnforceElements(e) {
+                enforce = e;
+            }
+
+            function setKeyboard(k) {
+                sendByte(getKeyboardByte(k));
+            }
+
+            function getSpeedByte(wpm) {
+                return Math.min(255, Math.round(wpm) + 200);
+            }
+
+            function setFarnsworth(dits) {
+                farnsworth = dits;
+            }
+
+            function setKeys(left, right) {
+                leftDown = left;
+                rightDown = right;
+                sendByte((left ? 0x2 : 0) | (right ? 0x1 : 0));
+                markManualSend();
+            }
+
+            function markManualSend() {
+                qso.lastManualSend = (new Date()).getTime();
+            }
+
+            function train(message) {
+                //document.getElementById('message').value = message; // TODO: display phrases w/o |
+                var prosign = false;
+                var words = message.split('|');
+                var startTime = audio();
+                for (var w in words) {
+                    var word = words[w];
+                    for (var i in word) {
+                        var c = word[i];
+                        if (c == ' ') { // word break
+                            silence(ditlen * 7 + (ditlen * farnsworth));
+                        } else {
+                            if (c == '<') prosign = true;
+                            if (c == '>') prosign = false;
+                            var j = morse.indexOf(c.toUpperCase());
+                            var letter = [];
+                            while (j > 1) {
+                                if (j % 2 == 0) {
+                                    letter.push(true);
+                                    j /= 2;
+                                } else {
+                                    letter.push(false);
+                                    j = (j - 1) / 2;
+                                }
+                            }
+                            letter.reverse();
+                            for (var j in letter) {
+                                playTone(letter[j] ? ditlen : ditlen * 3);
+                                silence(ditlen);
+                            }
+                            if (!prosign) {
+                                silence(ditlen * 3 + (ditlen * farnsworth));
+                            }
+                        }
+                    }
+                    say(word, t - startTime + trainingSpeechPause);
+                    silence(trainingSpeechPause * 2);
+                }
+                silence(ditlen * 7); // final word break
+            }
+
+            function practiceSending(message) {
+                clearMessage();
+                sending = message;
+                updateDisplay();
+            }
+
+            function keyboard(key) {
+                sending += key.toUpperCase();
+                updateDisplay();
+                sendRadioCW(key);
+            }
+
+            function send(message, manual = true) {
+                if (manual) markManualSend(); // vs. QSO auto-reply
+                if (connectedPort != null) {
+                    sending += message.toUpperCase() + ' ';
+                    updateDisplay();
+                    //var data = [];
+                    var letter = [];
+                    var prosign = false;
+                    for (var i in message) {
+                        var m = message[i];
+                        if (m == ' ') { // word break
+                            for (var i = 0; i < farnsworth / 3; i++) {
+                                //data.push(32); // extra letter-break
+                            }
+                            //data.push(47);
+                        } else {
+                            if (m == '<') prosign = true;
+                            if (m == '>') prosign = false;
+                            var j = morse.indexOf(m.toUpperCase());
+                            while (j > 1) {
+                                if (j % 2 == 0) {
+                                    letter.push(46); // dit
+                                    j /= 2;
+                                } else {
+                                    letter.push(45); // dah
+                                    j = (j - 1) / 2;
+                                }
+                            }
+                            //data = data.concat(letter.reverse());
+                            letter = [];
+                            if (!prosign) {
+                                for (var i = 0; i < farnsworth / 3; i++) {
+                                    //data.push(32); // letter-break
+                                }
+                                //data.push(32); // letter-break
+                            }
+                        }
+                    }
+                    //data.push(47); // final word break
+                    //const writer = connectedPort.writable.getWriter();
+                    //writer.write(new Uint8Array(data)).then(() => {
+                    //    writer.releaseLock();
+                    //});
+                }
+            }
+
+            //function sendMessage() {
+            //    if (connectedPort != null) {
+            //        send(document.getElementById('message').value);
+            //    }
+            //}
+
+            //function sendTraining() {
+            //    train(document.getElementById('message').value);
+            //}
+
+            var initQso = {
+                kind: 'disabled',
+                stage: 'idle',
+                stageChangeTime: 0,
+                yourCall: null,
+                theirCall: null,
+                send: null,
+                lastManualSend: 0,
+                lastSendingTime: 0,
+            };
+
+            var qso = Object.assign({}, initQso);
+
+            function qsoLoop(msg, time, qso) {
+                function randomCallsign() {
+                    return 'KTR4CEY';
+                }
+                var manualSentSinceStage = (qso.lastManualSend - qso.stageChangeTime) > 0;
+                var timeSinceLastManualSend = (time - qso.lastManualSend);
+                var sendAndPauseSinceStage = manualSentSinceStage && timeSinceLastManualSend > 3000;
+                switch (qso.kind) {
+                    case 'pota-activator':
+                        switch (qso.stage) {
+                            case 'idle':
+                                var call = /CQ DE ([^\ ]+).* K ?$/g.exec(msg);
+                                if (call) {
+                                    qso.stage = 'started';
+                                    qso.yourCall = call[1];
+                                    qso.theirCall = randomCallsign();
+                                    qso.send = qso.yourCall + ' DE ' + qso.theirCall + ' <AR>';
+                                }
+                                break;
+                            case 'started':
+                                var bye = /E ?E ?$/g.exec(msg);
+                                if (bye) {
+                                    qso.stage = 'idle';
+                                    qso.send = 'EE';
+                                }
+                                break;
+                        }
+                        break;
+                    case 'pota-hunter':
+                        switch (qso.stage) {
+                            case 'idle':
+                                qso.theirCall = randomCallsign();
+                                qso.send = 'CQ POTA DE ' + qso.theirCall + ' K';
+                                qso.stage = 'started';
+                                break;
+                            case 'started':
+                                if (sendAndPauseSinceStage) {
+                                    var call = /([A-Z][^\ ]+) ?$/g.exec(msg);
+                                    if (call) {
+                                        qso.yourCall = call[1];
+                                        qso.send = qso.yourCall + ' GM UR 599 5NN <BK>';
+                                        qso.stage = 'contact'
+                                    }
+                                }
+                                break;
+                            case 'contact':
+                                if (sendAndPauseSinceStage) {
+                                    qso.send = '<BK> TU ES 73 DE ' + qso.theirCall + ' E E';
+                                    qso.stage = 'bye'
+                                }
+                                break;
+                            case 'bye':
+                                if (sendAndPauseSinceStage) {
+                                    var ditdit = /E ?E ?$/g.exec(msg);
+                                    if (ditdit) qso.stage = 'idle'
+                                }
+                                break;
+                        }
+                        break;
+                }
+                return qso;
+            }
+
+            function testQsoLoop() {
+                function testCQ(cq, qso) {
+                    var out = qsoLoop(cq, 0, q);
+                    if (out.send != 'KK7HXU DE KTR4CEY <AR>') console.log('Unexpected CQ reply');
+                    if (out.stage != 'started') console.log('Unexpected CQ stage');
+                }
+                var q = Object.assign({}, qso);
+                q.kind = 'pota-activator';
+                testCQ('CQ DE KK7HXU K');
+                testCQ('CQ POTA DE KK7HXU K');
+                testCQ('CQ CQ CQ DE KK7HXU KK7HXU K');
+                testCQ('CQ CQ CQ POTA DE KK7HXU KK7HXU K');
+
+                var q = Object.assign({}, qso);
+                q.kind = 'pota-hunter';
+                var out = qsoLoop('', 0, q);
+                if (out.send != 'CQ POTA DE KTR4CEY K') console.log('Unexpected CQ');
+                if (out.stage != 'started') console.log('Unexpected CQ stage');
+                out = qsoLoop('KK7HXU', 0, q); // but not enough time
+                if (out.stage != 'started') console.log('Unexpected CQ stage');
+                q.stageChangeTime = 1000;
+                q.lastManualSend = 1001;
+                out = qsoLoop('KK7HXU', 4002, q); // but not enough time
+                if (out.stage != 'contact') console.log('Unexpected CQ stage');
+                if (out.send != 'KK7HXU GM UR 599 5NN <BK>') console.log('Unexpected contact reply')
+            }
+
+            var lastStage = '';
+            function simulateQso(msg) {
+                if (sending.length == 0 || sending == ' ') {
+                    qso = qsoLoop(msg, (new Date()).getTime(), qso);
+                    if (lastStage != qso.stage && !qso.send) {
+                        lastStage = qso.stage;
+                        qso.stageChangeTime = (new Date()).getTime() + 1000; // give time for loopback
+                    }
+                    if (qso.send) {
+                        var captureSend = qso.send;
+                        send(captureSend, false);
+                        qso.send = null;
+                    }
+                }
+            }
+
+            function escape(str) {
+                return str.replace(/\</g, '&lt;').replace(/\>/g, '&gt;');
+            }
+
+            function updateDisplay() {
+                var temp = // preemptively chop off char in progress (but reverts if later unmatched -- completes after letter timeout)
+                    sending.startsWith(char) ?
+                    sending.substring(char.length) :
+                    sending.startsWith(' ') && sending.length > 1 && sending.substring(1).startsWith(char) ?
+                    sending.substring(char.length + 1) :
+                    sending;
+                var copy = document.getElementById('copy');
+                copy.innerHTML = messageDisplay + "<span style='color:#555'>" + escape(char) + "</span><span id='cursor' style='border-left: 1px solid #777'>&nbsp;</span><span style='color:#555'>" + escape(temp) + "</span>";
+                var cursor = document.getElementById('cursor');
+                copy.scrollLeft = cursor.offsetLeft - copy.clientWidth / 2;
+            }
+
+            function reset() {
+                message = '';
+                messageDisplay = '&nbsp;';
+                sending = '';
+                p = 1;
+                char = '';
+                updateDisplay();
+                var canvas = document.getElementById('canvas');
+                var ctx = canvas.getContext('2d', { willReadFrequently: true });
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvasWidth, canvas.height);
+                cursor = 20;
+            }
+
+            var canvasVisible = true;
+            function toggleCode() {
+                document.getElementById('canvas').style.display = canvasVisible ? 'none' : '';
+                canvasVisible = !canvasVisible;
+            }
+
+            var decodeVisible = true;
+            function toggleDecode() {
+                document.getElementById('copy').style.display = decodeVisible ? 'none' : '';
+                decodeVisible = !decodeVisible;
+            }
+
+            function mute(m) {
+                setMute(m);
+            }
+
+            function updateCharacter() {
+                function setProsign(sign) {
+                    char = '<' + sign + '>';
+                }
+                switch (p) {
+                    //case 31: // backspace
+                        // TODO
+                    //    break;
+                    case 21:
+                        setProsign('AA');
+                        break;
+                    case 34:
+                        setProsign('VE');
+                        break;
+                    case 37:
+                        setProsign('INT');
+                        break;
+                    case 42:
+                        setProsign('AR');
+                        break;
+                    case 49:
+                        setProsign('BT');
+                        break;
+                    case 53:
+                        setProsign('CT');
+                        break;
+                    case 54:
+                        setProsign('KN'); // overrides '(' char
+                        break;
+                    case 69:
+                        setProsign('SK');
+                        break;
+                    case 103:
+                        setProsign('NJ');
+                        break;
+                    case 197:
+                        setProsign('BK');
+                        break;
+                    case 568:
+                        setProsign('SOS');
+                        break;
+                    case 256: // correction (clear)
+                        // TODO
+                        message = '';
+                        messageDisplay = '&nbsp;';
+                        char = '';
+                        break;
+                    default:
+                        if (p >= 121) { // unknown
+                            // TODO
+                            char = '□';
+                        } else {
+                            char = morse[p];
+                            if (char == ' ') { // unknown?
+                                char = '□';
+                            }
+                        }
+                        break;
+                }
+                updateDisplay();
+            }
+
+            function copy(b) {
+                switch (b) {
+                    case 46: // dit
+                        sendRadioDitDah(true);
+                        dit(true);
+                        updateBreaks(ditlen);
+                        break;
+                    case 45: // dah
+                        sendRadioDitDah(false);
+                        dah(true);
+                        updateBreaks(3 * ditlen);
+                        break;
+                }
+            }
+
+            var cursor = 20;
+            var straightDown = false;
+            var leftDown = false;
+            var rightDown = false;
+            var letterBreak = 0;
+            var wordBreak = 0;
+            var farnsworthWordBreak = 0;
+            var lastGain = 0;
+            var clearNextKeyState = false;
+
+            var straightKeyTone = false;
+            var lastStraightKeyToneChange = 0;
+            var straightKeyBuffer = 0;
+            function handleStraightKey() {
+                var now = (new Date()).getTime() / 1000;
+                var span = now - lastStraightKeyToneChange;
+                var len = straightKeyTone && span > (ditlen * 2) ? ditlen * 3 : ditlen; // enforce min length dit or snap to dah
+                if (straightKeyBuffer > 0) {
+                    if (!enforce || span >= len) {
+                        straightKeyBuffer = Math.max(0, straightKeyBuffer - 1);
+                        straightKeyTone = !straightKeyTone;
+                        makeTone(straightKeyTone);
+                        sendByte(straightKeyTone ? 0x1 : 0); // simulate keys to relay to radio
+                        lastStraightKeyToneChange = now;
+                        if (!straightKeyTone) {
+                            coder(Math.max(ditlen / 2, Math.min(ditlen * 6, span))); // min 1/2 dit, max 2 * dah
+                        }
+                    }
+                } else if (
+                    enforce && straightDown &&
+                    ((straightKeyTone && span > ditlen * 3) || // force up after dah
+                    (!straightKeyTone && span > ditlen))) { // force back down after element space
+                        straightKeyBuffer++;
+                }
+            }
+
+            function clearMessage() {
+                message = '';
+                messageDisplay = '&nbsp;';
+                updateDisplay();
+            }
+
+            function drawKeyAndToneState() {
+                var now = Date.now();
+                var ms = now - lastTrace;
+                lastTrace = now;
+                traceLog += (traceLog.endsWith('.') ? ms + '.' : '&nbsp;&nbsp;&nbsp;' + ms + '.');
+                if (straightDown) updateBreaks(0);
+                if (mode == 'S') handleStraightKey();
+                const ribbon = canvasWidth / 9;
+                var now = (new Date()).getTime() / 1000;
+                //if (now < wordBreak) {
+                if (now < letterBreak) {
+                    var canvas = document.getElementById('canvas');
+                    var ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    audio();
+                    cursor = 0;
+                    for (var repeat = 0; repeat < 2; repeat++)
+                    {
+                        if (clearNextKeyState) {
+                            //ctx.fillStyle = '#000';
+                            //ctx.fillRect(0, 0, canvasWidth, canvas.height);
+                            //cursor = canvas.height - 20;
+                            clearNextKeyState = false;
+                        }
+                        else
+                        {
+                            var imgData = ctx.getImageData(0, 0, canvasWidth, canvas.height - 1);
+                            ctx.putImageData(imgData, 0, 1); // scroll down
+                            ctx.fillRect(0, 0, canvasWidth, 1);
+                        }
+                        var gainVal = gain.gain.value;
+                        if ((lastGain < 0.5 && gainVal > 0.5) || (lastGain > 0.5 && gainVal < 0.5)) {
+                            ctx.fillStyle = '#555'; // mark tone boundaries
+                            lastGain = gainVal;
+                        } else {
+                            ctx.fillStyle = '#000'; // erase cursor
+                        }
+                        ctx.fillRect(0, cursor, canvasWidth, 1);
+                        if (leftDown) {
+                            ctx.fillStyle = '#F00';
+                            ctx.fillRect(ribbon, cursor, ribbon, 1);
+                        }
+                        /* if (straightDown) {
+                            ctx.fillStyle = '#909';
+                            ctx.fillRect(ribbon * 2, cursor, ribbon, 1);
+                        } */
+                        if (rightDown) {
+                            ctx.fillStyle = '#00F';
+                            ctx.fillRect(ribbon * 7, cursor, ribbon, 1);
+                        }
+                        if (gainVal > 0.5) {
+                            ctx.fillStyle = '#fff';
+                            ctx.fillRect(ribbon * 3, cursor, ribbon * 3, 1);
+                        }
+                        //cursor--;
+                        //if (cursor < 0) cursor = canvas.height + cursor;
+                        // ctx.fillStyle = '#555';
+                        // ctx.fillRect(0, cursor, canvasWidth, 1);
+                    }
+                }
+                if (now - letterBreak > 0) {
+                    clearTrace();
+                    if (p != 1)
+                    {
+                        if (sending.startsWith(char)) {
+                            sending = sending.substring(char.length);
+                            message += char;
+                            messageDisplay += escape(char);
+                        } else if (sending.startsWith(' ') && sending.length > 1 && sending.substring(1).startsWith(char)) {
+                            sending = sending.substring(char.length + 1);
+                            message += char;
+                            messageDisplay += "<span style='color:#00f'>_</span>" + escape(char); // missed space
+                        } else if (sending == '') {
+                            message += char;
+                            messageDisplay += escape(char);
+                        } else {
+                            //if (char == 'E') {
+                            //    messageDisplay += "<span style='color:#777'>·</span>";
+                            //    char = '';
+                            //}
+                            //else {
+                                message += char;
+                                messageDisplay += "<span style='color:#f00'>" + escape(char) + "</span>";
+                            //}
+                        }
+                        simulateQso(message);
+                        char = '';
+                        p = 1;
+                        updateDisplay();
+                    }
+                }
+                if (now - farnsworthWordBreak > 0 && !message.endsWith(' ')) {
+                    if (sending != '')
+                    {
+                        if (sending.startsWith(' ')) {
+                            sending = sending.substring(1);
+                            messageDisplay += ' ';
+                        } //else {
+                            //messageDisplay += "<span style='color:#00f'>…</span>"; // extra space
+                        //}
+                    }
+                    else
+                    {
+                        messageDisplay += ' ';
+                    }
+                    message += ' ';
+                    updateDisplay();
+                }
+                if (now - wordBreak > ditlen * 14.0) {
+                    clearNextKeyState = true;
+                }
+
+                window.setTimeout(drawKeyAndToneState, 5);
+            }
+
+            var lastStraightKey = false;
+            function read() {
+                if (connectedPort != null) {
+                    const reader = connectedPort.readable.getReader();
+                    reader.read().then(x =>
+                    {
+                        for (var i in x.value) {
+                            var v = x.value[i];
+                            if (v < 8) {
+                                straightDown = (v & 0x4) != 0;
+                                if (straightDown != lastStraightKey) {
+                                    if ((straightDown && !straightKeyTone) ||
+                                        (!straightDown && straightKeyTone))
+                                        straightKeyBuffer++;
+                                    lastStraightKey = straightDown;
+                                }
+                                leftDown = (v & 0x2) != 0;
+                                rightDown = (v & 0x1) != 0;
+                                markManualSend();
+                            } else {
+                                copy(v);
+                            }
+                        }
+                        reader.releaseLock();
+                        window.setTimeout(read, 20);
+                    });
+                } else {
+                    window.setTimeout(read, 20);
+                }
+            }
+
+            var lastPitch = defaultPitch;
+            var lastSpeed = defaultSpeed;
+            var loopCount = 0;
+            var timeout = null;
+            var radioRead = null;
+            function readRadio() {
+                if (connectedRadioPort != null && radioConnected) {
+                    // TODO: reader busy/locked https://stackoverflow.com/questions/65748344/how-can-i-interrupt-a-reader-when-it-hangs-need-a-timeout-on-reader-read
+                    if (radioRead == null) radioRead = connectedRadioPort.readable.getReader();
+                    radioRead.read().then(x =>
+                    {
+                        // 0xfd // end of message
+                        if (x.value[0] == 0xfe && x.value[1] == 0xfe) { // preamble
+                            if (x.value[2] == 0xe0) { // default controller address
+                                if (x.value[3] == 0xa4) { // transceiver address (default 0xa4 IC-705)
+                                    switch (x.value[4]) {
+                                        case 0x14: // setting
+                                            switch (x.value[5]) {
+                                                case 0x09: // CW pitch
+                                                    if (x.value.length >= 8) // TODO: truncated, should be state machine!
+                                                    {
+                                                        var d0 = x.value[6];
+                                                        var low = x.value[7];
+                                                        var d2 = low & 0xF;
+                                                        var d1 = (low & 0xF0) >> 4;
+                                                        var val = d0 * 100 + d1 * 10 + d2;
+                                                        var pitch = Math.round(((val - 1) / 253 * 600 + 300) / 5) * 5;
+                                                        if (pitch != lastPitch) {
+                                                            lastPitch = pitch;
+                                                            setPitch(pitch, false, true);
+                                                        }
+                                                    }
+                                                    break
+                                                case 0x0c: // CW speed
+                                                    if (x.value.length >= 8) // TODO: truncated, should be state machine!
+                                                    {
+                                                        var d0 = x.value[6];
+                                                        var low = x.value[7];
+                                                        var d2 = low & 0xF;
+                                                        var d1 = (low & 0xF0) >> 4;
+                                                        var val = d0 * 100 + d1 * 10 + d2;
+                                                        var speed = Math.round((val - 1) / 255 * 42 + 6.5);
+                                                        if (speed != lastSpeed) {
+                                                            lastSpeed = speed;
+                                                            setSpeed(speed, false, true);
+                                                        }
+                                                    }
+                                                    break
+                                            }
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+                        if (timeout) clearTimeout(timeout);
+                        timeout = setTimeout(function() {
+                            timeout = null;
+                            getRadioCWPitch();
+                            getRadioCWSpeed();
+                        }, 50); // throttle radio settings updates
+                        window.setTimeout(readRadio, 1);
+                    });
+                } else {
+                    window.setTimeout(readRadio, 1);
+                }
+            }
+
+            function simulateKeys(keys) {
+                var next = Date.now();
+                function updateKeyState() {
+                    if (keys.length > 0) {
+                        var k = keys[0];
+                        keys = keys.substring(1);
+                        setKeys(k == 'L' || k == 'B', k == 'R' || k == 'B');
+                        next += ditlen * 1000 / 2;
+                        window.setTimeout(updateKeyState, next - (new Date()).getTime());
+                    } else {
+                        setKeys(false, false);
+                    }
+                }
+                updateKeyState();
+            }
+
+            function simulateExamples(examples) {
+                var next = (new Date()).getTime();
+                function simulate() {
+                    var keys = examples.pop();
+                    simulateKeys(keys);
+                    if (examples.length > 0) {
+                      next += (keys.length + 12) * ditlen * 1000 / 2;
+                      window.setTimeout(simulate, next - (new Date()).getTime());
+                    }
+                }
+                examples = examples.reverse();
+                simulate();
+            }
+
+            function adjustSpeed(dit) {
+                if (!enforce) {
+                    var paris = 50 * dit; // .--. .- .-. .. ...  10 dits, 4 dahs (*3), 9 elements, 4 letters (*3), 1 word (*7)
+                    speed = 60 / paris;
+                    ditlen = dit; // setSpeed(60 / paris); // relay down to keyer?
+                    keyer.setSpeed(speed);
+                }
+            }
+
+            function coder(len) {
+                var dahlen = ditlen * 3;
+                len = Math.max(Math.min(len, dahlen * 2), ditlen / 2);
+                if (len < ditlen * 2) {
+                  dit(false);
+                  adjustSpeed((ditlen + len) / 2);
+                } else {
+                  dah(false);
+                  adjustSpeed((dahlen + len) / 6); // /2 -> avg /3 -> dit
+                }
+            }
+
+            function stopCamera() {
+                var stream = video.srcObject;
+                var tracks = stream.getTracks();
+                for (var i = 0; i < tracks.length; i++) {
+                    var track = tracks[i];
+                    track.stop();
+                }
+                video.srcObject = null;
+            }
+
+            var connectedRadioPort = null;
+            var radioConnected = false;
+            function connectRadio() {
+                navigator.serial.requestPort().then((port) => {
+                    port.open({ baudRate: 115200 }).then(() => {
+                        connectedRadioPort = port;
+                        radioConnected = true;
+                        updateConnectDisconnectButton();
+                        mute(true);
+                        setRadioCWSpeed(parseInt(document.getElementById('speed').value));
+                        setRadioCWPitch(parseInt(document.getElementById('pitch').value));
+                        readRadio();
+                    }).catch(e => {
+                        alert('ERROR OPENING: ' + e);
+                    });
+                }).catch((e) => {
+                    //alert('ERROR NO PORT CHOSEN: ' + JSON.stringify(e));
+                });
+            }
+
+            function disconnectRadio() {
+                if (connectedRadioPort != null) {
+                    radioConnected = false; // reader will close
+                    if (radioRead != null) {
+                        radioRead.releaseLock();
+                        radioRead = null;
+                    }
+                    if (radioWrite != null) {
+                        radioWrite.releaseLock();
+                        radioWrite = null;
+                    }
+                    if (connectedRadioPort != null) {
+                        connectedRadioPort.close();
+                        connectedRadioPort = null;
+                        mute(false);
+                    }
+                    updateConnectDisconnectButton();
+                }
+            }
+
+            function updateConnectDisconnectButton() {
+                document.getElementById('connect').innerText = (radioConnected ? 'Disconnect' : 'Connect');
+            }
+
+            function connectDisconnectRadio() {
+                if (radioConnected) disconnectRadio(); else connectRadio();
+            }
+
+            var radioWrite = null;
+            function sendRadioCommand(command, subcommand, data, transceiver, controller) {
+                if (connectedRadioPort != null) {
+                    var message = [0xfe, 0xfe]; // preamble
+                    message.push(transceiver || 0xa4); // transceiver address (default 0xa4, IC-705)
+                    message.push(controller || 0xe0); // default controller address
+                    message.push(command);
+                    if (subcommand) message.push(subcommand);
+                    if (data) message = message.concat(data);
+                    message.push(0xfd); // end of message
+                    if (!radioWrite) radioWrite = connectedRadioPort.writable.getWriter();
+                    radioWrite.write(new Uint8Array(message));
+                }
+            }
+
+            function sendRadioCW(message) {
+                var ascii = [];
+                for (var i in message) {
+                    ascii.push(message.charCodeAt(i));
+                }
+                sendRadioCommand(0x17 /* send CW */, null, ascii);
+            }
+
+            function setRadioCWSpeed(s) {
+                if (connectedRadioPort != null) {
+                    s = Math.round((s - 6) / 42 * 254 + 0.5);
+                    var d2 = (s % 10) & 0xff;
+                    s /= 10;
+                    var d1 = (s % 10) & 0xff;
+                    s /= 10;
+                    var d0 = (s % 10) & 0xff;
+                    var low = d1 << 4 | d2;
+                    sendRadioCommand(0x14, 0x0c, [d0, low]);
+                }
+            }
+
+            function getRadioCWSpeed() {
+                sendRadioCommand(0x14, 0x0c, null);
+            }
+
+            function setRadioCWPitch(p) {
+                if (connectedRadioPort != null) {
+                    p = Math.round((p - 300) / 600 * 253 + 0.5) + 1;
+                    var d2 = (p % 10) & 0xff;
+                    p /= 10;
+                    var d1 = (p % 10) & 0xff;
+                    p /= 10;
+                    var d0 = (p % 10) & 0xff;
+                    var low = d1 << 4 | d2;
+                    sendRadioCommand(0x14, 0x09, [d0, low]);
+                }
+            }
+
+            function getRadioCWPitch() {
+                sendRadioCommand(0x14, 0x09, null);
+            }
+
+            function sendRadioDitDah(dit) {
+                sendRadioCW(dit ? '^e' : '^t');
+            }
+
+            function resize() {
+                var canvas = document.getElementById('canvas');
+                canvas.height = window.innerHeight - 100;
+                var copy = document.getElementById('copy');
+                copy.style.width = window.innerWidth;
+            }
+
+            onresize = resize;
+
+            function modeChange(e) {
+                setMode(e.target.value);
+            }
+
+            function pitchChange(e) {
+                setPitch(parseInt(e.target.value), true, false);
+            }
+
+            function debounceChange(e) {
+                setDebounce(parseInt(e.target.value), true, false);
+            }
+
+            function muteChange(e) {
+                setMute(!e.target.checked, true, false);
+            }
+
+            function gainChange(e) {
+                setGain(parseInt(e.target.value), true, false);
+            }
+
+            function polarityChange(e) {
+                setPolarity(e.target.value, true, false);
+            }
+
+            function speedChange(e) {
+                setSpeed(parseInt(e.target.value), true, false);
+            }
+
+            function test() {
+                sendRadioCW("test");
+            }
+        </script>
+    </head>
+    <body onload="init()">
+        <div id="intro" style="height: 100vh; text-align: center; vertical-align: middle; padding: 3em">
+            <h1>This is messy prototype still in development.</h1>
+            <p>It uses the <a href="https://hamradio.solutions/vband/">USB paddle interface from Ham Radio Solutions</a> ("Store" tab).</p>
+            <p>It's a keyer that can be used for practice with a nifty visualization of paddle state (currently doesn't support straight keys).</p>
+            <p>It will also connect to a radio over USB/Bluetooth and will act as a proper keyer.</p>
+            <button onclick="load()">Let's do it!</button>
+        </div>
+        <div id="main" style="height: 100vh; display:none">
+            <table style="width: 100%; height: 100%;">
+                <tr>
+                    <td colspan="2">
+                        <h1 id="copy" style="border: 1px solid black; width: 100%; height: 100px; margin: 0; padding: 0; font-size: 72; overflow-y: hidden; overflow-x: scroll; white-space: nowrap;">&nbsp;</h1>
+                    </td>
+                </tr>
+                <tr>
+                    <td valign="top" style="width: 80px; height: 100%">
+                        <canvas id="canvas" width="80px" style="width: 80px"></canvas>
+                    </td>
+                    <td style="width: 100%">
+                        <table>
+                            <tr>
+                                <td>Mode:</td>
+                                <td width="100%">
+                                    <select id="mode">
+                                        <option value="U">Ultimatic</option>
+                                        <option value="A">Iambic-A</option>
+                                        <option value="B" selected="true">Iambic-B</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Speed:</td>
+                                <td width="100%">
+                                    <select id="speed"></select>wpm</h1>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Pitch:</td>
+                                <td width="100%">
+                                    <select id="pitch"></select>Hz</h1>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Polarity:</td>
+                                <td width="100%">
+                                    <select id="polarity">
+                                        <option value="ditdah">Left Dit</option>
+                                        <option value="dahdit">Right Dit</option>
+                                    </select></h1>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Debounce:</td>
+                                <td width="100%">
+                                    <select id="debounce"></select>ms</h1>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Volume:</td>
+                                <td width="100%">
+                                    <input type="checkbox" id="mute" name="mute" checked="true"><!--label for="mute">mute</label-->
+                                    <input type="range" min="0" max="100" value="100" class="slider" id="gain" />
+                                    <span id="gainval">100%</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Radio:</td>
+                                <td width="100%">
+                                    <button id="connect" onclick="connectDisconnectRadio()">Connect</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    <h3 style="margin-top: 3em">Usage tips:</h3>
+                                    <ul>
+                                        <li>Works with this <a href="https://hamradio.solutions/vband/">USB paddle interface</a></li>
+                                        <li>Or press left/right CTRL or square brackets to send.</li>
+                                        <li>Press BACKSPACE to clear.</li>
+                                    </ul>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    <h3 style="margin-top: 3em">Practice sending (choose a lesson below and key it):</h3>
+                                    <hr />
+                                    <a href="javascript:practiceSending('E T A N EEE TTT AAA NNN EEEEE TTTTT AAAAA NNNNN AN AT ANN ANT ATE EAT ETA NET TAN TAT TEA TEE TEN ANNA ANNE ANTE NATE NEAT TATE TEAT TEEN TENT EATEN TENET TENANT ANNETTE ANTENNA')">ETAN</a>
+                                    <a href="javascript:practiceSending('O I S 1 4 OOO III SSS 111 444 TTT EEE AAA NNN OOOOO IIIII SSSSS 11111 44444 TTTTT EEEEE AAAAA NNNNN AS IN IT NO ON TO SIN ST ITS SIT SON TOO OASIS SOON SITS SOOT SOTA IAN ASIA TOSS AT SEA INN OAT ONE SEE TAO TIE NIT SAT TIN TOE SINE SONIA NOT SET INTO NOON NOSE SANS SITE NOISE OASES ONION TOT ONTO TOES NOOSE SNOT TOOT SNOOT ASSESS ASSIST INSIST EASE ASIAN ANTI NINE SANE SEAN TINA EAST N1AS N4ON S41T NO1S AI1E IT4O EA1ON ES4IT 14 41 44 11 441 141 114 411')">OIS14</a>
+                                    <a href="javascript:practiceSending('R H D L 2 5 RRR HHH DDD LLL 222 555 OOO III SSS RRRRR HHHHH DDDDD LLLLL 22222 55555 OOOOO IIIII SSSSS DR RD DID DO HI HID ODD OH LID OLD ILL ROD DILL HOLD DOLL HILL ADD DAD LORD HAD DRILL HE ROLL ALL HIS OIL RED SOD DISH HARD HELD HOOD IDOL ODDS HER DELL HALL HERD LARD LIDS SLID SIR DOOR HELL ODOR SOLD AID LORI SILL ADO DIED DROOL SHILL DOE SAD DADS DIAL HIDE LAID HORRID AIR ASH DON HAS LIE NOD DASH DELI HAIL HIND IDLE LIED LOAD RAID DOT LEO SHE DOLE DORA HAIR HALO HASH OHIO RIDE HELLO AND HAILSTONE ISOLATION LOADSTONE TRADITION NINETEENTH 142 451 1425 DL1AT HH5H HS1TD ND2T NA4T')">RHDL25</a>
+                                    <a href="javascript:practiceSending('U C UUU CCC RRR HHH DDD LLL 111 444 UUUUU CCCCC RRRRR HHHHH DDDDD LLLLL 11111 44444 UH UR DUD DUH HUH CRUD CURD CULL US DULL HULL CHI HURL LULL LOU CHIC OUCH SCUD LURCH CHURCH CA EU OUR SUCH COUCH CUE LOUD LUCID OCCUR CAD DUE CLOD COLD HUSH CLOUD COULD HUE CORD HOUR LUSH RICH RUSH UCLA CAR RCA CLUE DUCT DUDE SLUR CHILD CRUSH SCULL CROUCH RUN URN CHAD CURE DUAL LURID CLAD CULT CUSS DUEL HAUL HULA CHILL CHORD CARD CURT RUDE THUD ARCH CALL COIL DOCS LUIS CRUDE CURED DUTCH HUNCH HURLS ICE CARL CELL COOL LURE NULL RICO RULE TURD CURIO HUTCH LUNCH INC USE AUDI HURT OURS RUTH SOUR THRU 4241 1452 NC5A NA2T CU1LL CO5NO NU4R CT1AC CE1NI')">UC</a>
+                                    <a href="javascript:practiceSending('M W 3 6 ? MMM WWW 333 666 ??? UUU CCC 222 555 MMMMM WWWWW 33333 66666 ????? UUUUU CCCCC 22222 55555 UM MUM CW MR MUD HUM MOM MS MOW RUM WOW AM ME MAW CHUM MUCH WE COM MEW SUM MUMS COW DIM MID SWUM HIM MOD DOW MIL OHM DRUM WHIM HOW MIR RIM WHO MULL WHOM CAM EMU LOW MAC OWL CAW MRS ROW WORM DAM MAD SCUM HAM DEW WED WHAM ARM AWL ELM HEW LAW MEL MOO RAM HUMS MUSH MULCH RAW WAR WOO CHOW MOMS SLUM SWIM WARM WHEW MILD CROW MOLD WILD WOWS AIM MIA DORM MILL ALUM AMMO HOWL MACH MAUL MIME WILL WORD MIMIC MOMMA MOE SAM CALM CLAM MEMO MULE HUMUS HW? W3AA N3AM DM5RA W6AM N2AT RW5L ON4UN 335 1432 6122')">MW36?</a>
+                                    <a href="javascript:practiceSending('F Y FFF YYY MMM WWW 333 666 FFFFF YYYYY MMMMM WWWWW 33333 66666 FM MY MUFF HF YUM FLY FRY YUMMY WHY IF CUFF MUMMY OF OFF YO DUFF HUFF MIFF DUFFY FLU FLUFF HUFFY FUR RUFF FLUFFY CRY DRY DUMMY AMY MAY YAM FEW ICY WAY YAW YOU LYLY MOMMY COY YEW RUMMY EMMY HOFF MUFFS FIR LUCY RIFF COMFY FOR SHY WRYLY FUN ROY SLY DULY FILM WHIFF FAD FIRM FULL HOMY RUDY MUDDY DAY FED FLOW FORM FOWL FROM FUME FURL WILY WOLF DAFFY FULLY WOLFF MUMMIFY DYE HAY DEFY MACY CHUMMY ELF FAR HEY LAY CUFFS FURRY SCUFF FER RAY REF FRAY CRUMMY RYE SOY FREY CODY FARM FLAW FOUL CLIFF HW? F5IN YO1AR HH5H NO3M AA3U S52R 1512 3316')">FY</a>
+                                    <a href="javascript:practiceSending('P G 7 9 / PPP GGG 777 999 /// FFF YYY 333 666 PPPPP GGGGG 77777 99999 ///// FFFFF YYYYY 33333 66666 GYP PM UP GYM PUG PUP GUY YUP GUM MUG GUPPY PYGMY GIG UMP PUPPY GO PIG PUMP PIP GUFF PLY PUFF PRY FIG GAG MUGGY YUPPY CUP EGG FOG GAP DUG PEG YIP PIGGY HUG MIG PEP UGH LUG SPY WIG PUFFY RUG GULP PIMP PLUG POPPY POMP PULP GAY PHD PAY YAP FOGGY YEP GUMMY PEGGY AMP GEM MAP MEG PAM WAG GULF PUDGY COG GUS PAW UGLY GYPSY PEPPY PIGMY DIG PEW DUMP DIP DOG GOD GLUM HUMP PUPS HIP HOG POD LUMP PLUM WIMP HOP LIP LOG RIG RUMP PLUMP LOP POL RIP GRIP GLYPH GUN PRO PLOP PUPA 7423 14253679 G4AN/3 N1AR/5 W9UCA/9 W3/PY2AA F6/N6AM 2N2222')">PG79/</a>
+                                    <a href="javascript:practiceSending('B V BBB VVV 777 999 BBBBB VVVVV 77777 99999 ///// BY BUG PUB BMW BIB BUY BOB BUM BIG BOG GOB BOP BUMP BUGGY BE BUFF BAG CUB FIB GAB BEG FOB BOY BUD DUB IVY BOBBY HUB MOB VIM BOMB BULB BOW BUR RUB VOW BAY ABBY BABY BUMPY BYE BLVD GRUB BEVY BURP BUFFY GABBY BUS SUB VIC WEB COBB BID FLUB BAGGY HUBBY DUMB VAMP BUBBLY RIB BLOB BURY PUBS RUBY FLYBY CAB ORB ROB BUN NUB GLIB WOMB BAD BUT TUB BLIP BLOG RUGBY GRUBBY BED BLAB BUOY PLUMB BAR BOO BRA VAL BARB BUSY BUYS WAVY HUBBUB BLUFF BODY CLUB COMB VERB BRAG CURB GARB GRAB DIVVY HOBBY GUMBO LOBBY 6146 5514 BV2AA BA1RO WB2AE N6RB/4 W2/VE1AR VE2/W2LE')">BV</a>
+                                    <a href="javascript:practiceSending('J K 8 0 &lt;BT&gt; JJJ KKK 888 000 &lt;BT&gt;&lt;BT&gt;&lt;BT&gt; BBB VVV JJJJJ KKKKK 88888 00000 &lt;BT&gt;&lt;BT&gt;&lt;BT&gt;&lt;BT&gt;&lt;BT&gt; BBBBB VVVVV JR JUG OK JIB JOB JIG JOG KIP JAB JAG JOY KEG JUMP JIM JUL KIM SKY BUCK JAY KAY YAK JAM KEY JAW BULK PUCK JEW JOCK KICK KID JAMB YUCK JACK JUDY KIRK JUMPY JUNK MUCK JED GAWK JUGS JULY JURY PICK JAR JEFF ARK ELK SKI BACK BUNK FUJI JERK BULKY BALK PACK PORK PUKE IKE JOE OAK BARK BOOK DUCK JOBS PECK PUNK YOCK YUKS ASK INK JON KIN HUCK JODY JOKE JUDD MICK KOJAK JOT KIT KINK LUCK MOCK MUSK WICK JIFFY FOLK FORK PARK SKIP YOLK BIKE FUNK HULK JIVE MILK PERK YACK YORK JACKY JUMBO SWITCH DIPOLE VERTICAL OHMS HOME TEST 807 3500 4250A K1JD N1AR W2TT K2UMU N2NW VE3NE VA3KP K4BAI N5KO')">JK80 &lt;BT&gt;</a>
+                                    <a href="javascript:practiceSending('X Q Z &lt;BK&gt; XXX QQQ ZZZ &lt;BK&gt;&lt;BK&gt;&lt;BK&gt; KKK JJJ 888 000 XXXXX QQQQQ ZZZZZ &lt;BK&gt;&lt;BK&gt;&lt;BK&gt;&lt;BK&gt;&lt;BK&gt; KKKKK JJJJJ 88888 00000 HZ KHZ BUZZ BOX FUZZ JAZZ ZIP MHZ FIX FOX ZAP MIX FIZZ WIZ FAX MAX UZI WAX QUIZ COX FUZZY JAZZY LIZ TUX HEX FOXY SIX QUIP REX SOX ZOO FLUX FIZZY ZIGGY SAX ZOE ZIPPY ZIT WAXY BOZO COZY JINX SUZY AXE ZULU CRUX KNOX QUAY TAX CRUZ DIZZY ZEN AJAX FUZE ROXY WHIZ FRIZZ LIZZY WHIZZ FLEX HAZY EXPO LAZY ZING LYNX ZAPS PIZZA QUICK MARX ZOOM PIZAZZ QUAD APEX GAZE PIZZAZZ QUIRK ONYX QUACK XMAS PROXY CZAR BOOZY FAZE OXBOW QUARK ZIGZAG EXAM COAX MAZE QUIT GIZMO FRIZZY ZEUS ZINC KLUTZ AQUA HOAX IRAQ EPOXY QUIPS EXEC ZERO AFFIX XEROX BUZZER QRX QRZ QTH QRS QRO QRP WX QRM 8044 7400 73 ZL2TT VK4OM JE1TRV BA1CW KH6LC AL2A AA3B')">XQZ &lt;BK&gt;</a>
+                                    <br />
+                                    <a href="javascript:practiceSending('EEEEE TTTTT IIIII MMMMM SSSSS OOOOO HHHHH 00000 55555 AAAAA NNNNN UUUUU DDDDD VVVVV BBBBB 44444 66666 ABCDEF GHIJK LMNOP QRSTU VWXYZ 12345 67890 / , . ? &lt;SK&gt; &lt;AR&gt; &lt;BT&gt; THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9')">Warmup</a>
+                                    <a href="javascript:practiceSending('AAAAA BBBBB CCCCC DDDDD EEEEE FFFFF GGGGG HHHHH IIIII JJJJJ KKKKK LLLLL MMMMM NNNNN OOOOO PPPPP QQQQQ RRRRR SSSSS TTTTT UUUUU VVVVV WWWWW XXXXX YYYYY ZZZZZ 11111 22222 33333 44444 55555 66666 77777 88888 99999 00000')">Exercise</a>
+                                    <a href="javascript:practiceSending('THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9 THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9 BENS BEST BENT WIRE/5 BENS BEST BENT WIRE/5 BENS BEST BENT WIRE/5 / / / / / , , , , , . . . . . ? ? ? ? ? &lt;SK&gt; &lt;SK&gt; &lt;SK&gt; &lt;SK&gt; &lt;SK&gt; &lt;AR&gt; &lt;AR&gt; &lt;AR&gt; &lt;AR&gt; &lt;AR&gt; &lt;BT&gt; &lt;BT&gt; &lt;BT&gt; &lt;BT&gt; &lt;BT&gt;')">Drill</a>
+                                    <br />
+                                    <a href="javascript:practiceSending('BE TO OF IN IT ON HE AS DO AT BY WE OR AN MY SO UP IF GO')">Two-letter words</a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" height="2000" valign="top">
+                                    <hr />
+                                    <h3>Debug Trace:</h3>
+                                    <div id="trace"></div>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </body>
+</html>
