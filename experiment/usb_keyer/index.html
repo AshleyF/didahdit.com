@@ -47,6 +47,7 @@
             var lastTrace = Date.now();
             function trace(message, primary) {
                 var now = Date.now();
+                if (traceLog.endsWith('.')) traceLog += '<br />';
                 traceLog += (primary ? '' : '&nbsp;&nbsp;&nbsp;') + message + ' ' + (now - lastTrace) + '<br />';
                 lastTrace = now;
                 document.getElementById('trace').innerHTML = traceLog;
@@ -181,12 +182,14 @@
             }
 
             function dit(tone) {
+                trace('DIT');
                 p *= 2;
                 updateCharacter();
                 if (tone) playTone(ditlen)
             }
 
             function dah(tone) {
+                trace('DAH');
                 p = p * 2 + 1;
                 updateCharacter();
                 if (tone) playTone(3 * ditlen);
@@ -1025,6 +1028,10 @@
             }
 
             function drawKeyAndToneState() {
+                var now = Date.now();
+                var ms = now - lastTrace;
+                lastTrace = now;
+                traceLog += (traceLog.endsWith('.') ? ms + '.' : '&nbsp;&nbsp;&nbsp;' + ms + '.');
                 if (straightDown) updateBreaks(0);
                 if (mode == 'S') handleStraightKey();
                 const ribbon = canvasWidth / 9;
