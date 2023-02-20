@@ -43,6 +43,19 @@
             var gain;
             var volume;
 
+            var traceLog = '';
+            var lastTrace = Date.now();
+            function trace(message, primary) {
+                var now = Date.now();
+                traceLog += (primary ? '' : '&nbsp;&nbsp;&nbsp;') + message + ' ' + (now - lastTrace) + '<br />';
+                lastTrace = now;
+                document.getElementById('trace').innerHTML = traceLog;
+            }
+
+            function clearTrace() {
+                traceLog = '';
+            }
+
             function say(utterance, delay) {
                 var utter = '';
                 for (var i in utterance) {
@@ -183,6 +196,7 @@
             mostRecentPaddle = 'none';
             lastSent = null;
             function pushLeft() {
+                trace('PUSH Left');
                 var ditdah = currentPolarity == 'ditdah';
                 buffer.push(ditdah); // dit
                 sendRadioDitDah(ditdah);
@@ -191,6 +205,8 @@
             }
 
             function pushRight() {
+                trace('PUSH Right');
+                var ditdah = currentPolarity == 'ditdah';
                 var ditdah = !(currentPolarity == 'ditdah');
                 buffer.push(ditdah); // dah
                 sendRadioDitDah(ditdah);
@@ -201,7 +217,7 @@
             var endedWithSqueeze = false;
             var pending = false;
             function keyerProcessBuffer() {
-                console.log("KEY " + Date.now());
+                trace('BUFFER ' + buffer.length);
                 pending = buffer.length > 0;
                 if (pending) {
                     endedWithSqueeze = (leftDown && rightDown);
@@ -242,6 +258,7 @@
             }
 
             function keyUpdateLeft(state) {
+                trace('UPDATE Left ' + state);
                 if (leftDown != state) {
                     leftDown = state;
                     if (leftDown) {
@@ -252,6 +269,7 @@
             }
 
             function keyUpdateRight(state) {
+                trace('UPDATE Right ' + state);
                 if (rightDown != state) {
                     rightDown = state;
                     if (rightDown) {
@@ -333,11 +351,13 @@
                         switch (e.code) {
                             case 'BracketLeft':
                             case 'ControlLeft':
+                                trace('Left DOWN', true);
                                 if (!leftActuallyDown) keyUpdateLeft(true);
                                 leftActuallyDown = true;
                                 break;
                             case 'BracketRight':
                             case 'ControlRight':
+                                trace('Right DOWN', true);
                                 if (!rightActuallyDown) keyUpdateRight(true);
                                 rightActuallyDown = true;
                                 break;
@@ -349,11 +369,14 @@
                         switch (e.code) {
                             case 'BracketLeft':
                             case 'ControlLeft':
+                                trace('Left UP', true);
                                 leftActuallyDown = false;
                                 setTimeout(function () { if (!leftActuallyDown) keyUpdateLeft(false); }, currentDebounce);
                                 break;
                             case 'BracketRight':
                             case 'ControlRight':
+                                trace('Right UP', true);
+                                leftActuallyDown = false;
                                 rightActuallyDown = false;
                                 setTimeout(function () { if (!rightActuallyDown) keyUpdateRight(false); }, currentDebounce);
                                 break;
@@ -1057,6 +1080,7 @@
                     }
                 }
                 if (now - letterBreak > 0) {
+                    clearTrace();
                     if (p != 1)
                     {
                         if (sending.startsWith(char)) {
@@ -1521,6 +1545,13 @@
                                     <a href="javascript:practiceSending('THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9 THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9 BENS BEST BENT WIRE/5 BENS BEST BENT WIRE/5 BENS BEST BENT WIRE/5 / / / / / , , , , , . . . . . ? ? ? ? ? &lt;SK&gt; &lt;SK&gt; &lt;SK&gt; &lt;SK&gt; &lt;SK&gt; &lt;AR&gt; &lt;AR&gt; &lt;AR&gt; &lt;AR&gt; &lt;AR&gt; &lt;BT&gt; &lt;BT&gt; &lt;BT&gt; &lt;BT&gt; &lt;BT&gt;')">Drill</a>
                                     <br />
                                     <a href="javascript:practiceSending('BE TO OF IN IT ON HE AS DO AT BY WE OR AN MY SO UP IF GO')">Two-letter words</a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" height="2000" valign="top">
+                                    <hr />
+                                    <h3>Debug Trace:</h3>
+                                    <div id="trace"></div>
                                 </td>
                             </tr>
                         </table>
