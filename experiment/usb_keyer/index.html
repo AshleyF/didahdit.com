@@ -22,9 +22,16 @@
             select { font-size: larger; background-color: black; color: white; }
             ::-webkit-scrollbar { width: 0px; }
         </style>
+        <script src="../../utility/keyer.js"></script>
+        <script src="../../utility/debouncer.js"></script>
         <script>
             const defaultFarnsworth = 7; // dits
             const canvasWidth = 80;
+
+            var currentPolarity = 'ditdah';
+            var keyer = Keyer(elementQueuedCallback, elementCallback);
+            var debouncerLeft = Debouncer(pressed => keyer.key(currentPolarity == 'ditdah' ? 'dit' : 'dah', pressed));
+            var debouncerRight = Debouncer(pressed => keyer.key(currentPolarity == 'dahdit' ? 'dit' : 'dah', pressed));
 
             var farnsworth = defaultFarnsworth; // dits
             var trainingSpeechPause = 2;
@@ -42,20 +49,6 @@
             var oscillator;
             var gain;
             var volume;
-
-            var traceLog = '';
-            var lastTrace = Date.now();
-            function trace(message, primary) {
-                var now = Date.now();
-                if (traceLog.endsWith('.')) traceLog += '<br />';
-                traceLog += (primary ? '' : '&nbsp;&nbsp;&nbsp;') + message + ' ' + (now - lastTrace) + '<br />';
-                lastTrace = now;
-                document.getElementById('trace').innerHTML = traceLog;
-            }
-
-            function clearTrace() {
-                traceLog = '';
-            }
 
             function say(utterance, delay) {
                 var utter = '';
@@ -182,104 +175,34 @@
             }
 
             function dit(tone) {
-                trace('DIT');
                 p *= 2;
                 updateCharacter();
                 if (tone) playTone(ditlen)
             }
 
             function dah(tone) {
-                trace('DAH');
                 p = p * 2 + 1;
                 updateCharacter();
                 if (tone) playTone(3 * ditlen);
             }
 
-            var buffer = [];
-            mostRecentPaddle = 'none';
-            lastSent = null;
-            function pushLeft() {
-                trace('PUSH Left');
-                var ditdah = currentPolarity == 'ditdah';
-                buffer.push(ditdah); // dit
-                sendRadioDitDah(ditdah);
-                lastSent = ditdah;
-                if (!pending) keyerProcessBuffer();
+            function elementQueuedCallback(element) {
+                sendRadioDitDah(element == 'dit');
             }
 
-            function pushRight() {
-                trace('PUSH Right');
-                var ditdah = currentPolarity == 'ditdah';
-                var ditdah = !(currentPolarity == 'ditdah');
-                buffer.push(ditdah); // dah
-                sendRadioDitDah(ditdah);
-                lastSent = ditdah;
-                if (!pending) keyerProcessBuffer();
-            }
-
-            var endedWithSqueeze = false;
-            var pending = false;
-            function keyerProcessBuffer() {
-                trace('BUFFER ' + buffer.length);
-                pending = buffer.length > 0;
-                if (pending) {
-                    endedWithSqueeze = (leftDown && rightDown);
-                    var element = buffer.shift();
-                    if (element) { // dit?
-                        dit(true);
-                        updateBreaks(ditlen);
-                        setTimeout(keyerProcessBuffer, 2 * ditlen * 1000);
-                    } else {
-                        dah(true);
-                        updateBreaks(3 * ditlen);
-                        setTimeout(keyerProcessBuffer, 4 * ditlen * 1000);
-                    }
-                } else {
-                    if (leftDown && rightDown) { // squeeze?
-                        switch (mode) {
-                            case 'U': // ultimatic
-                                if (mostRecentPaddle == 'left') { pushLeft(); }
-                                else if (mostRecentPaddle == 'right') { pushRight(); }
-                                break;
-                            case 'A': // iambic A
-                            case 'B': // iambic B
-                                if (lastSent != null && lastSent) pushRight(); else pushLeft(); // opposite
-                                break;
-                            default:
-                                throw "Unsupported mode: " + mode;
-                        }
-                    }
-                    else if (leftDown) { pushLeft(); }
-                    else if (rightDown) { pushRight(); }
-                    else {
-                        if (mode == 'B' && endedWithSqueeze) {
-                            if (lastSent != null && lastSent) pushRight(); else pushLeft(); // opposite
-                        }
-                        endedWithSqueeze = false;
-                    }
-                }
+            function elementCallback(element) {
+                if (element == 'dit') dit(true); else dah(true);
+                updateBreaks(element == 'dit' ? ditlen : 3 * ditlen);
             }
 
             function keyUpdateLeft(state) {
-                trace('UPDATE Left ' + state);
-                if (leftDown != state) {
-                    leftDown = state;
-                    if (leftDown) {
-                        mostRecentPaddle = 'left';
-                        pushLeft();
-                    }
-                }
+                debouncerLeft.key(state);
+                if (leftDown != state) leftDown = state;
             }
 
             function keyUpdateRight(state) {
-                trace('UPDATE Right ' + state);
-                if (rightDown != state) {
-                    rightDown = state;
-                    if (rightDown) {
-                        mostRecentPaddle = 'right';
-                        pushRight();
-                    }
-                }
+                debouncerRight.key(state);
+                if (rightDown != state) rightDown = state;
             }
 
             var loaded = false;
@@ -347,22 +270,16 @@
                 //        e.preventDefault();
                 //    }
                 //});
-                var leftActuallyDown = false;
-                var rightActuallyDown = false;
                 document.body.addEventListener('keydown', (e) => {
                     if (!e.repeat) {
                         switch (e.code) {
                             case 'BracketLeft':
                             case 'ControlLeft':
-                                trace('Left DOWN', true);
-                                if (!leftActuallyDown) keyUpdateLeft(true);
-                                leftActuallyDown = true;
+                                keyUpdateLeft(true);
                                 break;
                             case 'BracketRight':
                             case 'ControlRight':
-                                trace('Right DOWN', true);
-                                if (!rightActuallyDown) keyUpdateRight(true);
-                                rightActuallyDown = true;
+                                keyUpdateRight(true);
                                 break;
                         }
                     }
@@ -372,16 +289,11 @@
                         switch (e.code) {
                             case 'BracketLeft':
                             case 'ControlLeft':
-                                trace('Left UP', true);
-                                leftActuallyDown = false;
-                                setTimeout(function () { if (!leftActuallyDown) keyUpdateLeft(false); }, currentDebounce);
+                                keyUpdateLeft(false);
                                 break;
                             case 'BracketRight':
                             case 'ControlRight':
-                                trace('Right UP', true);
-                                leftActuallyDown = false;
-                                rightActuallyDown = false;
-                                setTimeout(function () { if (!rightActuallyDown) keyUpdateRight(false); }, currentDebounce);
+                                keyUpdateRight(false);
                                 break;
                         }
                     }
@@ -518,12 +430,14 @@
             function setMode(m) {
                 localStorage.setItem('tx_keyer', m);
                 mode = m;
+                keyer.setMode(mode);
                 sendByte(getModeByte(mode));
                 document.getElementById('mode').value = m;
             }
 
             var currentSpeed = defaultSpeed;
             function setSpeed(wpm, sendToRadio, updateMenu) {
+                keyer.setSpeed(wpm);
                 speed = wpm;
                 ditlen = 1.2 / speed;
                 sendByte(getSpeedByte(wpm));
@@ -547,8 +461,9 @@
 
             var currentDebounce = defaultDebounce;
             function setDebounce(d) {
-                if (currentDebounce == d) return;
-                currentDebounce = d;
+                if (debouncerLeft.getTimeout() == d && debouncerRight.getTimeout() == d) return;
+                debouncerLeft.setTimeout(d);
+                debouncerRight.setTimeout(d);
                 document.getElementById('debounce').value = d; 
                 localStorage.setItem('tx_debounce', d);
             }
@@ -575,7 +490,6 @@
                 localStorage.setItem('tx_gain', g);
             }
 
-            var currentPolarity = 'ditdah';
             function setPolarity(p, sendToRadio, updateMenu) {
                 if (currentPolarity == p) return;
                 currentPolarity = p;
@@ -1028,10 +942,6 @@
             }
 
             function drawKeyAndToneState() {
-                var now = Date.now();
-                var ms = now - lastTrace;
-                lastTrace = now;
-                traceLog += (traceLog.endsWith('.') ? ms + '.' : '&nbsp;&nbsp;&nbsp;' + ms + '.');
                 if (straightDown) updateBreaks(0);
                 if (mode == 'S') handleStraightKey();
                 const ribbon = canvasWidth / 9;
@@ -1087,7 +997,6 @@
                     }
                 }
                 if (now - letterBreak > 0) {
-                    clearTrace();
                     if (p != 1)
                     {
                         if (sending.startsWith(char)) {
@@ -1274,6 +1183,7 @@
                     var paris = 50 * dit; // .--. .- .-. .. ...  10 dits, 4 dahs (*3), 9 elements, 4 letters (*3), 1 word (*7)
                     speed = 60 / paris;
                     ditlen = dit; // setSpeed(60 / paris); // relay down to keyer?
+                    keyer.setSpeed(speed);
                 }
             }
 
@@ -1547,18 +1457,11 @@
                                     <a href="javascript:practiceSending('J K 8 0 &lt;BT&gt; JJJ KKK 888 000 &lt;BT&gt;&lt;BT&gt;&lt;BT&gt; BBB VVV JJJJJ KKKKK 88888 00000 &lt;BT&gt;&lt;BT&gt;&lt;BT&gt;&lt;BT&gt;&lt;BT&gt; BBBBB VVVVV JR JUG OK JIB JOB JIG JOG KIP JAB JAG JOY KEG JUMP JIM JUL KIM SKY BUCK JAY KAY YAK JAM KEY JAW BULK PUCK JEW JOCK KICK KID JAMB YUCK JACK JUDY KIRK JUMPY JUNK MUCK JED GAWK JUGS JULY JURY PICK JAR JEFF ARK ELK SKI BACK BUNK FUJI JERK BULKY BALK PACK PORK PUKE IKE JOE OAK BARK BOOK DUCK JOBS PECK PUNK YOCK YUKS ASK INK JON KIN HUCK JODY JOKE JUDD MICK KOJAK JOT KIT KINK LUCK MOCK MUSK WICK JIFFY FOLK FORK PARK SKIP YOLK BIKE FUNK HULK JIVE MILK PERK YACK YORK JACKY JUMBO SWITCH DIPOLE VERTICAL OHMS HOME TEST 807 3500 4250A K1JD N1AR W2TT K2UMU N2NW VE3NE VA3KP K4BAI N5KO')">JK80 &lt;BT&gt;</a>
                                     <a href="javascript:practiceSending('X Q Z &lt;BK&gt; XXX QQQ ZZZ &lt;BK&gt;&lt;BK&gt;&lt;BK&gt; KKK JJJ 888 000 XXXXX QQQQQ ZZZZZ &lt;BK&gt;&lt;BK&gt;&lt;BK&gt;&lt;BK&gt;&lt;BK&gt; KKKKK JJJJJ 88888 00000 HZ KHZ BUZZ BOX FUZZ JAZZ ZIP MHZ FIX FOX ZAP MIX FIZZ WIZ FAX MAX UZI WAX QUIZ COX FUZZY JAZZY LIZ TUX HEX FOXY SIX QUIP REX SOX ZOO FLUX FIZZY ZIGGY SAX ZOE ZIPPY ZIT WAXY BOZO COZY JINX SUZY AXE ZULU CRUX KNOX QUAY TAX CRUZ DIZZY ZEN AJAX FUZE ROXY WHIZ FRIZZ LIZZY WHIZZ FLEX HAZY EXPO LAZY ZING LYNX ZAPS PIZZA QUICK MARX ZOOM PIZAZZ QUAD APEX GAZE PIZZAZZ QUIRK ONYX QUACK XMAS PROXY CZAR BOOZY FAZE OXBOW QUARK ZIGZAG EXAM COAX MAZE QUIT GIZMO FRIZZY ZEUS ZINC KLUTZ AQUA HOAX IRAQ EPOXY QUIPS EXEC ZERO AFFIX XEROX BUZZER QRX QRZ QTH QRS QRO QRP WX QRM 8044 7400 73 ZL2TT VK4OM JE1TRV BA1CW KH6LC AL2A AA3B')">XQZ &lt;BK&gt;</a>
                                     <br />
-                                    <a href="javascript:practiceSending('EEEEE TTTTT IIIII MMMMM SSSSS OOOOO HHHHH 00000 55555 AAAAA NNNNN UUUUU DDDDD VVVVV BBBBB 44444 66666 ABCDEF GHIJK LMNOP QRSTU VWXYZ 12345 67890 / , . ? &lt;SK&gt; &lt;AR&gt; &lt;BT&gt; THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9')">Warmup</a>
+                                    <a href="javascript:practiceSending('EEEEE TTTTT IIIII MMMMM SSSSS OOOOO HHHHH 00000 55555 AAAAA NNNNN UUUUU DDDDD VVVVV BBBBB 44444 66666 ABCDEF GHIJK LMNOP QRSTU VWXYZ 12345 67890 / , . ? &lt;SK&gt; &lt;AR&gt; &lt;BT&gt; THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 70364 51289')">Warmup</a>
                                     <a href="javascript:practiceSending('AAAAA BBBBB CCCCC DDDDD EEEEE FFFFF GGGGG HHHHH IIIII JJJJJ KKKKK LLLLL MMMMM NNNNN OOOOO PPPPP QQQQQ RRRRR SSSSS TTTTT UUUUU VVVVV WWWWW XXXXX YYYYY ZZZZZ 11111 22222 33333 44444 55555 66666 77777 88888 99999 00000')">Exercise</a>
-                                    <a href="javascript:practiceSending('THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9 THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9 BENS BEST BENT WIRE/5 BENS BEST BENT WIRE/5 BENS BEST BENT WIRE/5 / / / / / , , , , , . . . . . ? ? ? ? ? &lt;SK&gt; &lt;SK&gt; &lt;SK&gt; &lt;SK&gt; &lt;SK&gt; &lt;AR&gt; &lt;AR&gt; &lt;AR&gt; &lt;AR&gt; &lt;AR&gt; &lt;BT&gt; &lt;BT&gt; &lt;BT&gt; &lt;BT&gt; &lt;BT&gt;')">Drill</a>
+                                    <a href="javascript:practiceSending('THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9 THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9 BENS BEST BENT WIRE/5 BENS BEST BENT WIRE/5 BENS BEST BENT WIRE/5 ///// ,,,,, ..... ????? &lt;SK&gt;&lt;SK&gt;&lt;SK&gt;&lt;SK&gt;&lt;SK&gt; &lt;AR&gt;&lt;AR&gt;&lt;AR&gt;&lt;AR&gt;&lt;AR&gt; &lt;BT&gt;&lt;BT&gt;&lt;BT&gt;&lt;BT&gt;&lt;BT&gt;')">Drill</a>
                                     <br />
                                     <a href="javascript:practiceSending('BE TO OF IN IT ON HE AS DO AT BY WE OR AN MY SO UP IF GO')">Two-letter words</a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td colspan="2" height="2000" valign="top">
-                                    <hr />
-                                    <h3>Debug Trace:</h3>
-                                    <div id="trace"></div>
                                 </td>
                             </tr>
                         </table>
