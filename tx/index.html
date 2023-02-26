@@ -33,6 +33,8 @@
                                 playDing();
                                 setTimeout(function () {
                                     simulateTouchButton('nextPhrase', false);
+                                    ui.keying = true;
+                                    redraw();
                                     done = false;
                                 }, dinglen / 2 * 1000);
                             }
@@ -40,11 +42,12 @@
                     }
                 }
                 ui.keying = ui.progress = true;
+                ui.keyingComplete = false;
                 switch (value.kind) {
                     case 'character':
                         if (value.complete) {
                             advanceCount(value.value);
-                            if (value.value == ' ') keyedCharacter = '';
+                            if (value.value == ' ') ui.keyingComplete = true;
                         } else {
                             keyedCharacter = value.value;
                         }
@@ -63,18 +66,7 @@
                         break;
                 }
                 redraw();
-    // Called with { complete: false, ... } updates as 'dit'/'dah' elements stream in.
-    //   Regular characters are of the form { kind: 'character', value: 'A', ... }
-    //     Including: ' ' (space) which is different to an explicit { kind: 'control', value: 'space' }
-    //   Prosigns are of the form { kind: 'prosign', value: 'BT', ... }
-    //   Control characters of the form { kind: 'control', value: 'backspace', ... }
-    //     Including: 'space', 'return', 'backspace', 'shift', 'error'
-    //   Invalid characters of the form { kind: 'invalid', value: null, ... }
-    // Called again with { complete: true, ... } once 'letter' break element is seen.
-    // Called with { complete: true, kind: 'character', symbol: ' ' } for 'word' breaks.
-                //testing(value);
             });
-            //var keyer = Keyer(decoder.element, function () { /* queued */});
             var keyer = Keyer(element => {
                 switch (element) {
                     case 'dit':
@@ -95,7 +87,7 @@
                 }
                 decoder.element(element);
             });
-            keyer.setMode('U');
+            keyer.setMode(getKeyerMode());
             var debouncerLeft = Debouncer(pressed => keyer.key('dit', pressed));
             var debouncerRight = Debouncer(pressed => keyer.key('dah', pressed));
 
@@ -105,6 +97,7 @@
                 dialog: null,
                 playing: false,
                 keying: false,
+                keyingComplete: false,
                 hide: (getBoolSetting('rx_hide_phrase', false)),
                 progress: false,
                 count: 0,
@@ -176,7 +169,8 @@
             }
 
             function overscoreProsigns(phrase) {
-                return phrase.replace(/\<(.)/g, '$1̅').replace(/\>/g, '̅');
+                //return phrase.replace(/\<(.)/g, '$1̅').replace(/\>/g, '̅');
+                return phrase.replace(/\</g, '⟨').replace(/\>/g, '⟩');
             }
 
             function convertUtterance(utterance) {
@@ -460,7 +454,7 @@
                                                             }
                                                         } else {
                                                             say('lesson complete');
-                                                            ui.playing = ui.hide = false;
+                                                            ui.keying = ui.playing = ui.hide = false;
                                                             saveHiddenState();
                                                             noSleep.disable();
                                                             nextLesson();
@@ -479,8 +473,7 @@
                     continuationTimeout1 = setTimeout(
                         function () {
                             if (ui.playing) {
-                                ui.playing = false;
-                                ui.count = 0;
+                                ui.keying = ui.playing = false;
                                 noSleep.disable();
                                 redraw();
                             }
@@ -661,6 +654,15 @@
                 return getBoolSetting('rx_scramble', false);
             }
 
+            function setKeyerMode(mode) {
+                keyer.setMode(mode);
+                localStorage.setItem('tx_keyer', mode);
+            }
+
+            function getKeyerMode() {
+                return localStorage.getItem('tx_keyer') || 'B';
+            }
+
             function resizeCanvas() {
                 var ratio = 1; // devicePixelRatio;
                 var w = window.innerWidth;
@@ -741,8 +743,8 @@
                 var padding = Math.min(canvas.width / 24, canvas.height / 24);
 
                 var buttons = [];
-                function drawButton(name, label, color, x, y, width, height, align, actual = true) {
-                    drawFittedText(label, color, x, y, width, height, 'normal', actual, align);
+                function drawButton(name, label, color, x, y, width, height, align, actual = true, weight = 'normal') {
+                    drawFittedText(label, color, x, y, width, height, weight, actual, align);
                     var p = padding / 2;
                     buttons.push({
                         name: name,
@@ -804,16 +806,17 @@
                     buttonSize,
                     'right');
                 if (ui.keying && keyedCharacter.length > 0) {
-                    drawFittedText(
+                    drawButton(
+                        'playPause',
                         keyedCharacter,
-                        keyedCharacterColor,
+                        ui.keyingComplete ? foregroundColor : keyedCharacterColor,
                         padding * 2 + buttonWidth * 2,
                         h - padding - buttonSize * largeButton,
                         buttonWidth * largeButton + padding * 2,
                         buttonSize * largeButton,
-                        'bold',
-                        false,
-                        'center');
+                        'center',
+                        true,
+                        'bold');
                 } else {
                     drawButton(
                         'playPause',
@@ -912,7 +915,7 @@
                     var left = padding * (w > h ? 4 : 1);
                     var right = w - padding * (w > h ? 4 : 1);
                     var top = padding * (h > w ? 4 : 1);
-                    var bottom = top + buttonSize * 6 + padding * 7;
+                    var bottom = top + buttonSize * 7 + padding * 8;
                     ui.dialog = {
                         left: left,
                         right: right,
@@ -920,7 +923,7 @@
                         bottom: bottom
                     };
                     fillRoundedRect(left, top, right, bottom, padding, dialogBackgroundColor);
-                    controlLeft = right - padding - buttonSize * 3;
+                    controlLeft = right - padding - buttonSize * 4;
                     const switchThinFactor = 1.1;
                     function drawSwitch(name, label, switchText, on, top) {
                         drawFittedText(
@@ -934,15 +937,15 @@
                             false,
                             'left');
                         fillRoundedRect(
-                            controlLeft + padding * switchThinFactor,
+                            controlLeft + padding * 2 * switchThinFactor,
                             top + padding * switchThinFactor,
-                            right - padding * switchThinFactor - padding,
+                            right - padding * 2 * switchThinFactor - padding,
                             top + padding / switchThinFactor + buttonSize,
                             buttonSize / switchThinFactor / 2,
                             subduedButtonColor);
                         ctx.beginPath();
                         ctx.arc(
-                            (on ? right - padding * 2 - buttonSize : controlLeft + padding) + buttonSize / 2,
+                            (on ? right - padding * 3 - buttonSize : controlLeft + padding * 2) + buttonSize / 2,
                             top + padding + buttonSize / 2,
                             buttonSize / 2,
                             0,
@@ -957,7 +960,7 @@
                         drawFittedText(
                             switchText,
                             subduedButtonColor,
-                            (on ? right - padding * 2 - buttonSize : controlLeft + padding) + margin,
+                            (on ? right - padding * 3 - buttonSize : controlLeft + padding * 2) + margin,
                             top + padding + margin,
                             buttonSize - margin * 2,
                             buttonSize - margin * 2,
@@ -973,7 +976,7 @@
                     }
                     var dark = getDarkMode();
                     drawSwitch('mode', 'Light/Dark:', dark ? '☽' : '☼', dark, top);
-                    function drawUpDownControl(label, name, val, min, max, row) {
+                    function drawGenericUpDownControl(label, name, val, showMin, showMax, row) {
                         drawFittedText(
                             label,
                             subduedButtonColor,
@@ -987,7 +990,7 @@
                         const arrowScale = 0.5;
                         drawFittedText(
                             '❰',
-                            val <= min ? disabledButtonColor : subduedButtonColor,
+                            showMin ? subduedButtonColor : disabledButtonColor,
                             controlLeft,
                             row + (buttonSize * arrowScale / 2),
                             buttonSize * arrowScale,
@@ -995,7 +998,7 @@
                             'normal',
                             true,
                             'center');
-                        if (val > min) {
+                        if (showMin) {
                             buttons.push({
                                 name: name + 'Down',
                                 left: controlLeft,
@@ -1010,20 +1013,20 @@
                             subduedButtonColor,
                             controlLeft + buttonSize,
                             row,
-                            buttonSize,
+                            buttonSize * 2,
                             buttonSize,
                             'center')
                         drawFittedText(
                             '❱',
-                            val >= max ? disabledButtonColor : subduedButtonColor,
-                            controlLeft + buttonSize * 2 + buttonSize * arrowScale,
+                            showMax ? subduedButtonColor : disabledButtonColor,
+                            controlLeft + buttonSize * 3 + buttonSize * arrowScale,
                             row + (buttonSize * arrowScale / 2),
                             buttonSize * arrowScale,
                             buttonSize * arrowScale,
                             'normal',
                             true,
                             'center');
-                        if (val < max) {
+                        if (showMax) {
                             buttons.push({
                                 name: name + 'Up',
                                 left: controlLeft + buttonSize * 2,
@@ -1032,6 +1035,9 @@
                                 bottom: row + buttonSize });
                         }
                     }
+                    function drawUpDownControl(label, name, val, min, max, row) {
+                        drawGenericUpDownControl(label, name, val, val >= min, val <= max, row)
+                    }
                     drawUpDownControl('Speed', 'speed', getSpeed(), 5, 50, top + padding * 2 + buttonSize);
                     drawUpDownControl('Farnsworth', 'farnsworth', getFarnsworth(), 1, 50, top + padding * 3 + buttonSize * 2);
                     drawUpDownControl('Wordsworth', 'wordsworth', getWordsworth(), 1, 50, top + padding * 4 + buttonSize * 3);
@@ -1039,6 +1045,9 @@
                     var scramble = getScramble();
                     var y = top + padding * 5 + buttonSize * 5;
                     drawSwitch('scramble', 'Scramble:', scramble ? 'on' : 'off', scramble, y);
+                    var keyer = getKeyerMode();
+                    var keyerName = keyer == 'A' ? 'Iambic A' : keyer == 'B' ? 'Iambic B' : 'Ultimatic';
+                    drawGenericUpDownControl('Keyer', 'keyer', keyerName, true, true, top + padding * 7 + buttonSize * 6);
                     ui.buttons = buttons;
                 }
                 function drawMenu(len, fnGetId, fnGetName, color) {
@@ -1233,6 +1242,36 @@
                                     setScramble(!getScramble());
                                     redraw();
                                     return;
+                                case 'keyer':
+                                    return;
+                                case 'keyerUp':
+                                    switch (getKeyerMode()) {
+                                        case 'A':
+                                            setKeyerMode('B');
+                                            break;
+                                        case 'B':
+                                            setKeyerMode('U');
+                                            break;
+                                        case 'U':
+                                            setKeyerMode('A');
+                                            break;
+                                    }
+                                    redraw();
+                                    return;
+                                case 'keyerDown':
+                                    switch (getKeyerMode()) {
+                                        case 'A':
+                                            setKeyerMode('U');
+                                            break;
+                                        case 'B':
+                                            setKeyerMode('A');
+                                            break;
+                                        case 'U':
+                                            setKeyerMode('B');
+                                            break;
+                                    }
+                                    redraw();
+                                    return;
                             }
                         }
                     }
@@ -1253,7 +1292,7 @@
                                 case 'settings':
                                     cancelRepeat();
                                     stopPhrase();
-                                    ui.playing = false;
+                                    ui.keying = ui.playing = false;
                                     ui.count = 0;
                                     noSleep.disable();
                                     ui.show = 'settings';
@@ -1262,7 +1301,7 @@
                                 case 'content':
                                     cancelRepeat();
                                     stopPhrase();
-                                    ui.playing = ui.hide = false;
+                                    ui.keying = ui.playing = ui.hide = false;
                                     saveHiddenState();
                                     noSleep.disable();
                                     ui.show = 'content';
@@ -1271,7 +1310,7 @@
                                 case 'lesson':
                                     cancelRepeat();
                                     stopPhrase();
-                                    ui.playing = ui.hide = false;
+                                    ui.keying = ui.playing = ui.hide = false;
                                     saveHiddenState();
                                     noSleep.disable();
                                     ui.show = 'lesson';
@@ -1280,7 +1319,7 @@
                                 case 'phraseNum':
                                     cancelRepeat();
                                     stopPhrase();
-                                    ui.playing = ui.hide = false;
+                                    ui.keying = ui.playing = ui.hide = false;
                                     saveHiddenState();
                                     noSleep.disable();
                                     ui.show = 'phrase';
@@ -1297,6 +1336,7 @@
                                         } else {
                                             stopPhrase();
                                             ui.playing = true;
+                                            ui.keying = false;
                                             noSleep.enable();
                                             ui.progress = true;
                                             ui.count = 0;
@@ -1306,23 +1346,26 @@
                                     redraw();
                                     return;
                                 case 'playPause':
-                                    cancelRepeat();
-                                    ui.hide = !(!ui.hide || ui.progress); // show if already unhidden or in progress
-                                    saveHiddenState();
-                                    ui.progress = false;
-                                    ui.count = 0;
-                                    stopPhrase();
-                                    ui.playing = !ui.playing;
-                                    if (ui.playing) noSleep.enable(); else noSleep.disable();
-                                    if (ui.playing) {
-                                        playPhrase(getCurrentPhrase(), true);
+                                    if (!ui.keying) {
+                                        cancelRepeat();
+                                        ui.hide = !(!ui.hide || ui.progress); // show if already unhidden or in progress
+                                        saveHiddenState();
+                                        ui.progress = false;
+                                        ui.count = 0;
+                                        stopPhrase();
+                                        ui.keying = ui.playing = !ui.playing;
+                                        if (ui.playing) noSleep.enable(); else noSleep.disable();
+                                        if (ui.playing) {
+                                            playPhrase(getCurrentPhrase(), true);
+                                        }
                                     }
+                                    ui.keying = false;
                                     redraw();
                                     return;
                                 case 'prevLesson':
                                     cancelRepeat();
                                     stopPhrase();
-                                    ui.playing = ui.hide = false;
+                                    ui.keying = ui.playing = ui.hide = false;
                                     saveHiddenState();
                                     noSleep.disable();
                                     prevLesson();
@@ -1331,7 +1374,7 @@
                                 case 'nextLesson':
                                     cancelRepeat();
                                     stopPhrase();
-                                    ui.playing = ui.hide = false;
+                                    ui.keying = ui.playing = ui.hide = false;
                                     saveHiddenState();
                                     noSleep.disable();
                                     nextLesson();
@@ -1339,7 +1382,7 @@
                                     return;
                                 case 'prevPhrase':
                                     stopPhrase();
-                                    ui.playing = ui.hide = false;
+                                    ui.keying = ui.playing = ui.hide = false;
                                     saveHiddenState();
                                     noSleep.disable();
                                     prevPhrase();
@@ -1347,7 +1390,7 @@
                                     return;
                                 case 'nextPhrase':
                                     stopPhrase();
-                                    ui.playing = ui.hide = false;
+                                    ui.keying = ui.playing = ui.hide = false;
                                     saveHiddenState();
                                     noSleep.disable();
                                     nextPhrase();
@@ -1367,7 +1410,7 @@
             function repeatTouch(x, y) {
                 cancelRepeat(); // in case touchend was lost somehow
                 repeatTimer = setTimeout(function() {
-                    repeatTimer = setInterval(function() { touch(x, y); }, 150);
+                    repeatTimer = setInterval(function() { touch(x, y); redraw(); }, 150);
                 }, 350);
                 touch(x, y);
             }
@@ -1448,7 +1491,7 @@
                         cancelRepeat();
                         stopPhrase();
                         stopAudio();
-                        ui.playing = false;
+                        ui.keying = ui.playing = false;
                         ui.count = 0;
                         noSleep.disable();
                         redraw();
@@ -1475,7 +1518,7 @@
                             case 'ArrowRight':
                                 simulateTouchButton(e.shiftKey ? 'nextLesson' : 'nextPhrase', true);
                                 break;
-                            case 'Space':
+                            case 'Enter':
                                 simulateTouchButton('playPause', false);
                                 break;
                         }
