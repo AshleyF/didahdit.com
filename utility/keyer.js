@@ -1,15 +1,15 @@
-function Keyer(elementQueuedCallback, elementCallback) {
-    var _elementQueuedCallback = elementQueuedCallback;
+function Keyer(elementCallback, jitElementCallback) {
     var _elementCallback = elementCallback;
-
+    var _jitElementCallback = jitElementCallback || function() {};
     var _mode = 'B'; // 'U'/'A'/'B'
-    var _elementSeconds = null; // setSpeed() to init
+    var _elementTiming = null; // setSpeed() to init
     var _queue = []; // 'dit'/'dah'
     var _lastPressed = null; // 'dit'/'dah'
     var _lastQueued = null; // 'dit'/'dah'
     var _squeezedLastElement = false;
     var _currentlyHeld = { 'dit': false, 'dah': false };
     var _pending = false;
+    var _breakTimer = null;
 
     setSpeed(25); // default
 
@@ -20,8 +20,13 @@ function Keyer(elementQueuedCallback, elementCallback) {
     function _enqueue(element) {
         _queue.push(element);
         _lastQueued = element;
-        _elementQueuedCallback(element);
+        _elementCallback(element);
         if (!_pending) _keyerUpdate();
+    }
+
+    function _setBreakTimer(callback, time) {
+        if (_breakTimer != null) clearTimeout(_breakTimer);
+        _breakTimer = setTimeout(callback, time);
     }
 
     function _keyerUpdate() {
@@ -30,8 +35,15 @@ function Keyer(elementQueuedCallback, elementCallback) {
         if (_pending) {
             _squeezedLastElement = squeezing;
             var element = _queue.shift();
-            _elementCallback(element);
-            setTimeout(_keyerUpdate, _elementSeconds[element]);
+            _jitElementCallback(element);
+            var elementTime = _elementTiming[element];
+            setTimeout(_keyerUpdate, elementTime);
+            _setBreakTimer(function () {
+                _elementCallback('letter');
+                _setBreakTimer(function () {
+                    _elementCallback('word');
+                }, _elementTiming.word - _elementTiming.letter);
+            }, _elementTiming.letter + elementTime);
         } else {
             if (squeezing) {
                 switch (_mode) {
@@ -57,7 +69,11 @@ function Keyer(elementQueuedCallback, elementCallback) {
 
     function setSpeed(wpm) {
         var ditlen = 1.2 / wpm * 1000;
-        _elementSeconds = { 'dit': 2 * ditlen, 'dah': 4 * ditlen };
+        _elementTiming = {
+            'dit': 2 * ditlen,
+            'dah': 4 * ditlen,
+            'letter': 3 * ditlen, // TODO: farnsworth
+            'word': 7 * ditlen }; // TODO: wordsworth
     }
 
     function key(element, pressed) {

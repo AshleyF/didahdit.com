@@ -29,7 +29,7 @@
             const canvasWidth = 80;
 
             var currentPolarity = 'ditdah';
-            var keyer = Keyer(elementQueuedCallback, elementCallback);
+            var keyer = Keyer(elementCallback, elementQueuedCallback);
             var debouncerLeft = Debouncer(pressed => keyer.key(currentPolarity == 'ditdah' ? 'dit' : 'dah', pressed));
             var debouncerRight = Debouncer(pressed => keyer.key(currentPolarity == 'dahdit' ? 'dit' : 'dah', pressed));
 
@@ -187,12 +187,22 @@
             }
 
             function elementQueuedCallback(element) {
-                sendRadioDitDah(element == 'dit');
+                switch (element) {
+                    case 'dit':
+                    case 'dah':
+                        if (element == 'dit') dit(true); else dah(true);
+                        updateBreaks(element == 'dit' ? ditlen : 3 * ditlen);
+                        break;
+                }
             }
 
             function elementCallback(element) {
-                if (element == 'dit') dit(true); else dah(true);
-                updateBreaks(element == 'dit' ? ditlen : 3 * ditlen);
+                switch (element) {
+                    case 'dit':
+                    case 'dah':
+                        sendRadioDitDah(element == 'dit');
+                        break;
+                }
             }
 
             function keyUpdateLeft(state) {
