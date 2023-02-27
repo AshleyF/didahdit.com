@@ -872,7 +872,7 @@
                 var phraseWidth = w - padding * 2;
                 var phraseHeight = h - padding * 4 - progressHeight - buttonSize - buttonSize * largeButton;
                 var phraseIndex = randomPhrase(phraseNum, content.lessons[lessonNum].phrases.length);
-                var phrase = convertPhrase(content.lessons[lessonNum].phrases[phraseNum]);
+                var phrase = convertPhrase(content.lessons[lessonNum].phrases[phraseIndex]);
                 if (ui.keying) phrase = phrase.replace(/\ /g, '⎵');
                 if ((ui.keying || ui.playing) && ui.progress && phrase.length > ui.count) {
                     if (phrase[ui.count - 1] == '<' || phrase[ui.count - 2] == '<') {
@@ -912,10 +912,15 @@
                 if (ui.show == 'settings') {
                     ctx.fillStyle = dimColor;
                     ctx.fillRect(0, 0, w, h);
+                    var settingRows = 7;
                     var left = padding * (w > h ? 4 : 1);
                     var right = w - padding * (w > h ? 4 : 1);
                     var top = padding * (h > w ? 4 : 1);
-                    var bottom = top + buttonSize * 7 + padding * 8;
+                    var bottom = top + buttonSize * settingRows + padding * (settingRows + 1);
+                    var overagePerRow = Math.min(0, (bottom - h) / settingRows);
+                    var padding = padding;
+                    var buttonHeight = buttonSize / 2;
+                    var bottom = top + buttonSize * settingRows + padding * (settingRows + 1);
                     ui.dialog = {
                         left: left,
                         right: right,
@@ -1038,16 +1043,16 @@
                     function drawUpDownControl(label, name, val, min, max, row) {
                         drawGenericUpDownControl(label, name, val, val >= min, val <= max, row)
                     }
-                    drawUpDownControl('Speed', 'speed', getSpeed(), 5, 50, top + padding * 2 + buttonSize);
-                    drawUpDownControl('Farnsworth', 'farnsworth', getFarnsworth(), 1, 50, top + padding * 3 + buttonSize * 2);
-                    drawUpDownControl('Wordsworth', 'wordsworth', getWordsworth(), 1, 50, top + padding * 4 + buttonSize * 3);
-                    drawUpDownControl('Pitch', 'pitch', getPitch(), 100, 900, top + padding * 5 + buttonSize * 4);
+                    drawUpDownControl('Speed:', 'speed', getSpeed(), 5, 50, top + padding * 2 + buttonSize);
+                    drawUpDownControl('Farnsworth:', 'farnsworth', getFarnsworth(), 1, 50, top + padding * 3 + buttonSize * 2);
+                    drawUpDownControl('Wordsworth:', 'wordsworth', getWordsworth(), 1, 50, top + padding * 4 + buttonSize * 3);
+                    drawUpDownControl('Pitch:', 'pitch', getPitch(), 100, 900, top + padding * 5 + buttonSize * 4);
                     var scramble = getScramble();
                     var y = top + padding * 5 + buttonSize * 5;
                     drawSwitch('scramble', 'Scramble:', scramble ? 'on' : 'off', scramble, y);
                     var keyer = getKeyerMode();
                     var keyerName = keyer == 'A' ? 'Iambic A' : keyer == 'B' ? 'Iambic B' : 'Ultimatic';
-                    drawGenericUpDownControl('Keyer', 'keyer', keyerName, true, true, top + padding * 7 + buttonSize * 6);
+                    drawGenericUpDownControl('Keyer:', 'keyer', keyerName, true, true, top + padding * 7 + buttonSize * 6);
                     ui.buttons = buttons;
                 }
                 function drawMenu(len, fnGetId, fnGetName, color) {
