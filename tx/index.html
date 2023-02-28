@@ -15,7 +15,7 @@
                 document.getElementById('trace').innerHTML += '<br />' + JSON.stringify(message);
             }
 
-            // TODO: polarity setting
+            var _polarity = 'ditdah';
             var keyedCharacter = '';
             var decoder = Decoder(value => {
                 var done = false;
@@ -88,8 +88,8 @@
                 decoder.element(element);
             });
             keyer.setMode(getKeyerMode());
-            var debouncerLeft = Debouncer(pressed => keyer.key('dit', pressed));
-            var debouncerRight = Debouncer(pressed => keyer.key('dah', pressed));
+            var debouncerLeft = Debouncer(pressed => keyer.key(_polarity == 'ditdah' ? 'dit' : 'dah', pressed));
+            var debouncerRight = Debouncer(pressed => keyer.key(_polarity == 'ditdah' ? 'dah' : 'dit', pressed));
 
             var canvas;
 
@@ -663,6 +663,16 @@
                 return localStorage.getItem('tx_keyer') || 'B';
             }
 
+            function setPolarity(polarity) {
+                _polarity = polarity;
+                localStorage.setItem('tx_polarity', polarity);
+            }
+
+
+            function getPolarity() {
+                return localStorage.getItem('tx_polarity') || 'ditdah';
+            }
+
             function resizeCanvas() {
                 var ratio = 1; // devicePixelRatio;
                 var w = window.innerWidth;
@@ -912,15 +922,13 @@
                 if (ui.show == 'settings') {
                     ctx.fillStyle = dimColor;
                     ctx.fillRect(0, 0, w, h);
-                    var settingRows = 7;
+                    var settingRows = 8;
                     var left = padding * (w > h ? 4 : 1);
                     var right = w - padding * (w > h ? 4 : 1);
                     var top = padding * (h > w ? 4 : 1);
-                    var bottom = top + buttonSize * settingRows + padding * (settingRows + 1);
-                    var overagePerRow = Math.min(0, (bottom - h) / settingRows);
-                    var padding = padding;
-                    var buttonHeight = buttonSize / 2;
-                    var bottom = top + buttonSize * settingRows + padding * (settingRows + 1);
+                    var approximateBottom = Math.min(h - top + padding, top + buttonSize * settingRows + padding * (settingRows + 1));
+                    var rowHeight = (approximateBottom - top - padding * 2) / settingRows;
+                    var bottom = top + padding + rowHeight * settingRows;
                     ui.dialog = {
                         left: left,
                         right: right,
@@ -936,7 +944,7 @@
                             subduedButtonColor,
                             left + padding,
                             top + padding,
-                            right - padding - buttonSize * 3,
+                            controlLeft - left - padding * 2,
                             buttonSize,
                             'normal',
                             false,
@@ -977,7 +985,7 @@
                             left: controlLeft,
                             top: top,
                             right: right,
-                            bottom: top + buttonSize + padding / 2 })
+                            bottom: top + rowHeight })
                     }
                     var dark = getDarkMode();
                     drawSwitch('mode', 'Light/Dark:', dark ? '☽' : '☼', dark, top);
@@ -987,7 +995,7 @@
                             subduedButtonColor,
                             left + padding,
                             row,
-                            right - padding - buttonSize * 3,
+                            controlLeft - left - padding * 2,
                             buttonSize,
                             'normal',
                             false,
@@ -1009,7 +1017,7 @@
                                 left: controlLeft,
                                 top: row,
                                 right: controlLeft + buttonSize,
-                                bottom: row + buttonSize
+                                bottom: row + rowHeight
                             });
                         }
                         drawButton(
@@ -1017,9 +1025,9 @@
                             val,
                             subduedButtonColor,
                             controlLeft + buttonSize,
-                            row,
+                            row + 3,
                             buttonSize * 2,
-                            buttonSize,
+                            buttonSize - 6,
                             'center')
                         drawFittedText(
                             '❱',
@@ -1037,22 +1045,23 @@
                                 left: controlLeft + buttonSize * 2,
                                 top: row,
                                 right: controlLeft + buttonSize * 4,
-                                bottom: row + buttonSize });
+                                bottom: row + rowHeight });
                         }
                     }
                     function drawUpDownControl(label, name, val, min, max, row) {
                         drawGenericUpDownControl(label, name, val, val >= min, val <= max, row)
                     }
-                    drawUpDownControl('Speed:', 'speed', getSpeed(), 5, 50, top + padding * 2 + buttonSize);
-                    drawUpDownControl('Farnsworth:', 'farnsworth', getFarnsworth(), 1, 50, top + padding * 3 + buttonSize * 2);
-                    drawUpDownControl('Wordsworth:', 'wordsworth', getWordsworth(), 1, 50, top + padding * 4 + buttonSize * 3);
-                    drawUpDownControl('Pitch:', 'pitch', getPitch(), 100, 900, top + padding * 5 + buttonSize * 4);
+                    drawUpDownControl('Speed:', 'speed', getSpeed(), 5, 50, top + padding + rowHeight);
+                    drawUpDownControl('Farnsworth:', 'farnsworth', getFarnsworth(), 1, 50, top + padding + rowHeight * 2);
+                    drawUpDownControl('Wordsworth:', 'wordsworth', getWordsworth(), 1, 50, top + padding + rowHeight * 3);
+                    drawUpDownControl('Pitch:', 'pitch', getPitch(), 100, 900, top + padding + rowHeight * 4);
                     var scramble = getScramble();
-                    var y = top + padding * 5 + buttonSize * 5;
-                    drawSwitch('scramble', 'Scramble:', scramble ? 'on' : 'off', scramble, y);
+                    drawSwitch('scramble', 'Scramble:', scramble ? 'on' : 'off', scramble, top + rowHeight * 5);
                     var keyer = getKeyerMode();
                     var keyerName = keyer == 'A' ? 'Iambic A' : keyer == 'B' ? 'Iambic B' : 'Ultimatic';
-                    drawGenericUpDownControl('Keyer:', 'keyer', keyerName, true, true, top + padding * 7 + buttonSize * 6);
+                    drawGenericUpDownControl('Keyer:', 'keyer', keyerName, true, true, top + padding + rowHeight * 6);
+                    var polarity = getPolarity() == 'ditdah' ? 'Left Dit' : 'Right Dit';
+                    drawGenericUpDownControl('Polarity:', 'polarity', polarity, true, true, top + padding + rowHeight * 7);
                     ui.buttons = buttons;
                 }
                 function drawMenu(len, fnGetId, fnGetName, color) {
@@ -1273,6 +1282,20 @@
                                             break;
                                         case 'U':
                                             setKeyerMode('B');
+                                            break;
+                                    }
+                                    redraw();
+                                    return;
+                                case 'polarity':
+                                    return;
+                                case 'polarityUp':
+                                case 'polarityDown':
+                                    switch (getPolarity()) {
+                                        case 'ditdah':
+                                            setPolarity('dahdit');
+                                            break;
+                                        case 'dahdit':
+                                            setPolarity('ditdah');
                                             break;
                                     }
                                     redraw();
@@ -1588,6 +1611,7 @@
         - 'rx_pitch_default'
         - 'rx_hide_phrase'
         - 'tx_mode' ('A', 'B', 'U')
+        - 'tx_polarity' ('ditdah', 'dahdit')
         - 'tx_buffer' (int size)
         - 'scramble'
         - 'shuffle_<ID>' (within lesson)
