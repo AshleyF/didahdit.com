@@ -2,6 +2,7 @@ function Keyer(elementCallback, jitElementCallback) {
     var _elementCallback = elementCallback;
     var _jitElementCallback = jitElementCallback || function() {};
     var _mode = 'B'; // 'U'/'A'/'B'
+    var _bufferLen = 1;
     var _elementTiming = null; // setSpeed() to init
     var _queue = []; // 'dit'/'dah'
     var _lastPressed = null; // 'dit'/'dah'
@@ -18,10 +19,12 @@ function Keyer(elementCallback, jitElementCallback) {
     }
 
     function _enqueue(element) {
-        _queue.push(element);
-        _lastQueued = element;
-        _elementCallback(element);
-        if (!_pending) _keyerUpdate();
+        if (_queue.length < _bufferLen || !_pending) {
+            _queue.push(element);
+            _lastQueued = element;
+            _elementCallback(element);
+            if (!_pending) _keyerUpdate();
+        }
     }
 
     function _setBreakTimer(callback, time) {
@@ -67,6 +70,8 @@ function Keyer(elementCallback, jitElementCallback) {
 
     function setMode(mode) { _mode = mode; }
 
+    function setBufferLen(len) { _bufferLen = len; }
+
     function setSpeed(wpm) {
         var ditlen = 1.2 / wpm * 1000;
         _elementTiming = {
@@ -87,6 +92,7 @@ function Keyer(elementCallback, jitElementCallback) {
     return {
         key,
         setMode,
+        setBufferLen,
         setSpeed,
     };
 }

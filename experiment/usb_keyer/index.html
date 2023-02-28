@@ -227,6 +227,7 @@
                 resize();
                 loaded = true;
                 document.getElementById('mode').addEventListener('change', modeChange);
+                document.getElementById('buffer').addEventListener('change', bufferLenChange);
                 var speed = document.getElementById('speed');
                 speed.addEventListener('change', speedChange);
                 for (var s = 48; s >= 6; s--) {
@@ -376,6 +377,7 @@
                 setGain(parseInt(localStorage.getItem('tx_gain')) || defaultGain, true, true);
                 setPolarity(localStorage.getItem('tx_polarity') || "ditdah", true, true);
                 setMode(localStorage.getItem('tx_keyer') || 'B', true, true);
+                setBufferLen(localStorage.getItem('tx_buffer') || 1, true, true);
                 setMemory(true);
                 setTone(false);
                 setEnforceElements(true);
@@ -443,6 +445,11 @@
                 keyer.setMode(mode);
                 sendByte(getModeByte(mode));
                 document.getElementById('mode').value = m;
+            }
+
+            function setBufferLen(len) {
+                localStorage.setItem('tx_buffer', len);
+                keyer.setBufferLen(len);
             }
 
             var currentSpeed = defaultSpeed;
@@ -1341,6 +1348,10 @@
                 setMode(e.target.value);
             }
 
+            function bufferLenChange(e) {
+                setBufferLen(parseInt(e.target.value));
+            }
+
             function pitchChange(e) {
                 setPitch(parseInt(e.target.value), true, false);
             }
@@ -1426,6 +1437,20 @@
                                 <td>Debounce:</td>
                                 <td width="100%">
                                     <select id="debounce"></select>ms</h1>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Buffer:</td>
+                                <td width="100%">
+                                    <select id="buffer">
+                                        <option value="0">None</option>
+                                        <option value="1" selected="true">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="3">4</option>
+                                        <option value="3">5</option>
+                                        <option value="1000">Infinite</option>
+                                    </select>
                                 </td>
                             </tr>
                             <tr>
