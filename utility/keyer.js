@@ -60,6 +60,7 @@ function Keyer(elementCallback, toneCallback) {
                         break;
                     case 'A': // iambic A
                     case 'B': // iambic B
+                    default:
                         _enqueue(_opposite(_lastQueued));
                         break;
                 }

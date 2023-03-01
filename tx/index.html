@@ -1126,6 +1126,8 @@
                         break;
                     case 'phrase':
                         alert(JSON.stringify(localStorage));
+                        localStorage.clear();
+                        alert(JSON.stringify(localStorage));
                         //var phrases = content.lessons[lessonNum].phrases;
                         //drawMenu(phrases.length, p => p, p => (p + 1) + ' ' + phrases[p]);
                         break;
