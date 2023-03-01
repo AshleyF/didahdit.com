@@ -187,9 +187,9 @@
                 return split[0].replace(/#/g, '');
             }
 
-            function overscoreProsigns(phrase) {
-                //return phrase.replace(/\<(.)/g, '$1̅').replace(/\>/g, '̅');
-                return phrase.replace(/\</g, '⟨').replace(/\>/g, '⟩');
+            function adornProsigns(phrase) {
+                //return phrase.replace(/\<(.)/g, '$1̅').replace(/\>/g, '̅'); // overscore
+                return phrase.replace(/\</g, '⟨').replace(/\>/g, '⟩'); // narrow angle brackets
             }
 
             function convertUtterance(utterance) {
@@ -728,7 +728,7 @@
                 document.body.style.backgroundColor = backgroundColor;
 
                 function drawFittedText(txt, color, x, y, width, height, weight, actual, align, progress, count, overlay) {
-                    txt = overscoreProsigns(txt.toString());
+                    txt = adornProsigns(txt.toString());
                     ctx.fillStyle = color;
                     //ctx.letterSpacing = "-0.02em"
                     function setFont(size) { ctx.font = weight + ' ' + size + 'px sans-serif' };
@@ -1125,6 +1125,7 @@
                         drawMenu(lessons.length, i => lessons[i].id, i => lessons[i].name, lessonTextColor);
                         break;
                     case 'phrase':
+                        alert(JSON.stringify(localStorage));
                         //var phrases = content.lessons[lessonNum].phrases;
                         //drawMenu(phrases.length, p => p, p => (p + 1) + ' ' + phrases[p]);
                         break;
