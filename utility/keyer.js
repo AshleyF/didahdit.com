@@ -1,7 +1,7 @@
-function Keyer(elementCallback, jitElementCallback) {
-    var _elementCallback = elementCallback;
-    var _jitElementCallback = jitElementCallback || function() {};
-    var _mode = 'B'; // 'U'/'A'/'B'
+function Keyer(elementCallback, toneCallback) {
+    var _elementCallback = elementCallback; // 'dit'/'dah' (when queued) 'letter'/'word' (just-in-time)
+    var _toneCallback = toneCallback || function() {}; // 'dit'/'dah' (just-in-time or after decoded) 'tone'/'silent' (straight)
+    var _mode = 'B'; // 'U'/'A'/'B'/'S'
     var _bufferLen = 1;
     var _elementTiming = null; // setSpeed() to init
     var _queue = []; // 'dit'/'dah'
@@ -11,12 +11,9 @@ function Keyer(elementCallback, jitElementCallback) {
     var _currentlyHeld = { 'dit': false, 'dah': false };
     var _pending = false;
     var _breakTimer = null;
+    var _lastHeldTime = -1;
 
     setSpeed(25); // default
-
-    function _opposite(element) {
-        return element == 'dit' ? 'dah' : 'dit';
-    }
 
     function _enqueue(element) {
         if (_queue.length < _bufferLen || !_pending) {
@@ -27,26 +24,34 @@ function Keyer(elementCallback, jitElementCallback) {
         }
     }
 
-    function _setBreakTimer(callback, time) {
+    function _clearBreakTimers() {
         if (_breakTimer != null) clearTimeout(_breakTimer);
-        _breakTimer = setTimeout(callback, time);
+    }
+
+    function _setBreakTimers(elementTime) {
+        function _setTimer(fn, time) {
+            _clearBreakTimers();
+            _breakTimer = setTimeout(fn, time);
+        }
+        _setTimer(function () {
+            _elementCallback('letter');
+            _setTimer(function () {
+                _elementCallback('word');
+            }, _elementTiming.word - _elementTiming.letter);
+        }, _elementTiming.letter + elementTime);
     }
 
     function _keyerUpdate() {
+        function _opposite(element) { return element == 'dit' ? 'dah' : 'dit'; }
         var squeezing = _currentlyHeld.dit && _currentlyHeld.dah;
         _pending = _queue.length > 0;
         if (_pending) {
             _squeezedLastElement = squeezing;
             var element = _queue.shift();
-            _jitElementCallback(element);
+            _toneCallback(element);
             var elementTime = _elementTiming[element];
             setTimeout(_keyerUpdate, elementTime);
-            _setBreakTimer(function () {
-                _elementCallback('letter');
-                _setBreakTimer(function () {
-                    _elementCallback('word');
-                }, _elementTiming.word - _elementTiming.letter);
-            }, _elementTiming.letter + elementTime);
+            _setBreakTimers(elementTime);
         } else {
             if (squeezing) {
                 switch (_mode) {
@@ -77,13 +82,29 @@ function Keyer(elementCallback, jitElementCallback) {
         _elementTiming = {
             'dit': 2 * ditlen,
             'dah': 4 * ditlen,
-            'letter': 3 * ditlen, // TODO: farnsworth
-            'word': 7 * ditlen }; // TODO: wordsworth
+            'letter': 3 * ditlen, // TODO: farnsworth?
+            'word': 7 * ditlen }; // TODO: wordsworth?
+    }
+
+    function _straightKey() {
+        var pressed = _currentlyHeld['dit'] || _currentlyHeld['dah'];
+        _toneCallback(pressed ? 'tone' : 'silent');
+        if (pressed) {
+            _lastHeldTime = Date.now();
+            _clearBreakTimers();
+        } else if (_lastHeldTime >= 0) {
+            var elapsed = Date.now() - _lastHeldTime;
+            _lastHeldTime = -1;
+            _toneCallback(elapsed >= _elementTiming.dit * 2 ? 'dah' : 'dit');
+            _setBreakTimers(0);
+        }
     }
 
     function key(element, pressed) {
         _currentlyHeld[element] = pressed;
-        if (pressed) {
+        if (_mode == 'S') {
+            _straightKey();
+        } else if (pressed) {
             _lastPressed = element;
             _enqueue(element);
         }

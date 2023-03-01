@@ -74,18 +74,33 @@
                         silence(ditlen);
                         break;
                     case 'dah':
-                        playTone(ditlen);
                         playTone(ditlen * 3);
                         silence(ditlen);
                         break;
                     case 'letter':
                         //silence(fditlen * 3);
+                        decoder.element(element);
                         break;
                     case 'word':
                         //silence(wditlen * 7);
+                        decoder.element(element);
                         break;
                 }
-                decoder.element(element);
+            }, tone => {
+                switch (tone) {
+                    case 'tone':
+                        makeTone(true);
+                        break;
+                    case 'silent':
+                        makeTone(false);
+                        break;
+                    case 'dit':
+                    case 'dah':
+                    case 'letter':
+                    case 'word':
+                        decoder.element(tone);
+                        break;
+                }
             });
             keyer.setMode(getKeyerMode());
             var debouncerLeft = Debouncer(pressed => keyer.key(_polarity == 'ditdah' ? 'dit' : 'dah', pressed));
@@ -150,11 +165,15 @@
                 }
             }
 
-            function playTone(len) {
-                const ramp = 0.005;
+            const ramp = 0.005;
+            function makeTone(on) {
                 var c = audio();
                 t = c > t ? c : t;
-                toneGain.gain.setTargetAtTime(1, t, ramp);
+                toneGain.gain.setTargetAtTime(on ? 1 : 0, t, ramp);
+            }
+
+            function playTone(len) {
+                makeTone(true);
                 t += len;
                 toneGain.gain.setTargetAtTime(0, t, ramp);
             }
@@ -1058,7 +1077,7 @@
                     var scramble = getScramble();
                     drawSwitch('scramble', 'Scramble:', scramble ? 'on' : 'off', scramble, top + rowHeight * 5);
                     var keyer = getKeyerMode();
-                    var keyerName = keyer == 'A' ? 'Iambic A' : keyer == 'B' ? 'Iambic B' : 'Ultimatic';
+                    var keyerName = keyer == 'A' ? 'Iambic A' : keyer == 'B' ? 'Iambic B' : keyer == 'U' ? 'Ultimatic' : 'Straight';
                     drawGenericUpDownControl('Keyer:', 'keyer', keyerName, true, true, top + padding + rowHeight * 6);
                     var polarity = getPolarity() == 'ditdah' ? 'Left Dit' : 'Right Dit';
                     drawGenericUpDownControl('Polarity:', 'polarity', polarity, true, true, top + padding + rowHeight * 7);
@@ -1267,6 +1286,9 @@
                                             setKeyerMode('U');
                                             break;
                                         case 'U':
+                                            setKeyerMode('S');
+                                            break;
+                                        case 'S':
                                             setKeyerMode('A');
                                             break;
                                     }
@@ -1275,13 +1297,16 @@
                                 case 'keyerDown':
                                     switch (getKeyerMode()) {
                                         case 'A':
-                                            setKeyerMode('U');
+                                            setKeyerMode('S');
                                             break;
                                         case 'B':
                                             setKeyerMode('A');
                                             break;
                                         case 'U':
                                             setKeyerMode('B');
+                                            break;
+                                        case 'S':
+                                            setKeyerMode('U');
                                             break;
                                     }
                                     redraw();

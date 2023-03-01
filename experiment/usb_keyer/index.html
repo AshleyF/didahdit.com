@@ -29,7 +29,7 @@
             const canvasWidth = 80;
 
             var currentPolarity = 'ditdah';
-            var keyer = Keyer(elementCallback, elementQueuedCallback);
+            var keyer = Keyer(elementCallback, toneCallback);
             var debouncerLeft = Debouncer(pressed => keyer.key(currentPolarity == 'ditdah' ? 'dit' : 'dah', pressed));
             var debouncerRight = Debouncer(pressed => keyer.key(currentPolarity == 'dahdit' ? 'dit' : 'dah', pressed));
 
@@ -186,12 +186,20 @@
                 if (tone) playTone(3 * ditlen);
             }
 
-            function elementQueuedCallback(element) {
+            function toneCallback(element) {
                 switch (element) {
                     case 'dit':
                     case 'dah':
                         if (element == 'dit') dit(true); else dah(true);
                         updateBreaks(element == 'dit' ? ditlen : 3 * ditlen);
+                        break;
+                    case 'tone':
+                        makeTone(true);
+                        straightDown = true;
+                        break;
+                    case 'silent':
+                        makeTone(false);
+                        straightDown = false;
                         break;
                 }
             }
@@ -960,7 +968,7 @@
 
             function drawKeyAndToneState() {
                 if (straightDown) updateBreaks(0);
-                if (mode == 'S') handleStraightKey();
+                //if (mode == 'S') handleStraightKey();
                 const ribbon = canvasWidth / 9;
                 var now = (new Date()).getTime() / 1000;
                 //if (now < wordBreak) {
@@ -1409,6 +1417,7 @@
                                         <option value="U">Ultimatic</option>
                                         <option value="A">Iambic-A</option>
                                         <option value="B" selected="true">Iambic-B</option>
+                                        <option value="S">Straight</option>
                                     </select>
                                 </td>
                             </tr>
