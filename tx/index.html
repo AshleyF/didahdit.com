@@ -1232,6 +1232,7 @@
             function touch(x, y) {
                 if (audioWasJustManuallyEnabled) {
                     audioWasJustManuallyEnabled = false;
+                    noSleep.enable();
                     playDing();
                     return;
                 }
