@@ -1547,12 +1547,10 @@
                     var y = e.y * ratio;
                     if (firstPress) {
                         firstPress = false;
-                        if (manuallyEnableAudio) {
-                            audio();
-                            redraw();
-                            return;
-                        }
+                        var clearDialogOnly = manuallyEnableAudio;
+                        say('');
                         audio();
+                        if (clearDialogOnly) return;
                         repeatTouch(x, y);
                         return;
                     }
