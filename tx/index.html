@@ -135,7 +135,7 @@
             var audioStarted = false;
             var audioDisallowed = false;
             function audio() {
-                if (!audioStarted || audioCtx.state == "suspended") {
+                if (!audioStarted || audioCtx.state != "running") {
                     audioCtx = new (AudioContext || webkitAudioContext)();
                     toneOscillator = audioCtx.createOscillator();
                     dingOscillator = audioCtx.createOscillator();
