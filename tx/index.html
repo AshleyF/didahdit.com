@@ -153,6 +153,7 @@
                     dingOscillator.start(0);
                     audioDisallowed = audioCtx.state != 'running';
                     if (audioDisallowed) {
+                        alert(audioCtx.state);
                         redraw(); // prompt to enable
                         return;
                     }
