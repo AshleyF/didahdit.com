@@ -135,7 +135,7 @@
             var audioStarted = false;
             var manuallyEnableAudio = false;
             function audio() {
-                if (!audioStarted) {
+                if (!audioStarted || audioCtx.state != 'running') {
                     audioCtx = new (window.AudioContext || window.audioContext || window.webkitAudioContext)();
                     toneOscillator = audioCtx.createOscillator();
                     dingOscillator = audioCtx.createOscillator();
@@ -1537,6 +1537,9 @@
                         e.preventDefault();
                         var p = e.touches[0];
                         repeatTouch(p.pageX * ratio, p.pageY * ratio);
+                    } else if (manuallyEnableAudio) {
+                        e.preventDefault();
+                        playDing();
                     }
                 };
                 canvas.onmousedown = function(e) {
