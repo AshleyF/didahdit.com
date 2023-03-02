@@ -1537,9 +1537,7 @@
                         e.preventDefault();
                         var p = e.touches[0];
                         repeatTouch(p.pageX * ratio, p.pageY * ratio);
-                    } else if (manuallyEnableAudio) {
-                        e.preventDefault();
-                        playDing();
+                        if (manuallyEnableAudio) playDing();
                     }
                 };
                 canvas.onmousedown = function(e) {
