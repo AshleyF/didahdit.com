@@ -1547,7 +1547,11 @@
                     var y = e.y * ratio;
                     if (firstPress) {
                         firstPress = false;
-                        say('');
+                        if (manuallyEnableAudio) {
+                            audio();
+                            redraw();
+                            return;
+                        }
                         audio();
                         repeatTouch(x, y);
                         return;
