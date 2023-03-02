@@ -17,6 +17,7 @@
 
             var _polarity = 'ditdah';
             var keyedCharacter = '';
+            var keyedCharacterError = false;
             var decoder = Decoder(value => {
                 var done = false;
                 function advanceCount(char) {
@@ -38,6 +39,10 @@
                                     done = false;
                                 }, dinglen / 2 * 1000);
                             }
+                        } else if (char != ' ') {
+                            keyedCharacterError = true;
+                            silence(ditlen);
+                            playDong();
                         }
                     }
                 }
@@ -50,6 +55,7 @@
                             if (value.value == ' ') ui.keyingComplete = true;
                         } else {
                             keyedCharacter = value.value;
+                            keyedCharacterError = false;
                         }
                         break;
                     case 'prosign':
@@ -57,10 +63,12 @@
                             advanceCount('<' + value.value + '>');
                         } else {
                             keyedCharacter = '<' + value.value + '>';
+                            keyedCharacterError = false;
                         }
                         break;
                     case 'invalid':
-                        keyedCharacter = '□';
+                        keyedCharacter = '�'; //'□';
+                        keyedCharacterError = false;
                         break;
                     case 'control':
                         break;
@@ -140,18 +148,25 @@
                     audioCtx = new (window.AudioContext || window.audioContext || window.webkitAudioContext)();
                     toneOscillator = audioCtx.createOscillator();
                     dingOscillator = audioCtx.createOscillator();
+                    dongOscillator = audioCtx.createOscillator();
                     toneOscillator.frequency.value = getPitch();
                     dingOscillator.frequency.value = 1500;
+                    dongOscillator.frequency.value = 1000;
                     toneGain = audioCtx.createGain();
                     dingGain = audioCtx.createGain();
+                    dongGain = audioCtx.createGain();
                     toneGain.gain.value = 0;
                     dingGain.gain.value = 0;
+                    dongGain.gain.value = 0;
                     toneOscillator.connect(toneGain);
                     dingOscillator.connect(dingGain);
+                    dongOscillator.connect(dongGain);
                     toneGain.connect(audioCtx.destination);
                     dingGain.connect(audioCtx.destination);
+                    dongGain.connect(audioCtx.destination);
                     toneOscillator.start(0);
                     dingOscillator.start(0);
+                    dongOscillator.start(0);
                     audioStarted = true;
                     if (manuallyEnableAudio) {
                         manuallyEnableAudio = false; // TOOD: check audioCtx.state == 'running' or != 'suspended'
@@ -293,11 +308,19 @@
             }
 
             var dinglen = 2.5;
-            function playDing() {
+            function playBell(bellGain) {
                 var c = audio();
                 var dingt = c > t ? c : t;
-                dingGain.gain.linearRampToValueAtTime(0.2, dingt + 0.005);
-                dingGain.gain.exponentialRampToValueAtTime(0.000001, dingt + dinglen);
+                bellGain.gain.linearRampToValueAtTime(0.2, dingt + 0.005);
+                bellGain.gain.exponentialRampToValueAtTime(0.000001, dingt + dinglen);
+            }
+
+            function playDing() {
+                playBell(dingGain);
+            }
+
+            function playDong() {
+                playBell(dongGain);
             }
 
             var morse = "  ETIANMSURWDKGOHVFÜL PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
@@ -845,7 +868,7 @@
                     drawButton(
                         'playPause',
                         keyedCharacter,
-                        ui.keyingComplete ? foregroundColor : keyedCharacterColor,
+                        ui.keyingComplete ? (keyedCharacterError ? phraseTextColor : foregroundColor) : keyedCharacterColor,
                         padding * 2 + buttonWidth * 2,
                         h - padding - buttonSize * largeButton,
                         buttonWidth * largeButton + padding * 2,
