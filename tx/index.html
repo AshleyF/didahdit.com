@@ -137,9 +137,6 @@
             function audio() {
                 if (!audioStarted || audioCtx.state == "suspended") {
                     audioCtx = new (AudioContext || webkitAudioContext)();
-                    alert(audioCtx.state)
-                    audioDisallowed = audioCtx.state == "suspended";
-                    if (audioDisallowed) redraw(); // prompt to enable
                     toneOscillator = audioCtx.createOscillator();
                     dingOscillator = audioCtx.createOscillator();
                     toneOscillator.frequency.value = getPitch();
@@ -154,6 +151,11 @@
                     dingGain.connect(audioCtx.destination);
                     toneOscillator.start(0);
                     dingOscillator.start(0);
+                    audioDisallowed = audioCtx.state == "suspended";
+                    if (audioDisallowed) {
+                        redraw(); // prompt to enable
+                        return;
+                    }
                     audioStarted = true;
                     say('');
                 }
@@ -1531,6 +1533,11 @@
                 var firstPress = true;
                 var noTouch = true; // until first event
                 canvas.ontouchstart = function(e) {
+                    if (audioDisallowed) {
+                        audio();
+                        redraw();
+                        return;
+                    }
                     noTouch = false;
                     if (!firstPress) {
                         e.preventDefault();
@@ -1539,6 +1546,11 @@
                     }
                 };
                 canvas.onmousedown = function(e) {
+                    if (audioDisallowed) {
+                        audio();
+                        redraw();
+                        return;
+                    }
                     // audio and speech must be enabled during first user interaction
                     // and ontouchstart doesn't seem to count, so first touch does this
                     // and repeating doesn't work. Thereafter, ontouchstart takes over.
