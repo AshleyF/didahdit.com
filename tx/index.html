@@ -1535,10 +1535,10 @@
                     noTouch = false;
                     if (!firstPress) {
                         e.preventDefault();
-                        if (manuallyEnableAudio) {
-                            playDing();
-                            return;
-                        }
+                        //if (manuallyEnableAudio) {
+                        //    playDing();
+                        //    return;
+                        //}
                         var p = e.touches[0];
                         repeatTouch(p.pageX * ratio, p.pageY * ratio);
                     }
@@ -1551,13 +1551,13 @@
                     var y = e.y * ratio;
                     if (firstPress) {
                         firstPress = false;
-                        var clearDialogOnly = manuallyEnableAudio;
+                        //var clearDialogOnly = manuallyEnableAudio;
                         say('');
                         audio();
-                        if (clearDialogOnly) {
-                            playDing();
-                            return;
-                        }
+                        //if (clearDialogOnly) {
+                        //    playDing();
+                        //    return;
+                        //}
                         repeatTouch(x, y);
                         return;
                     }
