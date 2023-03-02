@@ -133,9 +133,12 @@
             var dingGain;
             var dingOscillator;
             var audioStarted = false;
+            var audioDisallowed = false;
             function audio() {
-                if (!audioStarted) {
+                if (!audioStarted || audioCtx.state == "suspended") {
                     audioCtx = new (AudioContext || webkitAudioContext)();
+                    audioDisallowed = audioCtx.state == "suspended";
+                    if (audioDisallowed) redraw(); // prompt to enable
                     toneOscillator = audioCtx.createOscillator();
                     dingOscillator = audioCtx.createOscillator();
                     toneOscillator.frequency.value = getPitch();
@@ -1128,6 +1131,26 @@
                         //var phrases = content.lessons[lessonNum].phrases;
                         //drawMenu(phrases.length, p => p, p => (p + 1) + ' ' + phrases[p]);
                         break;
+                }
+                if (audioDisallowed) {
+                    ctx.fillStyle = dimColor;
+                    ctx.fillRect(0, 0, w, h);
+                    var height = buttonSize * 3;
+                    var left = padding * 2;
+                    var right = w - padding * 2;
+                    var top = (h - height) / 2
+                    var bottom = top + height;
+                    fillRoundedRect(left, top, right, bottom, padding, dialogBackgroundColor);
+                    drawFittedText(
+                        '☞ Enable Audio',
+                        mainButtonColor,
+                        left + padding,
+                        top + padding,
+                        right - left - padding * 2,
+                        bottom - top - padding * 2,
+                        'bold',
+                        true,
+                        'center')
                 }
             }
 
