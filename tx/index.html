@@ -133,10 +133,10 @@
             var dingGain;
             var dingOscillator;
             var audioStarted = false;
-            var audioDisallowed = false;
+            var manuallyEnableAudio = false;
             function audio() {
-                if (!audioStarted || audioCtx.state != "running") {
-                    audioCtx = new (AudioContext || webkitAudioContext)();
+                if (!audioStarted) {
+                    audioCtx = new (window.AudioContext || window.audioContext || window.webkitAudioContext)();
                     toneOscillator = audioCtx.createOscillator();
                     dingOscillator = audioCtx.createOscillator();
                     toneOscillator.frequency.value = getPitch();
@@ -151,13 +151,11 @@
                     dingGain.connect(audioCtx.destination);
                     toneOscillator.start(0);
                     dingOscillator.start(0);
-                    audioDisallowed = audioCtx.state != 'running';
-                    if (audioDisallowed) {
-                        alert(audioCtx.state);
-                        redraw(); // prompt to enable
-                        return;
-                    }
                     audioStarted = true;
+                    if (manuallyEnableAudio) {
+                        manuallyEnableAudio = false; // TOOD: check audioCtx.state == 'running' or != 'suspended'
+                        redraw();
+                    }
                     say('');
                 }
                 return audioCtx.currentTime;
@@ -1136,7 +1134,7 @@
                         //drawMenu(phrases.length, p => p, p => (p + 1) + ' ' + phrases[p]);
                         break;
                 }
-                if (audioDisallowed) {
+                if (manuallyEnableAudio) {
                     ctx.fillStyle = dimColor;
                     ctx.fillRect(0, 0, w, h);
                     var height = buttonSize * 3;
@@ -1534,11 +1532,6 @@
                 var firstPress = true;
                 var noTouch = true; // until first event
                 canvas.ontouchstart = function(e) {
-                    if (audioDisallowed) {
-                        audio();
-                        redraw();
-                        return;
-                    }
                     noTouch = false;
                     if (!firstPress) {
                         e.preventDefault();
@@ -1547,11 +1540,6 @@
                     }
                 };
                 canvas.onmousedown = function(e) {
-                    if (audioDisallowed) {
-                        audio();
-                        redraw();
-                        return;
-                    }
                     // audio and speech must be enabled during first user interaction
                     // and ontouchstart doesn't seem to count, so first touch does this
                     // and repeating doesn't work. Thereafter, ontouchstart takes over.
@@ -1592,19 +1580,28 @@
                 }
 
                 document.body.addEventListener('keydown', (e) => {
-                    if (audioDisallowed) {
-                        audio();
-                        redraw();
-                        return;
-                    }
                     if (!e.repeat) {
                         switch (e.code) {
                             case 'BracketLeft':
+                                if (!ui.playing) debouncerLeft.key(true);
+                                break;
                             case 'ControlLeft':
+                                if (!audioStarted) {
+                                    manuallyEnableAudio = true;
+                                    redraw();
+                                    break;
+                                }
                                 if (!ui.playing) debouncerLeft.key(true);
                                 break;
                             case 'BracketRight':
+                                if (!ui.playing) debouncerRight.key(true);
+                                break;
                             case 'ControlRight':
+                                if (!audioStarted) {
+                                    manuallyEnableAudio = true;
+                                    redraw();
+                                    break;
+                                }
                                 if (!ui.playing) debouncerRight.key(true);
                                 break;
                             case 'ArrowLeft':
@@ -1621,6 +1618,7 @@
                 });
 
                 document.body.addEventListener('keyup', (e) => {
+                    if (manuallyEnableAudio) return;
                     if (!e.repeat) {
                         switch (e.code) {
                             case 'BracketLeft':
