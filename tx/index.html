@@ -134,6 +134,7 @@
             var dingOscillator;
             var audioStarted = false;
             var manuallyEnableAudio = false;
+            var audioWasJustManuallyEnabled = false;
             function audio() {
                 if (!audioStarted || audioCtx.state != 'running') {
                     audioCtx = new (window.AudioContext || window.audioContext || window.webkitAudioContext)();
@@ -154,6 +155,7 @@
                     audioStarted = true;
                     if (manuallyEnableAudio) {
                         manuallyEnableAudio = false; // TOOD: check audioCtx.state == 'running' or != 'suspended'
+                        audioWasJustManuallyEnabled = true;
                         redraw();
                     }
                     say('');
@@ -1228,6 +1230,11 @@
             }
 
             function touch(x, y) {
+                if (audioWasJustManuallyEnabled) {
+                    audioWasJustManuallyEnabled = false;
+                    playDing();
+                    return;
+                }
                 if (ui.show == 'settings') {
                     if (dismissDialog(x, y)) return;
                     for (var b = 0; b < ui.buttons.length; b++) {
