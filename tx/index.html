@@ -1535,9 +1535,12 @@
                     noTouch = false;
                     if (!firstPress) {
                         e.preventDefault();
+                        if (manuallyEnableAudio) {
+                            playDing();
+                            return;
+                        }
                         var p = e.touches[0];
                         repeatTouch(p.pageX * ratio, p.pageY * ratio);
-                        if (manuallyEnableAudio) playDing();
                     }
                 };
                 canvas.onmousedown = function(e) {
