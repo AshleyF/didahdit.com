@@ -151,7 +151,7 @@
                     dingGain.connect(audioCtx.destination);
                     toneOscillator.start(0);
                     dingOscillator.start(0);
-                    audioDisallowed = audioCtx.state == "suspended";
+                    audioDisallowed = audioCtx.state != 'running';
                     if (audioDisallowed) {
                         redraw(); // prompt to enable
                         return;
@@ -1591,6 +1591,11 @@
                 }
 
                 document.body.addEventListener('keydown', (e) => {
+                    if (audioDisallowed) {
+                        audio();
+                        redraw();
+                        return;
+                    }
                     if (!e.repeat) {
                         switch (e.code) {
                             case 'BracketLeft':
