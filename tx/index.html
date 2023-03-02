@@ -1550,7 +1550,10 @@
                         var clearDialogOnly = manuallyEnableAudio;
                         say('');
                         audio();
-                        if (clearDialogOnly) return;
+                        if (clearDialogOnly) {
+                            playDing();
+                            return;
+                        }
                         repeatTouch(x, y);
                         return;
                     }
