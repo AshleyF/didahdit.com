@@ -137,6 +137,7 @@
             function audio() {
                 if (!audioStarted || audioCtx.state == "suspended") {
                     audioCtx = new (AudioContext || webkitAudioContext)();
+                    alert(audioCtx.state)
                     audioDisallowed = audioCtx.state == "suspended";
                     if (audioDisallowed) redraw(); // prompt to enable
                     toneOscillator = audioCtx.createOscillator();
