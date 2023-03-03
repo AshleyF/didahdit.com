@@ -60,7 +60,6 @@ function Keyer(elementCallback, toneCallback) {
                         break;
                     case 'A': // iambic A
                     case 'B': // iambic B
-                    default:
                         _enqueue(_opposite(_lastQueued));
                         break;
                 }
@@ -83,8 +82,8 @@ function Keyer(elementCallback, toneCallback) {
         _elementTiming = {
             'dit': 2 * ditlen,
             'dah': 4 * ditlen,
-            'letter': 3 * ditlen, // TODO: farnsworth?
-            'word': 7 * ditlen }; // TODO: wordsworth?
+            'letter': 2 * ditlen, // TODO: farnsworth? Also, 2 dits (rather than 3) to allow faster than proper sending
+            'word': 5 * ditlen }; // TODO: wordsworth? Also, 5 (rather than 7) dits to allow faster than proper sending
     }
 
     function _straightKey() {
