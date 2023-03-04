@@ -734,7 +734,7 @@
             }
 
             function resizeCanvas() {
-                var ratio = 1; // devicePixelRatio;
+                var ratio = devicePixelRatio;
                 var w = window.innerWidth;
                 var h = window.innerHeight;
                 canvas.width = w * ratio;
@@ -1581,7 +1581,7 @@
                     }
                 }
                 if (location.search == '?clear-settings') localStorage.clear();
-                var ratio = 1; // devicePixelRatio;
+                var ratio = devicePixelRatio;
                 canvas = document.getElementById('canvas');
                 var firstPress = true;
                 var noTouch = true; // until first event
