@@ -925,14 +925,14 @@
                     lessonTextColor,
                     padding * 2 + buttonSize,
                     padding + progressHeight,
-                    w - padding * 5 - buttonSize * 3,
+                    w - padding * 4 - buttonSize * 3,
                     buttonSize,
                     'left');
                 drawButton(
                     'phraseNum',
                     phraseCount - phraseNum,
                     phraseNumTextColor,
-                    w - padding * 2 - buttonSize * 2,
+                    w - padding - buttonSize * 2,
                     padding + progressHeight,
                     buttonSize,
                     buttonSize,
@@ -982,7 +982,7 @@
                 if (ui.show == 'settings') {
                     ctx.fillStyle = dimColor;
                     ctx.fillRect(0, 0, w, h);
-                    var settingRows = 8;
+                    var settingRows = 9;
                     var left = padding * (w > h ? 4 : 1);
                     var right = w - padding * (w > h ? 4 : 1);
                     var top = padding * (h > w ? 4 : 1);
@@ -1122,6 +1122,15 @@
                     drawGenericUpDownControl('Keyer:', 'keyer', keyerName, true, true, top + padding + rowHeight * 6);
                     var polarity = getPolarity() == 'ditdah' ? 'Left Dit' : 'Right Dit';
                     drawGenericUpDownControl('Polarity:', 'polarity', polarity, true, true, top + padding + rowHeight * 7);
+                    drawButton(
+                        'help',
+                        '☞ Tips & Tricks',
+                        lessonTextColor,
+                        left + padding,
+                        top + rowHeight * 8 + padding * 2,
+                        right - left - padding * 2,
+                        rowHeight / 2,
+                        'right');
                     ui.buttons = buttons;
                 }
                 function drawMenu(len, fnGetId, fnGetName, color) {
@@ -1391,6 +1400,9 @@
                                             break;
                                     }
                                     redraw();
+                                    return;
+                                case 'help':
+                                    window.open('./help', '_blank');
                                     return;
                             }
                         }
