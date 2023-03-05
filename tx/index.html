@@ -1668,7 +1668,6 @@
                     // audio and speech must be enabled during first user interaction
                     // and ontouchstart doesn't seem to count, so first touch does this
                     // and repeating doesn't work. Thereafter, ontouchstart takes over.
-                    e.preventDefault();
                     var x = e.x * ratio;
                     var y = e.y * ratio;
                     if (firstPress) {
@@ -1694,7 +1693,6 @@
                 };
                 var firstRelease = true;
                 canvas.onmouseup = function(e) {
-                    e.preventDefault();
                     if (firstRelease) {
                         firstRelease = false;
                         var x = e.x * ratio;
