@@ -728,10 +728,18 @@
                 localStorage.setItem('tx_polarity', polarity);
             }
 
-
             function getPolarity() {
                 return localStorage.getItem('tx_polarity') || 'ditdah';
             }
+
+            function setOnScreenKey(screenkey) {
+                localStorage.setItem('tx_screenkey', screenkey);
+            }
+
+            function getOnScreenKey() {
+                return getBoolSetting('tx_screenkey', false);
+            }
+
 
             function resizeCanvas() {
                 var ratio = devicePixelRatio;
@@ -840,12 +848,15 @@
                     w - padding - buttonSize,
                     padding, buttonSize, buttonSize,
                     'right');
+
+                var screenkey = getOnScreenKey();
+                var keyHeight = screenkey ? buttonSize * 4 : 0;
                 drawButton(
                     'prevLesson',
                     '⇤',
                     lessonNum > 0 ? subduedButtonColor : disabledButtonColor,
                     padding * 1 + buttonWidth * 0,
-                    h - padding - buttonSize,
+                    h - padding - buttonSize - keyHeight,
                     buttonWidth, buttonSize,
                     'left');
                 drawButton(
@@ -853,7 +864,7 @@
                     '⟲',
                     phraseNum > 0 ? subduedButtonColor : disabledButtonColor,
                     padding * 2 + buttonWidth * 1,
-                    h - padding - buttonSize,
+                    h - padding - buttonSize - keyHeight,
                     buttonWidth,
                     buttonSize,
                     'center');
@@ -862,7 +873,7 @@
                     '⟳',
                     phraseNum < content.lessons[lessonNum].phrases.length - 1 ? subduedButtonColor : disabledButtonColor,
                     padding * 4 + buttonWidth * 2 + buttonWidth * largeButton,
-                    h - padding - buttonSize,
+                    h - padding - buttonSize - keyHeight,
                     buttonWidth,
                     buttonSize,
                     'center');
@@ -871,7 +882,7 @@
                     '⇥',
                     lessonNum < content.lessons.length - 1 ? subduedButtonColor : disabledButtonColor,
                     padding * 5 + buttonWidth * 3 + buttonWidth * largeButton,
-                    h - padding - buttonSize,
+                    h - padding - buttonSize - keyHeight,
                     buttonWidth,
                     buttonSize,
                     'right');
@@ -881,7 +892,7 @@
                         keyedCharacter,
                         ui.keyingComplete ? (keyedCharacterError ? phraseTextColor : foregroundColor) : keyedCharacterColor,
                         padding * 2 + buttonWidth * 2,
-                        h - padding - buttonSize * largeButton,
+                        h - padding - buttonSize * largeButton - keyHeight,
                         buttonWidth * largeButton + padding * 2,
                         buttonSize * largeButton,
                         'center',
@@ -893,7 +904,7 @@
                         ui.playing ? 'II' : '▸',
                         foregroundColor,
                         padding * 3 + buttonWidth * 2,
-                        h - padding - buttonSize * largeButton,
+                        h - padding - buttonSize * largeButton - keyHeight,
                         buttonWidth * largeButton,
                         buttonSize * largeButton,
                         'center');
@@ -940,7 +951,7 @@
                 var phraseX = padding;
                 var phraseY = buttonSize + padding * 2 + progressHeight;
                 var phraseWidth = w - padding * 2;
-                var phraseHeight = h - padding * 4 - progressHeight - buttonSize - buttonSize * largeButton;
+                var phraseHeight = h - padding * 4 - progressHeight - buttonSize - buttonSize * largeButton - keyHeight;
                 var phraseIndex = randomPhrase(phraseNum, content.lessons[lessonNum].phrases.length);
                 var phrase = convertPhrase(content.lessons[lessonNum].phrases[phraseIndex]);
                 if (ui.keying) phrase = phrase.replace(/\ /g, '⎵');
@@ -979,10 +990,35 @@
                     top: phraseY - padding,
                     right: phraseWidth + padding,
                     bottom: phraseHeight + padding })
+                if (screenkey) {
+                    function drawPaddle(name, left, right) {
+                        var top = h - keyHeight + padding;
+                        fillRoundedRect(
+                            left,
+                            top,
+                            right,
+                            h - padding,
+                            padding,
+                            dialogBackgroundColor);
+                        var halfPadding = padding / w;
+                        buttons.push({
+                            name: name,
+                            left: left - halfPadding,
+                            top: top - halfPadding,
+                            right: right + halfPadding,
+                            bottom: h })
+                    }
+                    if (getKeyerMode() == 'S') {
+                        drawPaddle('leftKey', padding, w - padding);
+                    } else {
+                        drawPaddle('leftKey', padding, w / 2 - padding / 2);
+                        drawPaddle('rightKey', w / 2 + padding / 2, w - padding);
+                    }
+                }
                 if (ui.show == 'settings') {
                     ctx.fillStyle = dimColor;
                     ctx.fillRect(0, 0, w, h);
-                    var settingRows = 9;
+                    var settingRows = 10;
                     var left = padding * (w > h ? 4 : 1);
                     var right = w - padding * (w > h ? 4 : 1);
                     var top = padding * (h > w ? 4 : 1);
@@ -1120,14 +1156,16 @@
                     var keyer = getKeyerMode();
                     var keyerName = keyer == 'A' ? 'Iambic A' : keyer == 'B' ? 'Iambic B' : keyer == 'U' ? 'Ultimatic' : 'Straight';
                     drawGenericUpDownControl('Keyer:', 'keyer', keyerName, true, true, top + padding + rowHeight * 6);
+                    var screenkey = getOnScreenKey();
+                    drawSwitch('screenkey', 'On-screen Key:', screenkey ? 'on' : 'off', screenkey, top + rowHeight * 7);
                     var polarity = getPolarity() == 'ditdah' ? 'Left Dit' : 'Right Dit';
-                    drawGenericUpDownControl('Polarity:', 'polarity', polarity, true, true, top + padding + rowHeight * 7);
+                    drawGenericUpDownControl('Polarity:', 'polarity', polarity, true, true, top + padding + rowHeight * 8);
                     drawButton(
                         'help',
                         '☞ Tips & Tricks',
                         lessonTextColor,
                         left + padding,
-                        top + rowHeight * 8 + padding * 2,
+                        top + rowHeight * 9 + padding * 2,
                         right - left - padding * 2,
                         rowHeight / 2,
                         'right');
@@ -1401,6 +1439,11 @@
                                     }
                                     redraw();
                                     return;
+                                case 'screenkey':
+                                    cancelRepeat();
+                                    setOnScreenKey(!getOnScreenKey());
+                                    redraw();
+                                    return;
                                 case 'help':
                                     window.open('./help', '_blank');
                                     return;
@@ -1559,6 +1602,25 @@
                 }
             }
 
+            function hitTestOnScreenKeys(x, y, down) {
+                if (ui.show == null) {
+                    for (var b = 0; b < ui.buttons.length; b++) {
+                        var button = ui.buttons[b];
+                        if (x >= button.left && x <= button.right && y >= button.top && y <= button.bottom) {
+                            switch (button.name) {
+                                case 'leftKey':
+                                    if (!ui.playing) debouncerLeft.key(down);
+                                    return true;
+                                case 'rightKey':
+                                    if (!ui.playing) debouncerRight.key(down);
+                                    return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+
             var noSleep;
             onload = function() {
                 noSleep = new NoSleep();
@@ -1589,12 +1651,10 @@
                     noTouch = false;
                     if (!firstPress) {
                         e.preventDefault();
-                        //if (manuallyEnableAudio) {
-                        //    playDing();
-                        //    return;
-                        //}
                         var p = e.touches[0];
-                        repeatTouch(p.pageX * ratio, p.pageY * ratio);
+                        var x = p.pageX * ratio;
+                        var y = p.pageY * ratio;
+                        if (!hitTestOnScreenKeys(x, y, true)) repeatTouch(x, y);
                     }
                 };
                 canvas.onmousedown = function(e) {
@@ -1605,23 +1665,27 @@
                     var y = e.y * ratio;
                     if (firstPress) {
                         firstPress = false;
-                        //var clearDialogOnly = manuallyEnableAudio;
                         say('');
                         audio();
-                        //if (clearDialogOnly) {
-                        //    playDing();
-                        //    return;
-                        //}
-                        repeatTouch(x, y);
+                        if (!hitTestOnScreenKeys(x, y, true)) repeatTouch(x, y);
                         return;
                     }
                     if (noTouch)
                     {
-                        repeatTouch(x, y);
+                        if (!hitTestOnScreenKeys(x, y, true)) repeatTouch(x, y);
                     }
                 }
-                canvas.ontouchend = function(e) { cancelRepeat(); };
-                canvas.onmouseup = function(e) { cancelRepeat(); }
+                canvas.ontouchend = function(e) {
+                    var p = e.changedTouches[0];
+                    var x = p.pageX * ratio;
+                    var y = p.pageY * ratio;
+                    if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
+                };
+                canvas.onmouseup = function(e) {
+                    var x = e.x * ratio;
+                    var y = e.y * ratio;
+                    if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
+                }
                 resizeRedrawCanvas();
                 setDarkMode(getDarkMode());
                 setSpeed(getSpeed());
@@ -1739,6 +1803,7 @@
         - 'rx_pitch_default'
         - 'rx_hide_phrase'
         - 'tx_mode' ('A', 'B', 'U')
+        - 'tx_screenkey'
         - 'tx_polarity' ('ditdah', 'dahdit')
         - 'tx_buffer' (int size)
         - 'scramble'
