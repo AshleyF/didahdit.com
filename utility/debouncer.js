@@ -10,7 +10,7 @@ function Debouncer(keyCallback) {
     function getTimeout() { return _debounceTimeoutMs; }
 
     function key(pressed) {
-        if (_currentlyPressed != pressed) {
+        if (_currentlyPressed != pressed) { // ignore if state hasn't changed
             _currentlyPressed = pressed;
             var now = Date.now();
             if (now - _lastKeyTime > _debounceTimeoutMs) {
