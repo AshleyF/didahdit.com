@@ -1672,6 +1672,7 @@
                     var y = e.y * ratio;
                     if (firstPress) {
                         firstPress = false;
+                        e.preventDefault();
                         say('');
                         audio();
                         if (!hitTestOnScreenKeys(x, y, true)) repeatTouch(x, y);
@@ -1695,6 +1696,7 @@
                 canvas.onmouseup = function(e) {
                     if (firstRelease) {
                         firstRelease = false;
+                        e.preventDefault();
                         var x = e.x * ratio;
                         var y = e.y * ratio;
                         if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
