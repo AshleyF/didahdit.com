@@ -11,10 +11,6 @@
         <script src="../utility/decoder.js"></script>
         <script src="../content/library.js"></script>
         <script>
-            function testing(message) {
-                document.getElementById('trace').innerHTML += '<br />' + JSON.stringify(message);
-            }
-
             var _polarity = 'ditdah';
             var keyedCharacter = '';
             var keyedCharacterError = false;
@@ -80,7 +76,7 @@
                 }
                 redraw();
             });
-            var keyer = Keyer(element => {
+            var _keyer = Keyer(element => {
                 switch (element) {
                     case 'dit':
                         playTone(ditlen);
@@ -115,9 +111,9 @@
                         break;
                 }
             });
-            keyer.setMode(getKeyerMode());
-            var debouncerLeft = Debouncer(pressed => keyer.key(_polarity == 'ditdah' ? 'dit' : 'dah', pressed));
-            var debouncerRight = Debouncer(pressed => keyer.key(_polarity == 'ditdah' ? 'dah' : 'dit', pressed));
+            _keyer.setMode(getKeyerMode());
+            var _debouncerLeft = Debouncer(pressed => _keyer.key(_polarity == 'ditdah' ? 'dit' : 'dah', pressed));
+            var _debouncerRight = Debouncer(pressed => _keyer.key(_polarity == 'ditdah' ? 'dah' : 'dit', pressed));
 
             var canvas;
 
@@ -632,7 +628,7 @@
             }
 
             function setSpeed(wpm) {
-                keyer.setSpeed(wpm);
+                _keyer.setSpeed(wpm);
                 var speed = getSpeed();
                 var farnsworth = getFarnsworth();
                 if (wpm < farnsworth || speed == farnsworth)
@@ -715,7 +711,7 @@
             }
 
             function setKeyerMode(mode) {
-                keyer.setMode(mode);
+                _keyer.setMode(mode);
                 localStorage.setItem('tx_keyer', mode);
             }
 
@@ -765,7 +761,7 @@
                 var disabledButtonColor = darkMode ? '#444' : '#bbb'; // gray
                 var dialogBackgroundColor = darkMode ? '#222' : '#ddd';
                 var dialogAttributionColor = darkMode ? '#444' : '#bbb';
-                var keyedCharacterColor = darkMode ? '#fc0' : '#da0';
+                var keyedCharacterColor = darkMode ? '#fc0' : '#da0'; // yellow
 
                 var ctx = canvas.getContext('2d');
                 ctx.scale(1, 1);
@@ -991,7 +987,7 @@
                     right: phraseWidth + padding,
                     bottom: phraseHeight + padding })
                 if (screenkey) {
-                    function drawPaddle(name, left, right) {
+                    function drawPaddle(name, left, right, active) {
                         var top = h - keyHeight + padding;
                         fillRoundedRect(
                             left,
@@ -999,7 +995,7 @@
                             right,
                             h - padding,
                             padding,
-                            dialogBackgroundColor);
+                            active ? disabledButtonColor : dialogBackgroundColor);
                         var halfPadding = padding / w;
                         buttons.push({
                             name: name,
@@ -1008,11 +1004,14 @@
                             right: right + halfPadding,
                             bottom: h })
                     }
+                    var held = _keyer.getHeld();
                     if (getKeyerMode() == 'S') {
-                        drawPaddle('leftKey', padding, w - padding);
+                        drawPaddle('leftKey', padding, w - padding, held.dit || held.dah);
                     } else {
-                        drawPaddle('leftKey', padding, w / 2 - padding / 2);
-                        drawPaddle('rightKey', w / 2 + padding / 2, w - padding);
+                        var leftHeld = _polarity == 'ditdah' ? held.dit : held.dah;
+                        var rightHeld = _polarity == 'ditdah' ? held.dah : held.dit;
+                        drawPaddle('leftKey', padding, w / 2 - padding / 2, leftHeld);
+                        drawPaddle('rightKey', w / 2 + padding / 2, w - padding, rightHeld);
                     }
                 }
                 if (ui.show == 'settings') {
@@ -1153,8 +1152,8 @@
                     drawUpDownControl('Pitch:', 'pitch', getPitch(), 100, 900, top + padding + rowHeight * 4);
                     var scramble = getScramble();
                     drawSwitch('scramble', 'Scramble:', scramble ? 'on' : 'off', scramble, top + rowHeight * 5);
-                    var keyer = getKeyerMode();
-                    var keyerName = keyer == 'A' ? 'Iambic A' : keyer == 'B' ? 'Iambic B' : keyer == 'U' ? 'Ultimatic' : 'Straight';
+                    var keyerMode = getKeyerMode();
+                    var keyerName = keyerMode == 'A' ? 'Iambic A' : keyerMode == 'B' ? 'Iambic B' : keyerMode == 'U' ? 'Ultimatic' : 'Straight';
                     drawGenericUpDownControl('Keyer:', 'keyer', keyerName, true, true, top + padding + rowHeight * 6);
                     var screenkey = getOnScreenKey();
                     drawSwitch('screenkey', 'On-screen Key:', screenkey ? 'on' : 'off', screenkey, top + rowHeight * 7);
@@ -1609,10 +1608,16 @@
                         if (x >= button.left && x <= button.right && y >= button.top && y <= button.bottom) {
                             switch (button.name) {
                                 case 'leftKey':
-                                    if (!ui.playing) debouncerLeft.key(down);
+                                    if (!ui.playing) {
+                                        _debouncerLeft.key(down);
+                                        redraw();
+                                    }
                                     return true;
                                 case 'rightKey':
-                                    if (!ui.playing) debouncerRight.key(down);
+                                    if (!ui.playing) {
+                                        _debouncerRight.key(down);
+                                        redraw();
+                                    }
                                     return true;
                             }
                         }
@@ -1685,10 +1690,14 @@
                         if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
                     }
                 };
+                var firstRelease = true;
                 canvas.onmouseup = function(e) {
-                    var x = e.x * ratio;
-                    var y = e.y * ratio;
-                    if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
+                    if (firstRelease) {
+                        firstRelease = false;
+                        var x = e.x * ratio;
+                        var y = e.y * ratio;
+                        if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
+                    }
                 }
                 resizeRedrawCanvas();
                 setDarkMode(getDarkMode());
@@ -1714,7 +1723,10 @@
                     if (!e.repeat) {
                         switch (e.code) {
                             case 'BracketLeft':
-                                if (!ui.playing) debouncerLeft.key(true);
+                                if (!ui.playing) {
+                                    _debouncerLeft.key(true);
+                                    redraw();
+                                }
                                 break;
                             case 'ControlLeft':
                                 if (!audioStarted) {
@@ -1722,10 +1734,13 @@
                                     redraw();
                                     break;
                                 }
-                                if (!ui.playing) debouncerLeft.key(true);
+                                if (!ui.playing) _debouncerLeft.key(true);
                                 break;
                             case 'BracketRight':
-                                if (!ui.playing) debouncerRight.key(true);
+                                if (!ui.playing) {
+                                    _debouncerRight.key(true);
+                                    redraw();
+                                }
                                 break;
                             case 'ControlRight':
                                 if (!audioStarted) {
@@ -1733,7 +1748,7 @@
                                     redraw();
                                     break;
                                 }
-                                if (!ui.playing) debouncerRight.key(true);
+                                if (!ui.playing) _debouncerRight.key(true);
                                 break;
                             case 'ArrowLeft':
                                 simulateTouchButton(e.shiftKey ? 'prevLesson' : 'prevPhrase', true);
@@ -1754,11 +1769,17 @@
                         switch (e.code) {
                             case 'BracketLeft':
                             case 'ControlLeft':
-                                if (!ui.playing) debouncerLeft.key(false);
+                                if (!ui.playing) {
+                                    _debouncerLeft.key(false);
+                                    redraw();
+                                }
                                 break;
                             case 'BracketRight':
                             case 'ControlRight':
-                                if (!ui.playing) debouncerRight.key(false);
+                                if (!ui.playing) {
+                                    _debouncerRight.key(false);
+                                    redraw();
+                                }
                                 break;
                             case 'ArrowLeft':
                             case 'ArrowRight':
@@ -1784,7 +1805,6 @@
         </script>
     </head>
     <body class="dark">
-        <div id="trace" style="color: white"></div>
         <canvas id="canvas"></canvas>
     </body>
     <!--

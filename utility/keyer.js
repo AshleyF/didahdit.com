@@ -3,6 +3,7 @@ function Keyer(elementCallback, toneCallback) {
     var _toneCallback = toneCallback || function() {}; // 'dit'/'dah' (just-in-time or after decoded) 'tone'/'silent' (straight)
     var _mode = 'B'; // 'U'/'A'/'B'/'S'
     var _bufferLen = 1;
+    var _wpm; // setSpeed() to init
     var _elementTiming = null; // setSpeed() to init
     var _queue = []; // 'dit'/'dah'
     var _lastPressed = null; // 'dit'/'dah'
@@ -37,8 +38,8 @@ function Keyer(elementCallback, toneCallback) {
             _elementCallback('letter');
             _setTimer(function () {
                 _elementCallback('word');
-            }, _elementTiming.word - _elementTiming.letter);
-        }, _elementTiming.letter + elementTime);
+            }, _elementTiming.word - _elementTiming.letter); // after remaining word space
+        }, elementTime + _elementTiming.letter); // after element and letter space
     }
 
     function _keyerUpdate() {
@@ -50,7 +51,7 @@ function Keyer(elementCallback, toneCallback) {
             var element = _queue.shift();
             _toneCallback(element);
             var elementTime = _elementTiming[element];
-            setTimeout(_keyerUpdate, elementTime);
+            setTimeout(_keyerUpdate, elementTime + _elementTiming.element); // after element + element space
             _setBreakTimers(elementTime);
         } else {
             if (squeezing) {
@@ -74,20 +75,25 @@ function Keyer(elementCallback, toneCallback) {
     }
 
     function setMode(mode) { _mode = mode; }
+    function getMode() { return _mode; }
 
     function setBufferLen(len) { _bufferLen = len; }
+    function getBufferLen() { return _bufferLen; }
 
     function setSpeed(wpm) {
+        _wpm = wpm;
         var ditlen = 1.2 / wpm * 1000;
         _elementTiming = {
-            'dit': 2 * ditlen,
-            'dah': 4 * ditlen,
-            'letter': 3 * ditlen, // TODO: farnsworth? Also, 2 dits (rather than 3) to allow faster than proper sending
-            'word': 7 * ditlen }; // TODO: wordsworth? Also, 5 (rather than 7) dits to allow faster than proper sending
+            'dit': ditlen, // length of dit
+            'dah': 3 * ditlen, // length of dah
+            'element': ditlen, // space between elements
+            'letter': 3 * ditlen, // space between letters TODO: farnsworth?
+            'word': 7 * ditlen }; // space between words TODO: wordsworth?
     }
+    function getSpeed() { return _wpm; }
 
     function _straightKey() {
-        var pressed = _currentlyHeld['dit'] || _currentlyHeld['dah'];
+        var pressed = _currentlyHeld.dit || _currentlyHeld.dah;
         _toneCallback(pressed ? 'tone' : 'silent');
         if (pressed) {
             _lastHeldTime = Date.now();
@@ -95,7 +101,7 @@ function Keyer(elementCallback, toneCallback) {
         } else if (_lastHeldTime >= 0) {
             var elapsed = Date.now() - _lastHeldTime;
             _lastHeldTime = -1;
-            _toneCallback(elapsed >= _elementTiming.dit * 2 ? 'dah' : 'dit');
+            _toneCallback(elapsed >= _elementTiming.dah * 2/3 ? 'dah' : 'dit'); // 2/3rds dah becomes dah
             _setBreakTimers(0);
         }
     }
@@ -110,10 +116,18 @@ function Keyer(elementCallback, toneCallback) {
         }
     }
 
+    function getHeld() {
+        return _currentlyHeld;
+    }
+
     return {
         key,
         setMode,
+        getMode,
         setBufferLen,
+        getBufferLen,
         setSpeed,
+        getSpeed,
+        getHeld,
     };
 }
