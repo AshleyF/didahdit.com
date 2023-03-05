@@ -1653,9 +1653,9 @@
                 var firstPress = true;
                 var noTouch = true; // until first event
                 canvas.ontouchstart = function(e) {
-                    e.preventDefault();
                     noTouch = false;
                     if (!firstPress) {
+                        e.preventDefault();
                         for (var i = 0; i < e.touches.length; i++) {
                             var p = e.touches[i];
                             var x = p.pageX * ratio;
@@ -1684,12 +1684,14 @@
                     }
                 }
                 canvas.ontouchend = function(e) {
-                    e.preventDefault();
-                    for (var i = 0; i < e.changedTouches.length; i++) {
-                        var p = e.changedTouches[i];
-                        var x = p.pageX * ratio;
-                        var y = p.pageY * ratio;
-                        if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
+                    if (!firstRelease) {
+                        e.preventDefault();
+                        for (var i = 0; i < e.changedTouches.length; i++) {
+                            var p = e.changedTouches[i];
+                            var x = p.pageX * ratio;
+                            var y = p.pageY * ratio;
+                            if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
+                        }
                     }
                 };
                 var firstRelease = true;
