@@ -1651,10 +1651,12 @@
                     noTouch = false;
                     if (!firstPress) {
                         e.preventDefault();
-                        var p = e.touches[0];
-                        var x = p.pageX * ratio;
-                        var y = p.pageY * ratio;
-                        if (!hitTestOnScreenKeys(x, y, true)) repeatTouch(x, y);
+                        for (var i = 0; i < e.touches.length; i++) {
+                            var p = e.touches[i];
+                            var x = p.pageX * ratio;
+                            var y = p.pageY * ratio;
+                            if (!hitTestOnScreenKeys(x, y, true)) repeatTouch(x, y);
+                        }
                     }
                 };
                 canvas.onmousedown = function(e) {
@@ -1676,10 +1678,12 @@
                     }
                 }
                 canvas.ontouchend = function(e) {
-                    var p = e.changedTouches[0];
-                    var x = p.pageX * ratio;
-                    var y = p.pageY * ratio;
-                    if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
+                    for (var i = 0; i < e.changedTouches.length; i++) {
+                        var p = e.changedTouches[i];
+                        var x = p.pageX * ratio;
+                        var y = p.pageY * ratio;
+                        if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
+                    }
                 };
                 canvas.onmouseup = function(e) {
                     var x = e.x * ratio;
