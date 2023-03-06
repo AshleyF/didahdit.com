@@ -3,160 +3,124 @@
         <title>CW Practice</title>
         <style>body { margin: 0; padding: 0; }</style>
         <meta name="viewport" content="width=device-width" />
-        <link rel="shortcut icon" href="../icons/didahdit.svg"> 
-        <link rel="apple-touch-icon" href="../icons/didahdit.svg">
-        <script src="script/NoSleep.min.js"></script>
+        <link rel="shortcut icon" href="./icons/didahdit.svg"> 
+        <link rel="apple-touch-icon" href="./icons/didahdit.svg">
+        <script src="./script/NoSleep.min.js"></script>
+        <script src="./utility/keyer.js"></script>
+        <script src="./utility/debouncer.js"></script>
+        <script src="./utility/decoder.js"></script>
+        <script src="./content/library.js"></script>
         <script>
-            var library = [
-                { id: 'CWOPS',
-                  name: 'CWOps',
-                  lessons: [
-                    { id: 'CWOB1',
-                      name: 'E T A N',
-                      phrases: ['E', 'T', 'A', 'N', 'EEE', 'TTT', 'AAA', 'NNN', 'an', 'at', 'ann', 'ant', 'ate', 'eat', 'ETA|estimated time of arival', 'net', 'tan', 'tat', 'tea', 'tee', 'ten', 'anna', 'anne', 'ante', 'nate', 'neat', 'tate', 'teat', 'teen', 'tent', 'eaten', 'tenet', 'tenant', 'annette', 'antenna', 'a tan', 'an ant', 'anna ate', 'eat at ten', 'ate at ten', 'at tee', 'a neat tent'] },
-                    { id: 'CWOB2',
-                      name: 'O I S 1 4',
-                      phrases: ['O', 'I', 'S', '1', '4', 'OOO', 'III', 'SSS', '111', '444', 'TTT', 'EEE', 'AAA', 'NNN', 'as', 'in', 'it', 'no', 'on', 'to', 'sin', 'st', 'its', 'sit', 'son', 'too', 'oasis', 'soon', 'sits', 'soot', 'SOTA|sohtah, summits on the air', 'ian', 'asia', 'toss', 'at', 'sea', 'inn', 'oat', 'one', 'see', 'tao', 'tie', 'nit', 'sat', 'tin', 'toe', 'sine', 'sonia', 'not', 'set', 'into', 'noon', 'nose', 'sans', 'site', 'noise', 'oases', 'onion', 'tot', 'onto', 'toes', 'noose', 'snot', 'toot', 'snoot', 'assess', 'assist', 'insist', 'ease', 'asian', 'anti', 'nine', 'sane', 'sean', 'tina', 'east', 'one neat note', 'no noise', 'tie it', '#1 ton stone', 'N1AS', 'N4ON', 'S41T', 'NO1S', 'AI1E', 'IT4O', 'EA1ON', 'ES4IT', '#14', '#41', '#44', '#11', '#441', '#141', '#114', '#411'] },
-                    { id: 'CWOB3',
-                      name: 'R H D L 2 5',
-                      phrases: ['R', 'H', 'D', 'L', '2', '5', 'RRR|wherefore art thou romeo?', 'HHH', 'DDD', 'LLL', '222', '555', 'OOO', 'III', 'SSS', 'dr', 'rd', 'did', 'do', 'hi', 'hid', 'odd', 'oh', 'lid', 'old', 'ill', 'rod', 'dill', 'hold', 'doll', 'hill', 'add', 'dad', 'lord', 'had', 'drill', 'he', 'roll', 'all', 'his', 'oil', 'red', 'sod', 'dish', 'hard', 'held', 'hood', 'idol', 'odds', 'her', 'dell', 'hall', 'herd', 'lard', 'lids', 'slid', 'sir', 'door', 'hell', 'odor', 'sold', 'aid', 'lori', 'sill', 'ado', 'died', 'drool', 'shill', 'doe', 'sad', 'dads', 'dial', 'hide', 'laid', 'horrid', 'air', 'ash', 'don', 'has', 'lie', 'nod', 'dash', 'deli', 'hail', 'hind', 'idle', 'lied', 'load', 'raid', 'dot', 'leo', 'she', 'dole', 'dora', 'hair', 'halo', 'hash', 'ohio', 'ride', 'hello', 'and', 'hailstone', 'isolation', 'loadstone', 'tradition', 'nineteenth', '#142', '#451', '#1425', 'a tall hill', 'she is here', 'he is late', '#4 sheds', '#12 hills', 'DL1AT', 'HH5H', 'HS1TD', 'ND2T', 'NA4T'] },
-                    { id: 'CWOB4',
-                      name: 'U C',
-                      phrases: ['U', 'C', 'UUU', 'CCC', 'RRR', 'HHH', 'DDD', 'LLL', '111', '444', 'uh', 'ur', 'dud', 'duh', 'huh', 'crud', 'curd', 'cull', 'us', 'dull', 'hull', 'chi', 'hurl', 'lull', 'lou', 'chic', 'ouch', 'scud', 'lurch', 'church', 'CA|California', 'EU|European Union', 'our', 'such', 'couch', 'cue', 'loud', 'lucid', 'occur', 'cad', 'due', 'clod', 'cold', 'hush', 'cloud', 'could', 'hue', 'cord', 'hour', 'lush', 'rich', 'rush', 'UCLA|University of California, Los Angeles', 'car', 'RCA|Radio Corporation of America', 'clue', 'duct', 'dude', 'slur', 'child', 'crush', 'scull', 'crouch', 'run', 'urn', 'chad', 'cure', 'dual', 'lurid', 'clad', 'cult', 'cuss', 'duel', 'haul', 'hula', 'chill', 'chord', 'card', 'curt', 'rude', 'thud', 'arch', 'call', 'coil', 'docs', 'luis', 'crude', 'cured', 'dutch', 'hunch', 'hurls', 'ice', 'carl', 'cell', 'cool', 'lure', 'null', 'rico', 'rule', 'turd', 'curio', 'hutch', 'lunch', 'INC|incorporated', 'use', 'audi', 'hurt', 'ours', 'ruth', 'sour', 'thru', '#4241', '#1452', 'in the cell', 'that hurts', 'at the hall', 'hole in #1', 'sail on sailor', 'tell all', 'hold on', 'NC5A', 'NA2T', 'CU1LL', 'CO5NO', 'NU4R', 'CT1AC', 'CE1NI'] },
-                    { id: 'CWOB5',
-                      name: 'M W 3 6 ?',
-                      phrases: ['M', 'W', '3', '6', '?', 'MMM', 'WWW', '333', '666', '???', 'UUU', 'CCC', '222', '555', 'um', 'mum', 'CW|carrier wave, Morse Code', 'MR|mister', 'mud', 'hum', 'mom', 'MS|miss', 'mow', 'rum', 'wow', 'am', 'me', 'maw', 'chum', 'much', 'we', 'com', 'mew', 'sum', 'mums', 'cow', 'dim', 'mid', 'swum', 'him', 'mod', 'dow', 'mil', 'ohm', 'drum', 'whim', 'how', 'mir', 'rim', 'who', 'mull', 'whom', 'cam', 'emu', 'low', 'mac', 'owl', 'caw', 'MRS|missus', 'row', 'worm', 'dam', 'mad', 'scum', 'ham', 'dew', 'wed', 'wham', 'arm', 'awl', 'elm', 'hew', 'law', 'mel', 'moo', 'ram', 'hums', 'mush', 'mulch', 'raw', 'war', 'woo', 'chow', 'moms', 'slum', 'swim', 'warm', 'whew', 'mild', 'crow', 'mold', 'wild', 'wows', 'aim', 'mia', 'dorm', 'mill', 'alum', 'ammo', 'howl', 'mach', 'maul', 'mime', 'will', 'word', 'mimic', 'momma', 'moe', 'sam', 'calm', 'clam', 'memo', 'mule', 'humus', 'hw?|how copy?', 'well water', 'how is it?', 'is this it?', 'this is it', '#1432 hill street', '#1 and #4 is #5', 'W3AA', 'N3AM', 'DM5RA', 'W6AM', 'N2AT', 'RW5L', 'ON4UN', '#335', '#1432', '#6122'] },
-                    { id: 'CWOB6',
-                      name: 'F Y',
-                      phrases: ['F', 'Y', 'FFF', 'YYY', 'MMM', 'WWW', '333', '666', 'FM|frequency modulation', 'my', 'muff', 'HF|high frequency', 'yum', 'fly', 'fry', 'yummy', 'why', 'if', 'cuff', 'mummy', 'of', 'off', 'yo', 'duff', 'huff', 'miff', 'duffy', 'flu', 'fluff', 'huffy', 'fur', 'ruff', 'fluffy', 'cry', 'dry', 'dummy', 'amy', 'may', 'yam', 'few', 'icy', 'way', 'yaw', 'you', 'lyly', 'mommy', 'coy', 'yew', 'rummy', 'emmy', 'hoff', 'muffs', 'fir', 'lucy', 'riff', 'comfy', 'for', 'shy', 'wryly', 'fun', 'roy', 'sly', 'duly', 'film', 'whiff', 'fad', 'firm', 'full', 'homy', 'rudy', 'muddy', 'day', 'fed', 'flow', 'form', 'fowl', 'from', 'fume', 'furl', 'wily', 'wolf', 'daffy', 'fully', 'wolff', 'mummify', 'dye', 'hay', 'defy', 'macy', 'chummy', 'elf', 'far', 'hey', 'lay', 'cuffs', 'furry', 'scuff', 'fer|for', 'ray', 'ref', 'fray', 'crummy', 'rye', 'soy', 'frey', 'cody', 'farm', 'flaw', 'foul', 'cliff', 'hw?|how copy?', 'is this fair?', 'yes it is', 'the fur flies', 'she is shy', 'i say no', 'she says yes', 'he says no', 'who is he?', 'he is will', 'no he is walt', 'F5IN', 'YO1AR', 'HH5H', 'NO3M', 'AA3U', 'S52R', '#1512', '#3316'] },
-                    { id: 'CWOB7',
-                      name: 'P G 7 9 /',
-                      phrases: ['P', 'G', '7', '9', '/', 'PPP', 'GGG', '777', '999', '///', 'FFF', 'YYY', '333', '666', 'gyp', 'pm', 'up', 'gym', 'pug', 'pup', 'guy', 'yup', 'gum', 'mug', 'guppy', 'pygmy', 'gig', 'ump', 'puppy', 'go', 'pig', 'pump', 'pip', 'guff', 'ply', 'puff', 'pry', 'fig', 'gag', 'muggy', 'yuppy', 'cup', 'egg', 'fog', 'gap', 'dug', 'peg', 'yip', 'piggy', 'hug', 'mig', 'pep', 'ugh', 'lug', 'spy', 'wig', 'puffy', 'rug', 'gulp', 'pimp', 'plug', 'poppy', 'pomp', 'pulp', 'gay', 'phd', 'pay', 'yap', 'foggy', 'yep', 'gummy', 'peggy', 'amp', 'gem', 'map', 'meg', 'pam', 'wag', 'gulf', 'pudgy', 'cog', 'gus', 'paw', 'ugly', 'gypsy', 'peppy', 'pigmy', 'dig', 'pew', 'dump', 'dip', 'dog', 'god', 'glum', 'hump', 'pups', 'hip', 'hog', 'pod', 'lump', 'plum', 'wimp', 'hop', 'lip', 'log', 'rig', 'rump', 'plump', 'lop', 'pol', 'rip', 'grip', 'glyph', 'gun', 'pro', 'plop', 'pupa', '#7423', '14253679', 'he is a pro', 'she is near', 'do not gape', 'he is at #19 glen street', 'go to her', 'read the page', 'what page?', 'page #15', 'G4AN/3', 'N1AR/5', 'W9UCA/9', 'W3/PY2AA', 'F6/N6AM', '2N2222'] },
-                    { id: 'CWOB8',
-                      name: 'B V',
-                      phrases: ['B', 'V', 'BBB', 'VVV', '777', '999', '///', 'by', 'bug', 'pub', 'bmw', 'bib', 'buy', 'bob', 'bum', 'big', 'bog', 'gob', 'bop', 'bump', 'buggy', 'be', 'buff', 'bag', 'cub', 'fib', 'gab', 'beg', 'fob', 'boy', 'bud', 'dub', 'ivy', 'bobby', 'hub', 'mob', 'vim', 'bomb', 'bulb', 'bow', 'bur', 'rub', 'vow', 'bay', 'abby', 'baby', 'bumpy', 'bye', 'blvd', 'grub', 'bevy', 'burp', 'buffy', 'gabby', 'bus', 'sub', 'vic', 'web', 'cobb', 'bid', 'flub', 'baggy', 'hubby', 'dumb', 'vamp', 'bubbly', 'rib', 'blob', 'bury', 'pubs', 'ruby', 'flyby', 'cab', 'orb', 'rob', 'bun', 'nub', 'glib', 'womb', 'bad', 'but', 'tub', 'blip', 'blog', 'rugby', 'grubby', 'bed', 'blab', 'buoy', 'plumb', 'bar', 'boo', 'bra', 'val', 'barb', 'busy', 'buys', 'wavy', 'hubbub', 'bluff', 'body', 'club', 'comb', 'verb', 'brag', 'curb', 'garb', 'grab', 'divvy', 'hobby', 'gumbo', 'lobby', '#6146', '#5514', 'name is bob', 'name is bill', 'name is ted', 'name is vinnie', 'name is art', 'ur rst is 559', 'ur rst is 459', 'ur rst is 579', 'ur rst is 449', 'BV2AA', 'BA1RO', 'WB2AE', 'N6RB/4', 'W2/VE1AR', 'VE2/W2LE'] },
-                    { id: 'CWOB9',
-                      name: 'J K 8 0 <BT>',
-                      phrases: ['J', 'K', '8', '0', '<BT>|pause', 'JJJ', 'KKK', '888', '000', '<BT> <BT> <BT>', 'BBB', 'VVV', 'JR|junior', 'jug', 'ok', 'jib', 'job', 'jig', 'jog', 'kip', 'jab', 'jag', 'joy', 'keg', 'jump', 'jim', 'jul', 'kim', 'sky', 'buck', 'jay', 'kay', 'yak', 'jam', 'key', 'jaw', 'bulk', 'puck', 'jew', 'jock', 'kick', 'kid', 'jamb', 'yuck', 'jack', 'judy', 'kirk', 'jumpy', 'junk', 'muck', 'jed', 'gawk', 'jugs', 'july', 'jury', 'pick', 'jar', 'jeff', 'ark', 'elk', 'ski', 'back', 'bunk', 'fuji', 'jerk', 'bulky', 'balk', 'pack', 'pork', 'puke', 'ike', 'joe', 'oak', 'bark', 'book', 'duck', 'jobs', 'peck', 'punk', 'yock', 'yuks', 'ask', 'ink', 'jon', 'kin', 'huck', 'jody', 'joke', 'judd', 'mick', 'kojak', 'jot', 'kit', 'kink', 'luck', 'mock', 'musk', 'wick', 'jiffy', 'folk', 'fork', 'park', 'skip', 'yolk', 'bike', 'funk', 'hulk', 'jive', 'milk', 'perk', 'yack', 'york', 'jacky', 'jumbo', 'switch', 'dipole', 'vertical', 'ohms', 'home', 'test', '#807', '3500', '4250A', 'hw is he?', 'name is joe <BT>', 'age is #49', 'name is john <BT>', 'age is #66', 'name is tom <BT>', 'age is #72', 'ur rst is 549', 'ur rst is 579', 'sri no cpy', 'K1JD', 'N1AR', 'W2TT', 'K2UMU', 'N2NW', 'VE3NE', 'VA3KP', 'K4BAI', 'N5KO'] },
-                    { id: 'CWOB10',
-                      name: 'X Q Z <BK>',
-                      phrases: ['X', 'Q', 'Z', '<BK>|break', 'XXX', 'QQQ', 'ZZZ', '<BK> <BK> <BK>', 'KKK', 'JJJ', '888', '000', 'HZ|hertz', 'khz', 'buzz', 'box', 'fuzz', 'jazz', 'zip', 'MHZ|megahertz', 'fix', 'fox', 'zap', 'mix', 'fizz', 'wiz', 'fax', 'max', 'uzi', 'wax', 'quiz', 'cox', 'fuzzy', 'jazzy', 'liz', 'tux', 'hex', 'foxy', 'six', 'quip', 'rex', 'sox', 'zoo', 'flux', 'fizzy', 'ziggy', 'sax', 'zoe', 'zippy', 'zit', 'waxy', 'bozo', 'cozy', 'jinx', 'suzy', 'axe', 'zulu', 'crux', 'knox', 'quay', 'tax', 'cruz', 'dizzy', 'zen', 'ajax', 'fuze', 'roxy', 'whiz', 'frizz', 'lizzy', 'whizz', 'flex', 'hazy', 'expo', 'lazy', 'zing', 'lynx', 'zaps', 'pizza', 'quick', 'marx', 'zoom', 'pizazz', 'quad', 'apex', 'gaze', 'pizzazz', 'quirk', 'onyx', 'quack', 'xmas', 'proxy', 'czar', 'boozy', 'faze', 'oxbow', 'quark', 'zigzag', 'exam', 'coax', 'maze', 'quit', 'gizmo', 'frizzy', 'zeus', 'zinc', 'klutz', 'aqua', 'hoax', 'iraq', 'epoxy', 'quips', 'exec', 'zero', 'affix', 'xerox', 'buzzer', 'qrx', 'qrz', 'qth', 'qrs', 'qro', 'qrp', 'wx', 'qrm', '#8044', '#7400', '#73', 'u hv qsb', 'u hv qrm', 'qth is ny <BK>', 'qth is paris <BK>', 'pse qsy to #7054', 'ur rst is 579 <BK>', 'qth is nr tulsa <BK>', 'name is barry <BK>', 'ur rst is 559 <BK>', 'qth is dayton oh <BK>', 'ZL2TT', 'VK4OM', 'JE1TRV', 'BA1CW', 'KH6LC', 'AL2A', 'AA3B'] } ] },
-                { id: 'QTH',
-                  name: 'Locations',
-                  lessons: [
-                    { id: 'ST',
-                      name: 'States (US)/Provinces (CA)',
-                      phrases: ['AL|alabama', 'AK|alaska', 'AB|alberta', 'AR|arkansas', 'AS|american samoa', 'AZ|arizona', 'BC|british columbia', 'CA|california', 'LAX|los angeles california', 'EB|east bay california', 'ORG|orange california', 'SV|sacramento valley', 'SDG|san diego', 'SF|san francisco', 'SJV|san joaquin valley', 'SB|santa barbra', 'SCV|santa clara valley', 'DC|district of columbia', 'CO|colorado', 'CT|connecticut', 'DE|delaware', 'FL|florida', 'NFL|north florida', 'SFL|south florida', 'WCF|west coast florida', 'GA|georgia', 'GU|guam', 'ID|idaho', 'IL|illinois', 'IN|indiana', 'IA|iowa', 'KS|kansas', 'KY|kentucky', 'LA|louisiana', 'ME|maine', 'MB|manitoba', 'MH|marshall islands', 'MA|massachusetts', 'WMA|west massachusetts', 'MDC|maryland dc', 'EMA|eastern massachusetts', 'MI|michigan', 'MN|minnesota', 'MS|mississippi', 'MO|missouri', 'MT|montana', 'NB|new brunswick', 'MAR|maritime', 'NE|nebraska', 'NV|nevada', 'NY|new york', 'NNY|north new york', 'WNY|west new york', 'NLI|new york long island', 'NJ|new jersey', 'SNJ|south new jersey', 'ENY|eastern new york', 'NH|new hampshire', 'NM|new mexico', 'NL|newfoundland', 'NC|north carolina', 'NS|nova scotia', 'NU|nunavut', 'ND|north dakota', 'NT|northwest territories', 'GTA|greater toronto area', 'OH|ohio', 'OK|oklahoma', 'ON|ontario', 'ONE|ontario east', 'ONN|ontario north', 'ONS|ontario south', 'OR|oregon', 'PA|pennsylvania', 'WPA|west pennsylvania', 'PAC|pacific', 'EPA|eastern pennsylvania', 'PW|palau', 'PR|puerto rico', 'PE|prince edward island', 'QC|quebec', 'RI|rhode island', 'SK|saskatchewan', 'SC|south carolina', 'SD|south dakota', 'TN|tennesee', 'TX|texas', 'NTX|north texas', 'STX|south texas', 'WTX|west texas', 'VI|virgin islands', 'UT|utah', 'VT|vermont', 'VA|verginia', 'WA|washington', 'WWA|western washington', 'EWA|eastern washington', 'WV|west verginia', 'WI|wisconsin', 'WY|wyoming', 'YT|yukon'] },
-                    { id: 'PRE',
-                      name: 'Prefectures (JP)',
-                      phrases: ['AI|aichi', 'AK|akita', 'AO|aomori', 'CH|chiba', 'EH|ehime', 'FI|fukui', 'FO|fukuoka', 'FS|fukushima', 'GF|gifu', 'GM|gumma', 'HS|hiroshima', 'HK|hokkaido', 'HG|hyogo', 'IB|ibaraki', 'IS|ishikawa', 'IW|iwate', 'KG|kagawa', 'KS|kagoshima', 'KN|kanagawa', 'KC|kochi', 'KM|kumamoto', 'KY|kyoto', 'ME|mie', 'MG|miyagi', 'MZ|miyazaki', 'NN|nagano', 'NS|nagasaki', 'NR|nara', 'NI|niigata', 'OT|oita', 'OY|okayama', 'ON|okinawa', 'OS|osaka', 'SG|saga', 'ST|saitama', 'SH|shiga', 'SM|shimane', 'SZ|shizuoka', 'TC|tochigi', 'TS|tokushima', 'TK|tokyo', 'TT|tottori', 'TY|toyama', 'WK|wakayama', 'YT|yamagata', 'YC|yamaguchi', 'YN|yamanashi'] },
-                    { id: 'CITY_WORLD',
-                      name: '100 Cities (World)',
-                      phrases: ['tokyo', 'delhi', 'shanghai', 'dhaka', 'sao paulo', 'mexico city', 'cairo', 'beijing', 'mumbai', 'osaka', 'chongqing', 'karachi', 'istanbul', 'kinshasa', 'lagos', 'buenos aires', 'kolkata', 'manila', 'tianjin', 'guangzhou', 'rio de janeiro', 'lahore', 'bangalore', 'shenzhen', 'moscow', 'chennai', 'bogota', 'paris', 'jakarta', 'lima', 'bangkok', 'hyderabad', 'seoul', 'nagoya', 'london', 'chengdu', 'nanjing', 'tehran', 'ho chi minh city', 'luanda', 'new york city', 'wuhan', 'xi an shaanxi', 'ahmedabad', 'kuala lumpur', 'hangzhou', 'surat', 'suzhou', 'hong kong', 'riyadh', 'shenyang', 'baghdad', 'dongguan', 'foshan', 'dar es salaam', 'pune', 'santiago', 'madrid', 'haerbin', 'toronto', 'belo horizonte', 'khartoum', 'johannesburg', 'singapore', 'dalian', 'qingdao', 'zhengzhou', 'ji nan shandong', 'barcelona', 'saint petersburg', 'abidjan', 'yangon', 'fukuoka', 'alexandria', 'guadalajara', 'ankara', 'chittagong', 'addis ababa', 'melbourne', 'nairobi', 'hanoi', 'sydney', 'monterrey', 'changsha', 'brasilia', 'cape town', 'jiddah', 'urumqi', 'kunming', 'changchun', 'hefei', 'shantou', 'xinbei', 'kabul', 'ningbo', 'tel aviv', 'yaounde', 'rome', 'shijiazhuang', 'montreal'] },
-                    { id: 'CITY_AFRICA',
-                      name: '100 Cities (Africa)',
-                      phrases: ['kinshasa', 'lagos', 'cairo', 'giza', 'luanda', 'dar es salaam', 'khartoum', 'johannesburg', 'abidjan', 'alexandria', 'addis ababa', 'nairobi', 'cape town', 'yaoundé', 'kano', 'east rand', 'douala', 'casablanca', 'ibadan', 'antananarivo', 'abuja', 'kampala', 'kumasi', 'dakar', 'port harcourt', 'durban', 'ouagadougou', 'lusaka', 'algiers', 'bamako', 'omdurman', 'mbuji-mayi', 'pretoria', 'lubumbashi', 'accra', 'brazzaville', 'mogadishu', 'tunis', 'conakry', 'rabat', 'lomé', 'benin city', 'matola', 'monrovia', 'kananga', 'harare', 'onitsha', "n'djamena", 'nouakchott', 'mombasa', 'niamey', 'kisangani', 'pointe-noire', 'port elizabeth', 'tangier', 'freetown', 'fez', 'uyo', 'mwanza', 'lilongwe', 'kigali', 'bukavu', 'abomey-calavi', 'nnewi', 'tripoli', 'kaduna', 'aba', 'bujumbura', 'maputo', 'hargeisa', 'bobo dioulasso', 'shubra el-kheima', 'ikorodu', 'asmara', 'marrakesh', 'tshikapa', 'nyala', 'ilorin', 'blantyre', 'agadir', 'misratah', 'owerri', 'warri', 'jos', 'bangui', 'nampula', 'oran', 'west rand', 'lubango', 'cabinda', 'umuahia', 'libreville', 'benghazi', 'maiduguri', 'enugu', 'lokoja', 'vereeniging', 'benguela', 'bunia', 'zanzibar'] },
-                    { id: 'CITY_ASIA',
-                      name: '100 Cities (Asia)',
-                      phrases: ['shanghai', 'beijing', 'shenzhen', 'guangzhou', 'istanbul', 'chengdu', 'mumbai', 'karachi', 'tianjin', 'delhi', 'wuhan', 'dhaka', 'seoul', 'dongguan', "xi'an", 'nanjing', 'hangzhou', 'foshan', 'ho chi minh city', 'jakarta', 'bengaluru', 'tokyo', 'hanoi', 'taipei', 'hong kong', 'chongqing', 'baghdad', 'qingdao', 'tehran', 'shenyang', 'hyderabad', 'suzhou', 'ahmedabad', 'lahore', 'harbin', 'bangkok', 'hefei', 'dalian', 'chennai', 'kolkata', 'xiamen', 'surat', 'yangon', 'wuxi', 'jinan', 'taiyuan', 'zhengzhou', 'riyadh', 'changchun', 'shijiazhuang', 'chattogram', 'kunming', 'zhongshan', 'nanning', 'shantou', 'fuzhou', 'ningbo', 'busan', 'puyang', 'yokohama', 'singapore', 'ankara', 'shiyan', 'tangshan', 'changzhou', 'pyongyang', 'zibo', 'pune', 'changsha', 'kabul', 'guiyang', 'ueruemqi', 'lanzhou', 'dubai', 'huizhou', 'haikou', 'jeddah', 'kanpur', 'quezon city', 'osaka', 'linyi', 'baoding', 'jaipur', 'wenzhou', 'incheon', 'yunfu', 'basrah', 'navi mumbai', 'daegu', 'faisalabad', 'izmir', "huai'an", 'lucknow', 'surabaya', 'nanchang', 'hohhot', 'mashhad', 'shaoxing', 'nantong', 'nagpur'] },
-                    { id: 'CITY_EUROPE',
-                      name: '100 Cities (Europe)',
-                      phrases: ['moscow', 'london', 'saint petersburg', 'berlin', 'madrid', 'kyiv', 'rome', 'paris', 'bucharest', 'minsk', 'budapest', 'hamburg', 'warsaw', 'vienna', 'barcelona', 'stockholm', 'kharkiv', 'novosibirsk', 'yekaterinburg', 'nizhniy novgorod', 'belgrade', 'munich', 'milan', 'prague', 'copenhagen', 'sofia', 'samara', 'omsk', 'kazan', 'rostov-na-donu', 'chelyabinsk', 'ufa', 'donetsk', 'dublin', 'brussels', 'odessa', 'volgograd', 'dnipro', 'birmingham', 'perm', 'koeln', 'naples', 'krasnoyarsk', 'turin', 'liverpool', 'saratov', 'voronezh', 'valencia', 'marseille', 'lodz', 'krakow', 'riga', 'amsterdam', 'zaporizhzhya', 'lviv', 'sevilla', 'tolyatti', 'zagreb', 'sarajevo', 'sheffield', 'zaragoza', 'athens', 'frankfurt am main', 'krasnodar', 'palermo', 'ulyanovsk', 'chisinau', 'wroclaw', 'izhevsk', 'kryvyy rih', 'bristol', 'yaroslavl', 'barnaul', 'rotterdam', 'essen', 'glasgow', 'stuttgart', 'dortmund', 'vladivostok', 'irkutsk', 'genoa', 'oslo', 'khabarovsk', 'khabarovsk vtoroy', 'duesseldorf', 'goeteborg', 'poznan', 'malaga', 'helsinki', 'orenburg', 'bremen', 'vilnius', 'novokuznetsk', 'ryazan', 'tyumen', 'lisbon', 'lipetsk', 'nuernberg', 'hannover', 'penza'] },
-                    { id: 'CITY_NA',
-                      name: '100 Cities (N America)',
-                      phrases: ['mexico city', 'new york city', 'los angeles', 'chicago', 'toronto', 'brooklyn', 'houston', 'queens', 'santo domingo', 'havana', 'iztapalapa', 'ecatepec de morelos', 'phoenix', 'philadelphia', 'montreal', 'guadalajara', 'manhattan', 'san antonio', 'puebla', 'san diego', 'the bronx', 'ciudad juarez', 'tijuana', 'dallas', 'leon de los aldama', 'port-au-prince', 'santiago de los caballeros', 'gustavo adolfo madero', 'zapopan', 'monterrey', 'ciudad nezahualcoyotl', 'san jose', 'calgary', 'guatemala city', 'managua', 'jacksonville', 'kingston', 'austin', 'fort worth', 'columbus', 'indianapolis', 'charlotte', 'san francisco', 'tegucigalpa', 'ottawa', 'chihuahua', 'naucalpan de juarez', 'merida', 'seattle', 'alvaro obregon', 'san luis potosi', 'aguascalientes', 'denver', 'hermosillo', 'edmonton', 'saltillo', 'santo domingo oeste', 'santo domingo este', 'mexicali', 'washington', 'nashville', 'el paso', 'oklahoma city', 'detroit', 'culiacan', 'boston', 'guadalupe', 'acapulco de juarez', 'mississauga', 'memphis', 'tlalnepantla', 'portland', 'new south memphis', 'winnipeg', 'cancun', 'santiago de queretaro', 'las vegas', 'baltimore', 'coyoacan', 'santa maria chimalhuacan', 'torreon', 'milwaukee', 'vancouver', 'morelia', 'brampton', 'reynosa', 'new kingston', 'tlaquepaque', 'tlalpan', 'south boston', 'albuquerque', 'santiago de cuba', 'tuxtla', 'cuauhtemoc', 'tucson', 'quebec', 'san salvador', 'fresno', 'hamilton', 'victoria de durango'] },
-                    { id: 'CITY_SA',
-                      name: '100 Cities (S America)',
-                      phrases: ['buenos aires', 'sao paulo', 'lima', 'bogota', 'rio de janeiro', 'santiago', 'caracas', 'salvador', 'fortaleza', 'cali', 'belo horizonte', 'maracaibo', 'brasilia', 'la paz', 'medellin', 'guayaquil', 'santa cruz de la sierra', 'maracay', 'curitiba', 'valencia', 'manaus', 'asuncion', 'recife', 'cordoba', 'belem', 'quito', 'barranquilla', 'porto alegre', 'montevideo', 'rosario', 'goiania', 'guarulhos', 'barquisimeto', 'campinas', 'nova iguacu', 'maceio', 'cartagena', 'ciudad guayana', 'sao luis', 'mendoza', 'cochabamba', 'arequipa', 'duque de caxias', 'callao', 'san miguel de tucuman', 'natal', 'trujillo', 'teresina', 'sao bernardo do campo', 'campo grande', 'cucuta', 'jaboatao', 'la plata', 'osasco', 'santo andre', 'joao pessoa', 'jaboatao dos guararapes', 'contagem', 'ribeirao preto', 'feira de santana', 'sao jose dos campos', 'chiclayo', 'bucaramanga', 'uberlandia', 'sorocaba', 'mar del plata', 'maturin', 'cuiaba', 'salta', 'aparecida de goiania', 'puente alto', 'barcelona', 'aracaju', 'santa fe', 'londrina', 'juiz de fora', 'belford roxo', 'joinville', 'niteroi', 'sao joao de meriti', 'san juan', 'pereira', 'iquitos', 'ananindeua', 'santa marta', 'ciudad bolivar', 'cumana', 'ibague', 'florianopolis', 'santos', 'ribeirao das neves', 'vila velha', 'serra', 'bello', 'diadema', 'campos dos goytacazes', 'resistencia', 'maua', 'betim', 'pasto'] },
-                    { id: 'CITY_OCEANIA',
-                      name: '100 Cities (Oceania)',
-                      phrases: ['auckland', 'brisbane', 'gold coast', 'canberra', 'jayapura', 'christchurch', 'canterbury-bankstown', 'blacktown', 'port moresby', 'honolulu', 'casey', 'logan', 'wyndham', 'geelong', 'sorong', 'parramatta', 'sydney', 'cumberland', 'hume', 'liverpool', 'whittlesea', 'stirling', 'wellington', 'wollongong', 'ipswich', 'fairfield', 'penrith', 'brimbank', 'lake macquarie', 'wanneroo', 'monash', 'townsville', 'moreland', 'boroondara', 'hamilton', 'whitehorse', 'onkaparinga', 'melbourne', 'campbelltown', 'toowoomba', 'dandenong', 'newcastle', 'kingston', 'knox', 'darebin', 'joondalup', 'redland', 'melton', 'tauranga', 'radwick', 'cairns', 'glen eira', 'swan', 'salisbury', 'frankston', 'rockingham', 'dunedin', 'banyule', 'moonee valley', 'ryde', 'port adelaide enfield', 'manningham', 'gosnells', 'maroondah', 'charles sturt', 'stonnington', 'port phillip', 'lower hutt', 'cockburn', 'ballarat', 'manokwari', 'bayside', 'shoalhaven', 'bendigo', 'melville', 'lae', 'tea tree gully', 'yarra', 'hobsons bay', 'canada bay', 'nouméa', 'playford', 'canning', 'marion', 'maribyrnong', 'palmerston north', 'hastings', 'armadale', 'new plymouth', 'suva', 'mandurah', 'darwin', 'honiara', 'maitland', 'willoughby', 'mackay', 'blue mountains', 'rockhampton', 'rotorua', 'coffs harbour'] },
-                    { id: 'CITY_US',
-                      name: '100 Cities (U.S.)',
-                      phrases: ['new york', 'los angeles', 'chicago', 'houston', 'phoenix', 'philadelphia', 'san antonio', 'san diego', 'dallas', 'san jose', 'austin', 'jacksonville', 'fort worth', 'columbus', 'indianapolis', 'charlotte', 'san francisco', 'seattle', 'denver', 'oklahoma city', 'nashville', 'el paso', 'washington', 'boston', 'las vegas', 'portland', 'detroit', 'louisville', 'memphis', 'baltimore', 'milwaukee', 'albuquerque', 'fresno', 'tucson', 'sacramento', 'mesa', 'kansas city', 'atlanta', 'omaha', 'colorado springs', 'raleigh', 'virginia beach', 'long beach', 'miami', 'oakland', 'minneapolis', 'tulsa', 'bakersfield', 'wichita', 'arlington', 'aurora', 'tampa', 'new orleans', 'cleveland', 'anaheim', 'honolulu', 'henderson', 'stockton', 'lexington', 'corpus christi', 'riverside', 'santa ana', 'orlando', 'irvine', 'cincinnati', 'newark', 'saint paul', 'pittsburgh', 'greensboro', 'st. louis', 'lincoln', 'plano', 'anchorage', 'durham', 'jersey city', 'chandler', 'chula vista', 'buffalo', 'north las vegas', 'gilbert', 'madison', 'reno', 'toledo', 'fort wayne', 'lubbock', 'st. petersburg', 'laredo', 'irving', 'chesapeake', 'winston–salem', 'glendale', 'scottsdale', 'garland', 'boise', 'norfolk', 'spokane', 'fremont', 'richmond', 'santa clarita', 'san bernardino'] } ] },
-                { id: 'NAME',
-                  name: 'Names',
-                  lessons: [
-                    { id: 'NAME2',
-                      name: 'Two-letter Names',
-                      phrases: ['bo', 'vi', 'cy', 'zo', 'el', 'ed', 'di', 'li', 'po', 'em', 'al', 'lo', 'ty', 'ki', 'ab', 'jo', 'oz', 'mo', 'su', 'lu', 'aj', 'cj', 'dj', 'jc', 'jd', 'jj', 'jr', 'jt', 'kc', 'lj', 'rj', 'tj'] },
-                    { id: 'NAME3',
-                      name: 'Three-letter Names',
-                      phrases: ['ash', 'ace', 'abe', 'ali', 'art', 'ava', 'axl', 'bob', 'cam', 'dan', 'don', 'doc', 'dev', 'ham', 'fen', 'hal', 'ben', 'ivy', 'ian', 'lev', 'lon', 'lee', 'lex', 'mac', 'mae', 'moe', 'cal', 'ada', 'dax', 'mia', 'neo', 'eva', 'guy', 'gay', 'gus', 'gil', 'roy', 'red', 'reb', 'eli', 'tam', 'tal', 'tom', 'tim', 'tex', 'obi', 'pat', 'poe', 'pax', 'ted', 'lou', 'fox', 'rip', 'rex', 'noa', 'ned', 'mel', 'ida', 'ira', 'ike', 'jay', 'jac', 'joe', 'jon', 'jun', 'jet', 'jed', 'jeb', 'jim', 'ren', 'rue', 'rob', 'ron', 'pip', 'eve', 'kai', 'kit', 'kal', 'kay', 'ken', 'kip', 'koa', 'leo', 'sam', 'sal', 'sid', 'sly', 'ray', 'rae', 'amy', 'gia', 'wes', 'zoe', 'van', 'bea', 'aya', 'val', 'vin', 'wil', 'liv', 'max', 'zac', 'zak', 'zed'] },
-                    { id: 'NAME4',
-                      name: 'Four-letter Names',
-                      phrases: ['mary', 'john', 'lisa', 'mark', 'gary', 'eric', 'lori', 'paul', 'ryan', 'emma', 'anna', 'jack', 'ruth', 'jose', 'adam', 'sean', 'carl', 'sara', 'kyle', 'joan', 'noah', 'jean', 'judy', 'alan', 'juan'] },
-                    { id: 'NAME5',
-                      name: 'Five-letter Names',
-                      phrases: ['james', 'linda', 'david', 'susan', 'sarah', 'karen', 'nancy', 'betty', 'brian', 'carol', 'kevin', 'emily', 'donna', 'bobby', 'marie', 'mason', 'kayla', 'louis', 'laura', 'jacob', 'larry', 'scott', 'helen', 'debra', 'frank', 'jason', 'janet', 'maria', 'jerry', 'tyler', 'diane', 'aaron', 'julie', 'joyce', 'henry', 'kelly', 'peter', 'ethan', 'megan', 'keith', 'roger', 'terry', 'dylan', 'jesse', 'billy', 'alice', 'julia', 'bruce', 'logan', 'grace', 'amber', 'doris', 'wayne', 'randy', 'diana', 'ralph', 'bryan'] },
-                    { id: 'NAME6',
-                      name: 'Six-letter Names',
-                      phrases: ['ashley', 'thomas', 'robert', 'daniel', 'joseph', 'sandra', 'donald', 'steven', 'andrew', 'joshua', 'amanda', 'george', 'ronald', 'edward', 'sharon', 'angela', 'brenda', 'pamela', 'justin', 'nicole', 'samuel', 'rachel', 'dennis', 'olivia', 'nathan', 'lauren', 'walter', 'evelyn', 'judith', 'jeremy', 'andrea', 'cheryl', 'hannah', 'gerald', 'martha', 'harold', 'gloria', 'teresa', 'austin', 'arthur', 'janice', 'jordan', 'sophia', 'albert', 'denise', 'willie', 'elijah', 'eugene', 'philip', 'alexis'] },
-                    { id: 'NAME7',
-                      name: 'Seven-letter Names',
-                      phrases: ['michael', 'william', 'barbara', 'richard', 'jessica', 'charles', 'matthew', 'anthony', 'kenneth', 'dorothy', 'melissa', 'timothy', 'deborah', 'rebecca', 'jeffrey', 'cynthia', 'shirley', 'stephen', 'brandon', 'gregory', 'patrick', 'carolyn', 'raymond', 'heather', 'douglas', 'zachary', 'madison', 'frances', 'kathryn', 'abigail', 'gabriel', 'marilyn', 'beverly', 'theresa', 'vincent', 'natalie', 'russell'] },
-                ] },
-                { id: 'QSO',
-                  name: 'QSO',
-                  lessons: [
-                    { id: 'WORDS',
-                      name: 'Common QSO Words',
-                      phrases: ['and', 'the', 'you', 'that', 'a', 'to', 'know', 'of', 'it', 'yeah', 'in', 'they', 'do', 'so', 'but', 'is', 'like', 'have', 'was', 'we', 'its', 'just', 'on', 'or', 'not', 'think', 'for', 'well', 'what', 'about', 'all', 'thats', 'oh', 'really', 'one', 'are', 'right', 'uh', 'them', 'at', 'there', 'my', 'mean', 'dont', 'no', 'with', 'if', 'when', 'can', 'as', 'his', 'from', 'had', 'by', 'some', 'were', 'out', 'other', 'where', 'your', 'up', 'name', 'inv v|inverted V', 'dipole', 'beam', 'endfed', 'g5vr', 'windom', 'ocf', 'sloper', 'vertical', 'rig', 'age', 'icom', 'knwd|kenwood', 'yaesu', 'tentec', 'elecraft', 'heathkit', 'homebrew', 'mfj', 'temp', 'warm', 'hot', 'cold', 'sunny', 'cool', 'cloudy', 'cldy|cloudy', 'clear', 'clr|clear', 'rain', 'snow', 'sleet', 'hail', 'windy', 'wndy|windy', 'fog', 'hour', '599', '589', '579', '479', '359', '489', '559'] },
-                    { id: 'PHRASES',
-                      name: 'Common QSO Phrases',
-                      phrases: ['ur rst 5nn', 'qth is nr spokane wa', 'rig is icom 7300', 'ant is cha mpas vert', 'ham since 2022', 'tu joe co', 'cq sst k1rv', 'ge sue ma', 'gl rick tu k1rv sst', 'name is bob', 'ur rst 549', 'qth is tuscon az', 'rig is ic705', 'ant is efhw', 'ham since 1997', 'name is jane', 'ur rst 55n', 'qth is buffalo ny', 'rig is kx2', 'ant is dipole', 'ham since 2013', 'cul 73 ee', 'cq pota de k4swl k', 'kk7hxu gm ur 5nn 5nn <bk>', '<bk> tu ur 5nn 5nn wa wa <bk>', '<bk> tu es 73 de k4swl ee <bk>', 'cq cq de k7cw k7cw k', 'tu fer call <BT>', 'ur rst 579 57n <BT>', 'name is bob bob <BT>', 'qth is portland, or portland, or<BT>', 'so hw cpy?', 'r r fb bob <BT>', 'ur rst 599 5nn <BT>', 'name hr is ashley ashley <BT>', 'qth is nr spokane, wa spokane, wa <BT>', 'hw cpy? <bk>', '<bk> r r r fb ashley nice to meet u <BT>', 'rig hr is icom 705 into vert <BT>', 'wx is too cold <BT>', 'age is 51 51 been ham 2 yrs <BT>', 'hw? <bk>', '<bk> rig yaesu ft747 ant dipole <BT>', 'age 48 been ham 6 months <BT>', 'wx hr warm es sunny <BT>', '<bk> r r r fb thx fer qso <BT>', 'hpe cul 73 73', '<bk> r r tu nice qso <BT>', 'cul 73 73'] },
-                    { id: 'ABBR',
-                      name: 'Common QSO Abbr.',
-                      phrases: ['R|roger', 'TU|thank you', 'TNX|thanks', 'TKS|thanks', 'DE|from', 'RST|readability signal strength tone', 'C|yes correct', 'U|you', 'CQ|call for stations', 'AGN|again', 'GUD|good', 'K|over', '<KN>|over (specific station)', 'ANT|antenna', 'ES|and', 'FER|for', 'FB|fine business - very good', 'UFB|ultra-fine business - excellent', 'VY|very', 'GM|good morning', 'GA|good afternoon', 'GE|good evening', 'GN|good night', 'GL|good luck', 'GB|goodbye', 'GD|good', 'GUD|good', 'GG|going', 'HI|laughter', 'HEE|laughter', 'HR|here', 'HW|how', 'NR|near or number', 'OM|old man', 'PLS|please', 'PSE|please', 'PWR|power', 'WX|weather', '73|best wishes', '88|love and kisses', '<BK>|break', '<KN>|end', 'YRS|years', 'TEST|contest', 'CLDY|cloudy', 'CLR|clear', 'WNDY|windy', 'HW?|how copy?', 'CW|carrier wave/morse code', 'SSB|single side band', 'USB|upper side band', 'LSB|lower side band', 'MNI|many', 'DR|dear', 'YL|young lady/girlfriend', 'XYL|ex-girlfriend/wife', 'YF|wife', 'RPRT|report', 'CNDX|conditions', 'OP|operator', 'DX|long distance contact', 'RIG|radio', 'TX|transmit', 'RX|receive', 'HB|homebrew', 'HPE|hope', 'CU|see you', 'SN|soon', 'CUL|see you later', 'BCNU|be seeing you', 'CPI|copy', 'CPY|copy', 'SIG|signal', 'CFM|confirm', 'UR|your', 'URS|yours', 'ABT|bbout', 'NW|now', 'BURO|QSL bureau', 'SRI|sorry', 'BTU|back to you', 'ADR|address', 'BTR|better', 'BUG|semiautomatic key', 'B4|before', 'ARND|around', 'CK|check', 'CL|clear', 'CLG|caling', 'CUD|could', 'CUZ|because', 'DSW|goodbye (russian)', 'ENUF|enough', 'FM|from', 'FREQ|frequency', 'FWD|forward', 'GG|going', 'GND|ground', 'HV|have', 'LID|poor operator', 'MSG|message', 'NIL|not in log', 'OB|old boy', 'OC|old chap', 'OT|old timer', 'PX|prefix', 'RCVR|receiver', 'RFI|radio frequency interference', 'RPT|report', 'RTTY|radio-teletype', 'SED|said', 'SEZ|says', 'SIGS|signals', '<SK>|out, end of contact', 'SKED|schedule', 'SNR|signal-to-noise', 'STN|station', 'TEMP|temperature', 'TFC|traffic', 'TMW|tomorrow', 'TT|that', 'TVI|television interference', 'TXT|text', 'WID|with', 'WKD|worked', 'WL|will', 'WUD|would', 'XCVR|transceiver', 'XMTR|transmitter'] },
-                    { id: 'QCODES',
-                      name: 'Q-Codes',
-                      phrases: ['QSO|contact', 'QSL|confirm contact', 'QRL?|is this frequency in use?', 'QRL|frequence in use', 'QSY|change frequency', 'QRM|man-made interference', 'QRN|natural atmospheric interference', 'QRQ|send more quickly', 'QRS|send more slowly', 'QRZ?|who is calling', 'QTH|station location', 'QSB|signal fading', 'QRP|low power', 'QRO|high power', 'QRU|nothing more to say', 'QRT|stop sending', 'QRA?|station call?', 'QRG?|exact frequency?', 'QRV|ready', 'ORX|will call again at...', 'OSD|keying defective', 'QSK?|can you hear me between your signals?', 'QSP|I will relay a message to...', 'QST|message to all hams'] },
-                ] },
-                { id: 'NUM',
-                  name: 'Numbers',
-                  lessons: [
-                    { id: '1DIG',
-                      name: 'Single-digits',
-                      phrases: ['#1', '#2', '#3', '#4', '#5', '#6', '#7', '#8', '#9', '#0'] },
-                    { id: '2DIG',
-                      name: 'Two-digit (Random)',
-                      phrases: ['#42', '#72', '#34', '#74', '#60', '#53', '#45', '#38', '#39', '#27', '#44', '#70', '#91', '#95', '#50', '#96', '#73', '#67', '#21', '#52', '#40', '#37', '#64', '#41', '#89', '#30', '#35', '#62', '#49', '#56', '#58', '#79', '#78', '#15', '#15', '#92', '#19', '#10', '#28', '#21', '#17', '#24', '#65', '#89', '#75', '#45', '#78', '#16', '#80', '#59', '#34', '#53', '#50', '#82', '#83', '#95', '#57', '#13', '#88', '#33', '#42', '#70', '#73', '#79', '#94', '#68', '#56', '#11', '#93', '#47', '#18', '#99', '#32', '#35', '#71', '#12', '#84', '#64', '#91', '#74', '#60', '#97', '#25', '#22', '#48', '#76', '#15', '#54', '#36', '#52', '#69', '#26', '#44', '#40', '#49', '#55', '#66', '#72', '#81', '#30', '#37', '#61', '#58', '#77', '#85', '#43', '#67', '#96', '#86', '#51', '#23', '#62', '#41', '#27', '#14', '#39', '#90', '#63', '#31', '#87', '#20', '#98', '#38', '#46', '#29'] },
-                    { id: '3DIG',
-                      name: 'Three-digit (RST)',
-                      phrases: ['#599', '5NN', '#549', '54N', '#539', '53N', '#559', '55N', '#579', '57N', '#569', '56N', '#589', '58N', '#529', '52N', '#519', '51N', '#499', '4NN', '#449', '44N', '#439', '43N', '#459', '45N', '#479', '47N', '#469', '46N', '#489', '48N', '#429', '42N', '#419', '41N'] },
-                ] },
-                { id: 'CALLSIGNS', // from https://www.sotadata.org.uk/en/roll/chaser
-                  name: 'Call Signs',
-                  lessons: [
-                    { id: 'SOTA_USA',
-                      name: 'SOTA Chasers (USA)',
-                      phrases: ['K6EL', 'NG6R', 'WB6POT', 'K6YK', 'NT6E', 'K6QCB', 'NA6MG', 'WA6KYR', 'AE9F', 'NK6A', 'KH2TJ', 'N6WT', 'W6JMP', 'AB6SO', 'W6STR', 'WA9STI', 'N6AN', 'N6JZT', 'K6KM', 'WC6J', 'KE6MT', 'W6DT', 'W6JP', 'W6WW', 'WA6RIC', 'W6TED', 'W6IYS', 'N1CLC', 'K7TP', 'KX6A', 'AI6XG', 'NA6O', 'N0OI', 'KU6J', 'N5XL', 'K6KMH', 'KX6I', 'W9SSN', 'WA6ARA', 'KI6PMD', 'NF1R', 'N6MKW', 'K6HZR', 'K6CPR', 'AA0BV', 'KI6DS', 'KE6RS', 'K6STR', 'AA6XA', 'KN6EZE', 'N6GO', 'W6LOR', 'NF6R', 'K6ARK', 'NS1TA', 'W1EJ', 'W6IPA', 'N6JFD', 'K6DGW', 'KN6DMO', 'KD7WPJ', 'ND6P', 'K6MAA', 'KB9ENS', 'AJ6KZ', 'NU6T', 'K3GX', 'K6CWC', 'W6BRY', 'KE6GLA', 'K6NIA', 'K6SDW', 'K6FW', 'N6ARA', 'KN6RDC', 'W6DER', 'KW6JIM', 'AI6ZV', 'NJ6Q', 'N0PCL', 'KM3A', 'AG6N', 'KG6LI', 'KB6CIO', 'N6MMA', 'WU6X', 'KA6AIL', 'K6XM', 'WM6T', 'K6TW', 'N6NKT', 'KI6SYD', 'KN6OMN', 'KG6OKI', 'K6ABM', 'N6IV', 'KN6LFB', 'KN3O', 'K6ARV', 'N6MST', 'K6CMG', 'K6TUY', 'K6PVZ', 'N6VGW', 'KI6NN', 'KN6FNY', 'KJ6MBW', 'AJ6CL', 'K6ERI', 'N6CK', 'N6ZA', 'W6BJB', 'KM6TNT', 'KN6IPE', 'KS6PKY', 'W6VXP', 'K6JS', 'KD7DTS', 'NA6Z', 'KK6ZLY', 'N6IZ', 'N6KM', 'N6LHL', 'W5RJD', 'KK6M', 'N6TEM', 'WI6X', 'K6TOR', 'W6LEN', 'W6HW', 'WO6JO', 'KN6GOG', 'KQ6UP', 'W6BFT', 'KK6TV', 'KI6A', 'K6JEB', 'AA6TH', 'W6VH', 'K6DDJ', 'K0SSK', 'KN6IUF', 'K6MDG', 'K6PB', 'W6LEN', 'AD6DM', 'KN6GOH', 'N7DA', 'NS3C', 'KA3DRR', 'KM6BMQ', 'W6NX', 'KB6QEW', 'AI6IE', 'AD6VT', 'KK6QMS', 'K6FRC', 'NV2J', 'N6FP', 'WA6L', 'N1WAX', 'KG6T', 'WB6I', 'W5EAL', 'WA3IGU', 'KN6BAZ', 'AA6MK', 'WM6Y', 'KN6NUN', 'N2ZIP', 'K6WIL', 'K6RIN', 'AI6V', 'NE6G', 'WB6EDK', 'WD6T', 'N6HAN', 'KI6M', 'N6TNO', 'KK6LHT', 'N9DK', 'KK6YRG', 'KC8J', 'KM6WCO', 'AG6NS', 'N5VWN', 'N7QD', 'WA6OEF', 'N6GD', 'N6XI', 'N6WBL', 'K6MBD', 'W7UT', 'AF6GA', 'K6KWI', 'KN6PHZ', 'K3TIM', 'N6SLV', 'W6EMM', 'N9OHW', 'W6TC', 'K6SF', 'W6RQR', 'KN6CMK', 'W6RMI', 'KG6HQD', 'N6PG', 'K6TNT', 'KG6BXW', 'KM6JUR', 'K6LJU', 'N6DVS', 'KI6WJP', 'AA6OC', 'W6RWS', 'K6VG', 'K6GG', 'KE6WJY', 'WB6VIC', 'KK6MJG', 'K6VN', 'W6PNG', 'AJ6FN', 'KJ6LDJ', 'KB1LQD', 'AJ6IY', 'W6KL', 'N3BEN', 'AJ6QL', 'N3XUL', 'KM6HBH', 'AJ6ET', 'W6CMY', 'WC0O', 'KI6SGV', 'AF6TF', 'NT6N'] },
-                    { id: 'SOTA_CA',
-                      name: 'SOTA Chasers (Canada)',
-                      phrases: ['VE1WT', 'VE1PVH', 'VE1ANC', 'VE2JCW', 'VA2VL', 'VA2EO', 'VA2SG', 'VE2DDZ', 'VE2PID', 'VA2YZX', 'VA2CZ', 'VA2NM', 'VE2DJN', 'VE2GT', 'VA3SIE', 'VA2SNL', 'VE3DTI', 'VE2VAB', 'VE2QA', 'VE2EZD', 'VE3EMB', 'VE2EGN', 'VE2NGO', 'VA2MO', 'VA3AMX', 'VA2NNN', 'VA2GLU', 'VA2EPR', 'VA2BBW', 'VA2EI', 'VA2FDT', 'VE2PID', 'VE2HEW', 'VE2OK', 'VE2JFM', 'VA2DXZ', 'VE3WMB', 'VE3JO', 'VE3FAL', 'VA6FUN', 'VE6JTW', 'VE6CCM', 'VE6AGR', 'VE6GO', 'VE6UX', 'VE6LCE', 'VA6RCN', 'VE6SVJ', 'VA6BGE', 'VE7HI', 'VA7VJ', 'VE7CV', 'VE7JH', 'VE7OM', 'VE7NI', 'VE7ESE', 'VE7ETS', 'VA7ADI', 'VA7SGY', 'VE7QIN', 'VE7QH', 'VE7NCD', 'VE7UTS', 'VA7UNX', 'VE7GM', 'VE7CCY'] },
-                    { id: 'SOTA_CT',
-                      name: 'SOTA Chasers (CT)',
-                      phrases: ['CT1BQH', 'CT1DRB', 'CT1ILT', 'CT1HIX', 'CT2IWW', 'CT1BWW', 'CT1GZB', 'CT1DBS', 'CT7AGT', 'CT2HPM', 'CT3MD', 'CT7AUP', 'CT7AEZ', 'CT7AQS', 'CT7ABE', 'CT1GFQ', 'CT7AFI', 'CT1ETE', 'CT1EQQ', 'CT1DGH', 'CT1MH', 'CT2IUV', 'CT7AGR', 'CT1HMN', 'CT7ABG', 'CT7ARW', 'CT1EXR', 'CT7AUS', 'CT2HKN', 'CT2GZJ', 'CT1EUW'] },
-                    { id: 'SOTA_DL',
-                      name: 'SOTA Chasers (DL)',
-                      phrases: ['DL1FU', 'DJ5AV', 'DL3HXX', 'DF5WA', 'DL2HWI', 'DL8DXL', 'DL2DXA', 'DL7VKD', 'DL2EF', 'DK7ZH', 'DL6UNF', 'DL3JPN', 'DL2KAS', 'DJ2MX', 'DL6KVA', 'DL7URB', 'DL6MST', 'DL8UVG', 'DL4FCK', 'DL6UHA', 'DL2YBG', 'DL3MBE', 'DL8YR', 'DJ9BX', 'DL6FBK', 'DL4KCA', 'DL4TO', 'DL3FT', 'DG1NPM', 'DL3BRA', 'DK1WI', 'DL3NM', 'DL8MLD', 'DL7RAG', 'I3VAD', 'DJ9MH', 'DJ5AA', 'DL6GCA', 'DL4ALI', 'DM3SWD', 'DL6AP', 'DL8AWK', 'DL5AWI', 'DL9MDI', 'DL1ASA', 'DL3VTA', 'DK5WL', 'DL5ZG', 'DL1HBT', 'DH0DK', 'DF8KY', 'LX1NO', 'DF3MC', 'DL8AAM', 'DL9SXX', 'DL4MFM', 'DJ4EY', 'DL3KUM', 'DK1HKU', 'DJ5KZ', 'DL9UJF', 'DJ4MX', 'DF1BN', 'DL1CR', 'DK2JK', 'DL5WW', 'DL3TU', 'DF2PI', 'DL3GJ', 'DJ5CL', 'DF2GN', 'DJ8WO', 'DL2SBA', 'DL8OK', 'DL2ZBO', 'DM3FAM', 'DL1AIW', 'DL2HX', 'DL1DVE/P', 'DK1HW', 'DL7BW', 'DL9TX', 'DL6DH', 'DL1GKC', 'DD2TC', 'DL1DQJ', 'DL4MHA', 'DL3FCG', 'DK6YM', 'DC3CC', 'DL8RBS', 'DJ4FF', 'DK1AX', 'DL2XL', 'DL1JDT', 'DL6CGC', 'DF7FX', 'DL9KWA', 'DL2FAZ', 'DL4OCE', 'DM2PR', 'DL4ROB', 'DL8DZV', 'DL6CMK', 'DF2OU', 'DL8MBS', 'DH9SB', 'DK6NC', 'DL3HWO', 'DF6RI', 'DL8NDG', 'DK3DUA', 'DL2VV', 'DK8OA', 'DD6DO', 'DL2RVL', 'DF1PY', 'DL8MF', 'DC8MH', 'DK1IO', 'DL3HAH', 'DJ5RE', 'DL4FO', 'DL1JET', 'DL4ABO', 'DD1LD', 'DF9DX', 'DF9GH', 'DJ7AL', 'DL5AZZ', 'DL4EPM', 'DL2COM', 'DL1ABJ', 'DK1DU', 'DL1DXA', 'DF3IS', 'DK2MT', 'DF1AI', 'DL9LBR', 'DH5ST', 'DL2LFH', 'DL4ZBY', 'DL2AJB', 'DM1LE', 'DK3WM', 'DL4NV', 'DL1AWC', 'DL2AAW', 'DL4CF', 'DJ0MEW', 'DL2KDW', 'DL8ARJ', 'DL5XL', 'DL7VMM', 'DB8SM', 'DL8WJM', 'DL2DVE', 'DL2GWZ', 'DL5JAG', 'DF7DR', 'DG8HJ', 'DL8LJ', 'DJ5VY', 'DF5KT', 'DL8ZAW', 'DK9ES', 'DL3HV', 'DH7KU', 'DL6HH', 'DM6EE', 'DM1FS', 'DC1MBR', 'DL4AC', 'DK4RW', 'DL7CX', 'DK5UR', 'DM1TBE', 'DK3IT', 'DF8IF', 'DK7FH', 'DL5FAB', 'DD0LT', 'DF2DR', 'DK7MG', 'DK1FE', 'DJ6XG', 'DM5JBN', 'DF6XP', 'DH8WN', 'DM4KM', 'DC0NA', 'DK5CM', 'DL4AH', 'DF1ET', 'DG1EHM', 'DM5CQ', 'DL8WEM', 'DL1GRC', 'DL2LUX', 'DF2OK', 'DL2NAI', 'DL7VDC', 'DF4KJ', 'DK2RO', 'DC5LY', 'DL5AVJ', 'DH3IAJ', 'DL3VTL', 'DK5RK', 'DC8YZ', 'DG4WT', 'DK3RED', 'DL8FCC', 'DL2KL', 'DL1AXB', 'DL1JEL', 'DK9HE', 'DJ8TX', 'DK1BZ', 'DK2AB', 'DL6MZ', 'DM5TM', 'DL5DRM', 'DL5DBY', 'DG0JMB', 'DM3XI', 'DL5FDP', 'DF5GO', 'DL5OE', 'DL7UJM', 'DB2OW', 'DG2MEL', 'DK1TBL', 'DM2ORI', 'DB1GEO', 'DJ1MD', 'DK2KV', 'DL1MRL', 'DK6TR', 'DK5SP', 'DK3IP', 'DL6MOG', 'DL5GY', 'DL2FMK', 'DL3MAV', 'DL6GCE', 'DL1TSC', 'DL1HTF', 'DH9FAV', 'DH6AD', 'DH4NWG', 'DG9MDM', 'DO1UZ', 'DJ2TG', 'DG3NEU', 'DL6SEZ', 'DK7MX', 'DK2ZA', 'DH1AHL', 'DO1HFS', 'DK2DH', 'DK4MO', 'DK4RX', 'DL3RR', 'DL5FCE', 'DO1DJJ', 'DL5SCH', 'DD1KT', 'DD5AM', 'DH1FR', 'DC5BK', 'DK1WV', 'DH4RA', 'DL8DTL', 'DK7GL', 'DJ3EI', 'DH5FS', 'DH2SN', 'DG6UAX', 'DK3MT', 'DL3YA', 'DF0FHH', 'DL2NEW', 'DK2CX', 'DL8FMA', 'DF2ET', 'DL3SKY', 'DL2ASB', 'DD5CF', 'DJ2MRK', 'DL3RCG', 'DG1PSI', 'DL8RO', 'DK5FN', 'DL6ABF', 'DL6DBN', 'DJ1AK', 'DF6RK', 'DC1SAF', 'DF3FS', 'DK2RMP', 'DL8DZL', 'DL2IC', 'DR1517LU', 'DL1LIP', 'DL8SBX', 'DL1AKP', 'DK2DL', 'DL3MXX', 'DO1BEN', 'DL4VK', 'DG9LBH', 'DL1LMN', 'DF9TS', 'DM5US', 'DG5WU', 'DL3DCM', 'DL3KDP', 'DF9GU', 'DL5OCK'] },
-                    { id: 'SOTA_EA',
-                      name: 'SOTA Chasers (EA)',
-                      phrases: ['EA2DT', 'EA2LU', 'EA7GV', 'EA2IF', 'EA2BD', 'EB2CZF', 'EA5K', 'EA1DFP', 'EA4R', 'EA3Y', 'EA2BO', 'EA2GM', 'EA4BOC', 'EA1AER', 'EA2WX', 'EA1AXW', 'EA2CP', 'EA4MY', 'EA2CW', 'EA4HH', 'EA4MZ', 'EA4ESP', 'EA5YI', 'EA3AVV', 'EA1AAP', 'EA2EFI', 'EA2DDG', 'EA4M', 'EB2GKK', 'EA3CYM', 'EA2PI', 'EC8ADS', 'EA7YT', 'EA5JN', 'EA4DON', 'EA4DOS', 'EA5M', 'EA3BV', 'EA4IS', 'EC2DM', 'EA2EMO', 'EA2KY', 'EA4AAI', 'EC1AIP', 'EB1EVX', 'EA2EA', 'EA3GHZ', 'EA1FB', 'EA1XN', 'EA5SM', 'EA7GTJ', 'EA3BP', 'EA4SG', 'EA1FU', 'EB7CIN', 'EA5AER', 'EA1HMT', 'EA2CWM', 'EC5A', 'EA3ENB', 'EA7GVZ', 'EA2EOW', 'EA2BSB', 'EA1KC', 'EA5DD', 'EA4JM', 'EA1AV', 'EC7ZT', 'EA5DKU', 'EA2LMI', 'EA4DSU', 'EA1RCO', 'EB7HQE', 'EA2ESK', 'EA1FBU', 'EA7SS', 'EA2EX', 'EA1VT', 'EA4VQ', 'EA2ENC', 'EA9PD', 'EA3M', 'EA1NL', 'EA1IEH', 'EA2NN', 'EA1SV', 'EA1SB', 'EA3BE', 'EA7Q', 'EA3BFL', 'EC5M', 'EC4YO', 'EA2TP', 'EA2ECA', 'EA3HIP', 'EA5NU', 'EA2ERT', 'EA4HIH', 'EA4GOK', 'EA1CBX', 'EA2CTB', 'EA4CPD', 'EA1IYG', 'EA5AT', 'EA7URS', 'EB5AG', 'EA5IYL', 'EA7HNY', 'EA6SK', 'EC6PG', 'EA7KJG', 'EA3BR', 'EA5Q', 'EB3JT', 'EA5GXI', 'EA5ER', 'EA7ZC', 'EA5IY', 'EA1IIB', 'EA2CIA', 'EA4FJX', 'EA2KB', 'EA1DA', 'EB1CU', 'EA7HY', 'EA1CN', 'EA5IFY', 'EA3O', 'EA3DMN', 'EA4DW', 'EA2JB', 'EA8DKV', 'EA6LU', 'EA4DXP', 'EA8AA', 'EA3HVE', 'EA7IPP', 'EA2EEB', 'EA2IV', 'EA7KNC', 'EA5HRM', 'EA5EX', 'EA6KB', 'EA2BCH', 'EA6AIF', 'EA1GKP', 'EA3HP', 'EA1EH', 'EA3CJU', 'EA3GIL', 'EA8CYU', 'EA2EVM', 'EA4GBA', 'EB5EEV', 'EB2AFU', 'EA4GPZ', 'EA7KKQ', 'EA1FG', 'EA2DJJ', 'EA4HGT', 'EA5EY', 'EA5JDQ', 'EA5HRE', 'EA2DXR', 'EA5IXR', 'EA5FPL', 'EA1BL', 'EA1GFG', 'EA5HEU', 'EA1DHB', 'EA4JJ', 'EC7AKV', 'EA8AP', 'EA5GKA', 'EA4BQG', 'EA5IUY', 'EA2DYS', 'EA3WD', 'EA2CKX', 'EA7GZQ', 'EA2OX', 'EA5ICP', 'EA2EBI', 'EA2CSC', 'EA2CNC', 'EB5TT', 'EB2JU', 'EA2DPK', 'EA2BHE', 'EA3GCV', 'EA8RM', 'EA2DXY', 'EA2DPS', 'EA1CVZ', 'EA5JCH', 'EA1DP', 'EA5GDW/P', 'EA2CCG', 'EB1GCA', 'EA1DNT', 'EA7KJJ', 'EA2URV', 'EA5NR', 'EA2EVC', 'EA3KN', 'EA2EQX', 'EA2ASB', 'EA4NI', 'EC1AQT'] },
-                    { id: 'SOTA_G',
-                      name: 'SOTA Chasers (G)',
-                      phrases: ['G4SSH', 'G4OBK', 'G4AFI', 'G4FGJ', 'G3RDQ', 'G4CMQ', 'M0BKV', 'G0NUP', 'G3VXJ', 'GI4ONL', 'G4ZIB', 'G4WSX', 'G3WPF', 'G4ELZ', 'G4OOE', 'G0BPU', 'G3XQE', 'GW0DSP', 'M0IML', 'GM4ZMK', 'GM4FAM', 'LY5G', 'MW0BBU', 'G0FVH', 'G4APO', 'G3OHC', 'GM0AXY', 'M6BLV', 'G4CPA', 'G3VQO', 'G4YBU', 'G0TDM', 'G3TJE', 'G4BLH', 'GW4ISJ', 'G4OIG', 'G0NES', 'G0UBJ', 'G0HIO', 'M0COP', 'G0VYR', 'GM7NZI', 'G4FVK', 'GI4SRQ', 'G4OWG', 'G3HKO', 'M1EYP', 'G4YTK', 'GM0OAA', 'G4IVV', 'GI0AZB', 'G4RQJ', 'G4CFS', 'G0EVV', 'MW0BYS', 'G0ANV', 'MW0IDX', 'G3NIJ', 'G3NYY', 'G4DDL', 'M0LEP', '2E0AGB', 'GW4VPX', 'G3YMC', 'MW6GWR', 'G4TJC', 'GI4OSF', 'GM4WCE', 'GW4ZPL', 'G4ASA', 'G8TMV', 'GM0GAV', 'G8MIA', 'G4USW', 'M0DHP', 'GI0AZA', 'G0HRT', 'G0AZS', 'M1BUU', 'GM3YTS', 'MM0ROV', 'G6DTN', 'G4TPJ', 'M0OAT', 'GM4COX', 'M5OTA', 'G4YIL', 'MM0FMF', 'M0WBG', 'M6GYU/P', 'G4ZAO', 'G4TGJ', 'G0AOD', 'G3PAW', 'G4CMZ', 'G4GRG', 'G4WTF', 'M0TUB', 'G7GQL', 'G4AZS', 'MM0GYX', 'G4ZRP', 'G0OOG', 'MX0BCQ', '2E0FTD', 'M0JSB', 'G0KPE', 'GW4CQZ', 'GW4WND', 'GW0VSW', 'G4YSS', 'GX0ANT', 'M0WIV', '2E0NHM', 'M0NOM', 'MW0ZAP', 'G3XOB', 'G0ORO', 'G4CCQ', 'G8CPZ', 'G0VOF', 'M0KVI', 'G4UDU', 'G0POT', 'M0CQE', 'M0MPM', 'GW3BV', 'G3TZA', 'G4FUJ', 'GM4NFI', 'M0HDF', 'MM1HMZ', 'M0DDT', 'GM0HUU', 'MW0SAW', 'G8CXK', 'M0RPK', 'M0CEF', 'G4MSN', 'G0DJF', 'G4NSZ', 'M0BLF', 'G6LUG', 'G7KSE', 'G0MGM', 'M0PLA', 'G4SGX', 'MM0IVR', 'G0NMD', 'M0HQO', 'G0RQL', 'MM0DWF', 'G4TRY', 'MI0SRR', 'G3XJS', 'G4YQA', 'G4UZE', 'GI4FLG', '2E0LID', 'G0RAX', 'GM4TOE', 'G4IPB', 'M0TTQ', 'GM0VMV', 'G4MEM', 'G4KRN', 'M0MSW', 'MI0WWB', 'G0UUU', 'G4DBW', 'M0UFX', 'G0MFR', 'ANON160921', 'G4TSQ', 'M0MZB', 'G0VWP', 'G4YTD', 'GW4GTE', 'M0VFC', 'GM0EPO', 'M0IBC', 'G0VQW', 'M0OZH', '2M0NCM', 'G4ETS', 'G0DDX', '2E0HXE', 'M0KLO', 'M0SHM', 'M0ICR', 'G0VPS', 'G0HIK', 'G0TPH', 'G0SDD', 'MW0OFA', 'MW3PZO', 'GM4JXP', 'GM0BKC', 'G0NIG', '2E0FTT', 'MI0TXM', 'M0UKD', '2W0NNN', 'M0UAT', 'G4ENZ', 'G6WRW', 'GM4KJQ', 'G1JZY', 'G4ERW', 'M1MAJ', 'GM3JW', 'M5TUE', 'MM0CMV', '2E1FKA', 'M0ISI', 'G6TUH', 'G4KKI', 'M0RSF', 'MW0GWG', 'MI7ACD', 'M0DEV', 'G0LGS', 'M0TTE', 'G3YBY', 'M0YMC', 'MJ0ASP', 'M0HJV', 'GM4UBJ', 'G4ERP', 'G0RQQ', 'M0MMU', 'G3ZQC', 'MI3UIW', 'G3YPQ', 'MU0GSY', 'G0SBN', 'M0DAG', 'M3KXZ', 'G4DJJ', 'MM0XET', '2E0LMA', '2E0MIX', 'MW0CBC', 'G4MPK', 'M0NKC', 'M0NTC', 'M0IQQ', 'GW6OVD', 'GW7FYG', 'MW0WML', 'M7KTE', 'M0TVU', '2E0LDJ', 'G0EQC', 'G8AJM', 'MM3IIG', 'GM0WNR', 'G6XBF', 'G0LWU', 'G4GIY', 'G0DJA', 'MW0YCC', 'M0GIA', 'G0MJG', 'G0OXT', 'G1PIE', '2I0FVX', 'M0SFR', 'M0YDH', 'G0TRT', 'M0BGR', 'G0NMY', 'M0DFA', 'G6LKB', 'MM0GSS', 'G0WCZ', 'M0TCL', 'G4VHJ', 'M1JSC', 'G4ZFZ', 'M0RYB', 'GM4OAS', 'GW7AAV', 'MODXT', 'G4MD', 'G4JQX', 'M5BRY', 'M0IHT', 'GW4BVE', 'M7RMZ', 'KN6IPA', 'M0KDN', 'GM4YMM', 'M3ZFF', '2E0LKC', 'G4BRK', 'M0NGZ', 'G1RVK', 'G4KRJ', '2E0LMD', 'GW0VLN', 'G0KPH', 'G7SKR', 'M0XED', 'M0BQE', 'G4EUK'] },
-                    { id: 'SOTA_JA',
-                      name: 'SOTA Chasers (JA)',
-                      phrases: ['JH1MXV', 'JA1VVH', 'JA1VRY', 'JA5QJX', 'JG0AWE', 'JS6TMW', '7N1FRE', 'JA4RQO', 'JH7IOT', 'JA3NAP', 'JG1BOK', 'JH1NJN', 'JJ1QVO', 'JF1NDT', 'JP3DGT', 'JA1CTV', 'JS1IFK', 'JF7RJM', 'JR3XEX', 'JQ1GLJ', 'JA3GOJ', 'JN3FMD', '7M4QZE', 'JJ1IZY', 'JE1LHW', 'JR8SGE', 'JA9MJR', 'JI3BAP', 'JP1QEC', 'JR8MHA', 'JN1MSO', 'JL1NIE', 'JG4LCS', 'JS1JNM', 'JS1BXH', 'JA9LNB', 'JH0WMN', 'JG2WGK', 'JS1UEH', 'JR1NNL', 'JI8UCI', 'JJ1SWI', 'JI1UPL', 'JL3MNP', 'JP3PPL', 'JG1GPY', 'JK1VUZ', 'JA3HKR', 'JA1JCF', 'JR0QWW', 'JF2LXU', 'JA1DFO', 'JL1SDA', 'JJ3IUS', 'JG1EJY', 'JI1OOP', 'JH0WYT', 'JA6FCL', 'JL7UWQ', 'JO2BWZ', 'JF2OZH', 'JO3WLQ', 'JJ1PFC', 'JF1OVA', 'JF1GZZ', 'JH0ROI', 'JR8WOW', 'JG1QPZ', 'JS6SDQ', 'JF3KQA', 'JA1BJT', 'JQ3AJX', 'JF3NDW', 'JG5JXW', '7L1GOE', 'JG3IHE', '7L1CAK', 'JM3HRC', 'JA7ENA', 'JO7DBY', 'JS2HYW', 'JH3GBD', 'JN3OHW', 'JM3URG', 'JJ3AMO', 'JE7RMV', 'JI3XOM', 'JA1GZK', 'JI3VOV', 'JG1JJL', 'JP3OUG', 'JR7LCQ', 'JA3MMR', 'JH0UUY', 'JK1XAY', 'JA5EXN', 'JF1CMH', 'JJ5OZX', 'JS2VVH', 'JG6IPE', 'JH1WHH', 'JJ1HWM', '7N4KQM', 'JA9ILH', 'JL2CJB', 'JO1OLZ', 'JG1PDC', 'JJ1RUI', 'JO3ALU', 'JI1IHV', 'JA9WWH', 'JN1LGH', 'JR0VSF', 'JF1HMC', 'JG2RZF', 'JR2RIA', '7N1NEQ', '7M4EZB', 'JH5AOZ', 'JR7CVG', 'JO2NZH', 'JJ0TJS', '7L1WCX', 'JN1NCB', 'JK1KSV', 'JG4JIS', 'JO4GMS', 'JK2WSZ', 'JO4JFH', 'JN1BBO', 'JS2ITI', 'JA1TJV', 'JA9BSL', 'JR2EKD', 'JR6HK', 'JJ1OMV', 'JP7XBF', 'JF0FUM', 'JH7XRG', 'JE7MHN', 'JG3SUQ', 'JP3HIW', '7N3KUJ', '7L4WVU', 'JS2JSY', 'JO1RBT', 'JF3GXQ', 'JR7XRF', 'JO3RTF', 'JM3GVH', 'JA1EQO', 'JR1KDA', 'JJ1TYD', 'JJ1XHQ', 'JG6CRU', 'JS2AAV', 'JJ1STD', 'JO3PHE', 'JI1NBC'] },
-                ] },
-            ];
+            var _polarity = 'ditdah';
+            var keyedCharacter = '';
+            var keyedCharacterError = false;
+            var decoder = Decoder(value => {
+                var done = false;
+                function advanceCount(char) {
+                    if (!done) {
+                        var phrase = convertPhrase(getContent().lessons[getLessonNum()].phrases[getPhraseNum()]);
+                        var i = phrase.toUpperCase().indexOf(char, ui.count);
+                        if (i == ui.count) {
+                            ui.count++;
+                            if (phrase[ui.count - 1] == '<' || phrase[ui.count - 2] == '<') {
+                                while (phrase[ui.count++] != '>');
+                            }
+                            if (ui.count == phrase.length) {
+                                done = true;
+                                playDing();
+                                setTimeout(function () {
+                                    if (nextPhrase()) {
+                                        redraw();
+                                    } else {
+                                        say('lesson complete');
+                                        nextLesson();
+                                    }
+                                    ui.keying = true;
+                                    redraw();
+                                    done = false;
+                                }, dinglen / 2 * 1000);
+                            }
+                        } else if (char != ' ') {
+                            keyedCharacterError = true;
+                            playDong();
+                        }
+                    }
+                }
+                ui.keying = ui.progress = true;
+                ui.keyingComplete = false;
+                switch (value.kind) {
+                    case 'character':
+                        if (value.complete) {
+                            advanceCount(value.value);
+                            if (value.value == ' ') ui.keyingComplete = true;
+                        } else {
+                            keyedCharacter = value.value;
+                            keyedCharacterError = false;
+                        }
+                        break;
+                    case 'prosign':
+                        if (value.complete) {
+                            advanceCount('<' + value.value + '>');
+                        } else {
+                            keyedCharacter = '<' + value.value + '>';
+                            keyedCharacterError = false;
+                        }
+                        break;
+                    case 'control':
+                    case 'invalid':
+                        keyedCharacter = '�'; //'□';
+                        keyedCharacterError = false;
+                        if (value.complete) advanceCount(value.value); // to play dong
+                        break;
+                }
+                redraw();
+            });
+            var _keyer = Keyer(element => {
+                switch (element) {
+                    case 'dit':
+                        playTone(ditlen);
+                        silence(ditlen);
+                        break;
+                    case 'dah':
+                        playTone(ditlen * 3);
+                        silence(ditlen);
+                        break;
+                    case 'letter':
+                        //silence(fditlen * 3);
+                        decoder.element(element);
+                        break;
+                    case 'word':
+                        //silence(wditlen * 7);
+                        decoder.element(element);
+                        break;
+                }
+            }, tone => {
+                switch (tone) {
+                    case 'tone':
+                        makeTone(true);
+                        break;
+                    case 'silent':
+                        makeTone(false);
+                        break;
+                    case 'dit':
+                    case 'dah':
+                    case 'letter':
+                    case 'word':
+                        decoder.element(tone);
+                        break;
+                }
+            });
+            _keyer.setMode(getKeyerMode());
+            var _debouncerLeft = Debouncer(pressed => _keyer.key(_polarity == 'ditdah' ? 'dit' : 'dah', pressed));
+            var _debouncerRight = Debouncer(pressed => _keyer.key(_polarity == 'ditdah' ? 'dah' : 'dit', pressed));
 
             var canvas;
 
             var ui = {
                 dialog: null,
                 playing: false,
+                keying: false,
+                keyingComplete: false,
                 hide: (getBoolSetting('rx_hide_phrase', false)),
                 progress: false,
                 count: 0,
@@ -177,25 +141,38 @@
             var dingGain;
             var dingOscillator;
             var audioStarted = false;
+            var manuallyEnableAudio = false;
+            var audioWasJustManuallyEnabled = false;
             function audio() {
-                if (!audioStarted) {
-                    audioCtx = new (AudioContext || webkitAudioContext)();
+                if (!audioStarted || audioCtx.state != 'running') {
+                    audioCtx = new (window.AudioContext || window.audioContext || window.webkitAudioContext)();
                     toneOscillator = audioCtx.createOscillator();
                     dingOscillator = audioCtx.createOscillator();
+                    dongOscillator = audioCtx.createOscillator();
                     toneOscillator.frequency.value = getPitch();
                     dingOscillator.frequency.value = 1500;
+                    dongOscillator.frequency.value = 1000;
                     toneGain = audioCtx.createGain();
                     dingGain = audioCtx.createGain();
+                    dongGain = audioCtx.createGain();
                     toneGain.gain.value = 0;
                     dingGain.gain.value = 0;
+                    dongGain.gain.value = 0;
                     toneOscillator.connect(toneGain);
                     dingOscillator.connect(dingGain);
+                    dongOscillator.connect(dongGain);
                     toneGain.connect(audioCtx.destination);
                     dingGain.connect(audioCtx.destination);
+                    dongGain.connect(audioCtx.destination);
                     toneOscillator.start(0);
                     dingOscillator.start(0);
+                    dongOscillator.start(0);
                     audioStarted = true;
-                    say('');
+                    if (manuallyEnableAudio) {
+                        manuallyEnableAudio = false; // TOOD: check audioCtx.state == 'running' or != 'suspended'
+                        audioWasJustManuallyEnabled = true;
+                        redraw();
+                    }
                 }
                 return audioCtx.currentTime;
             }
@@ -209,11 +186,15 @@
                 }
             }
 
-            function playTone(len) {
-                const ramp = 0.005;
+            const ramp = 0.005;
+            function makeTone(on) {
                 var c = audio();
                 t = c > t ? c : t;
-                toneGain.gain.setTargetAtTime(1, t, ramp);
+                toneGain.gain.setTargetAtTime(on ? 1 : 0, t, ramp);
+            }
+
+            function playTone(len) {
+                makeTone(true);
                 t += len;
                 toneGain.gain.setTargetAtTime(0, t, ramp);
             }
@@ -227,8 +208,9 @@
                 return split[0].replace(/#/g, '');
             }
 
-            function overscoreProsigns(phrase) {
-                return phrase.replace(/\<(.)/g, '$1̅').replace(/\>/g, '̅');
+            function adornProsigns(phrase) {
+                //return phrase.replace(/\<(.)/g, '$1̅').replace(/\>/g, '̅'); // overscore
+                return phrase.replace(/\</g, '⟨').replace(/\>/g, '⟩'); // narrow angle brackets
             }
 
             function convertUtterance(utterance) {
@@ -320,15 +302,26 @@
 
             function say(utterance) {
                 if ('speechSynthesis' in window) {
-                    speechSynthesis.speak(new SpeechSynthesisUtterance(utterance));
+                    var utter = new SpeechSynthesisUtterance(utterance)
+                    utter.volume = 0.8;
+                    speechSynthesis.speak(utter);
                 }
             }
 
-            function playDing() {
+            var dinglen = 2.5;
+            function playBell(bellGain) {
                 var c = audio();
                 var dingt = c > t ? c : t;
-                dingGain.gain.linearRampToValueAtTime(0.2, dingt + 0.005);
-                dingGain.gain.exponentialRampToValueAtTime(0.000001, dingt + 2.5);
+                bellGain.gain.linearRampToValueAtTime(0.2, dingt + 0.005);
+                bellGain.gain.exponentialRampToValueAtTime(0.000001, dingt + dinglen);
+            }
+
+            function playDing() {
+                playBell(dingGain);
+            }
+
+            function playDong() {
+                playBell(dongGain);
             }
 
             var morse = "  ETIANMSURWDKGOHVFÜL PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
@@ -483,7 +476,6 @@
                 var code = encodePhrase(convertPhrase(phrase));
                 playCode(code);
                 const trainingSpeechPause = 2000;
-                const trainingSpeechCharacterPause = 130;
                 var delay = codeMilliseconds(code);
                 if (speakAndAdvance) {
                     continuationTimeout1 = setTimeout(
@@ -500,26 +492,33 @@
                                             say(utter);
                                             continuationTimeout1 = setTimeout(
                                                 function () {
-                                                    if (ui.playing) {
-                                                        if (nextPhrase()) {
-                                                            ui.count = 0;
-                                                            var play = function() { playPhrase(getCurrentPhrase(), speakAndAdvance, false) };
-                                                            if (ui.progress) {
-                                                                continuationTimeout1 = setTimeout(play, fditlen * 3 * 1000);
-                                                            } else {
-                                                                play();
-                                                            }
-                                                        } else {
-                                                            say('lesson complete');
-                                                            ui.playing = ui.hide = false;
-                                                            saveHiddenState();
-                                                            noSleep.disable();
-                                                            nextLesson();
+                                                    var waitForSpeech = function() {
+                                                        if (speechSynthesis.speaking) {
+                                                            continuationTimeout1 = setTimeout(waitForSpeech, 50);
+                                                            return;
                                                         }
-                                                        redraw();
+                                                        if (ui.playing) {
+                                                            if (nextPhrase()) {
+                                                                ui.count = 0;
+                                                                var play = function() { playPhrase(getCurrentPhrase(), speakAndAdvance, false) };
+                                                                if (ui.progress) {
+                                                                    continuationTimeout1 = setTimeout(play, fditlen * 3 * 1000);
+                                                                } else {
+                                                                    play();
+                                                                }
+                                                            } else {
+                                                                say('lesson complete');
+                                                                ui.keying = ui.playing = ui.hide = false;
+                                                                saveHiddenState();
+                                                                noSleep.disable();
+                                                                nextLesson();
+                                                            }
+                                                            redraw();
+                                                        }
                                                     }
+                                                    waitForSpeech();
                                                 },
-                                                (ui.progress ? 0 : trainingSpeechPause) + utter.length * trainingSpeechCharacterPause);
+                                                (ui.progress ? 0 : trainingSpeechPause));
                                         }
                                     },
                                     ui.progress ? 0 : trainingSpeechPause);
@@ -530,7 +529,7 @@
                     continuationTimeout1 = setTimeout(
                         function () {
                             if (ui.playing) {
-                                ui.playing = false;
+                                ui.keying = ui.playing = false;
                                 noSleep.disable();
                                 redraw();
                             }
@@ -629,6 +628,7 @@
             }
 
             function setSpeed(wpm) {
+                _keyer.setSpeed(wpm);
                 var speed = getSpeed();
                 var farnsworth = getFarnsworth();
                 if (wpm < farnsworth || speed == farnsworth)
@@ -710,8 +710,35 @@
                 return getBoolSetting('rx_scramble', false);
             }
 
+            function setKeyerMode(mode) {
+                _keyer.setMode(mode);
+                localStorage.setItem('tx_keyer', mode);
+            }
+
+            function getKeyerMode() {
+                return localStorage.getItem('tx_keyer') || 'B';
+            }
+
+            function setPolarity(polarity) {
+                _polarity = polarity;
+                localStorage.setItem('tx_polarity', polarity);
+            }
+
+            function getPolarity() {
+                return localStorage.getItem('tx_polarity') || 'ditdah';
+            }
+
+            function setOnScreenKey(screenkey) {
+                localStorage.setItem('tx_screenkey', screenkey);
+            }
+
+            function getOnScreenKey() {
+                return getBoolSetting('tx_screenkey', false);
+            }
+
+
             function resizeCanvas() {
-                var ratio = 1; // devicePixelRatio;
+                var ratio = devicePixelRatio;
                 var w = window.innerWidth;
                 var h = window.innerHeight;
                 canvas.width = w * ratio;
@@ -727,13 +754,15 @@
                 const dimColor = '#000b';
 
                 var darkMode = getDarkMode();
-                var backgroundColor = darkMode ? '#111' : '#eee'; // black/white
-                var foregroundColor = darkMode ? '#eee' : '#111'; // white/black
+                var backgroundColor = darkMode ? '#000' : '#fff'; // black/white
+                var foregroundColor = darkMode ? '#fff' : '#000'; // white/black
                 var mainButtonColor = foregroundColor;
-                var subduedButtonColor = darkMode ? '#ccc' : '#333'; // gray
-                var disabledButtonColor = darkMode ? '#333' : '#ccc'; // gray
+                var subduedButtonColor = darkMode ? '#bbb' : '#444'; // gray
+                var disabledButtonColor = darkMode ? '#444' : '#bbb'; // gray
                 var dialogBackgroundColor = darkMode ? '#222' : '#ddd';
                 var dialogAttributionColor = darkMode ? '#444' : '#bbb';
+                var keyedCharacterColor = darkMode ? '#fc0' : '#eb1'; // yellow
+                var disabledPaddleColor = darkMode ? '#111' : '#eee';
 
                 var ctx = canvas.getContext('2d');
                 ctx.scale(1, 1);
@@ -745,7 +774,7 @@
                 document.body.style.backgroundColor = backgroundColor;
 
                 function drawFittedText(txt, color, x, y, width, height, weight, actual, align, progress, count, overlay) {
-                    txt = overscoreProsigns(txt.toString());
+                    txt = adornProsigns(txt.toString());
                     ctx.fillStyle = color;
                     //ctx.letterSpacing = "-0.02em"
                     function setFont(size) { ctx.font = weight + ' ' + size + 'px sans-serif' };
@@ -789,8 +818,8 @@
                 var padding = Math.min(canvas.width / 24, canvas.height / 24);
 
                 var buttons = [];
-                function drawButton(name, label, color, x, y, width, height, align, actual = true) {
-                    drawFittedText(label, color, x, y, width, height, 'normal', actual, align);
+                function drawButton(name, label, color, x, y, width, height, align, actual = true, weight = 'normal') {
+                    drawFittedText(label, color, x, y, width, height, weight, actual, align);
                     var p = padding / 2;
                     buttons.push({
                         name: name,
@@ -816,12 +845,15 @@
                     w - padding - buttonSize,
                     padding, buttonSize, buttonSize,
                     'right');
+
+                var screenkey = getOnScreenKey();
+                var keyHeight = screenkey ? buttonSize * 4 : 0;
                 drawButton(
                     'prevLesson',
                     '⇤',
                     lessonNum > 0 ? subduedButtonColor : disabledButtonColor,
                     padding * 1 + buttonWidth * 0,
-                    h - padding - buttonSize,
+                    h - padding - buttonSize - keyHeight,
                     buttonWidth, buttonSize,
                     'left');
                 drawButton(
@@ -829,7 +861,7 @@
                     '⟲',
                     phraseNum > 0 ? subduedButtonColor : disabledButtonColor,
                     padding * 2 + buttonWidth * 1,
-                    h - padding - buttonSize,
+                    h - padding - buttonSize - keyHeight,
                     buttonWidth,
                     buttonSize,
                     'center');
@@ -838,7 +870,7 @@
                     '⟳',
                     phraseNum < content.lessons[lessonNum].phrases.length - 1 ? subduedButtonColor : disabledButtonColor,
                     padding * 4 + buttonWidth * 2 + buttonWidth * largeButton,
-                    h - padding - buttonSize,
+                    h - padding - buttonSize - keyHeight,
                     buttonWidth,
                     buttonSize,
                     'center');
@@ -847,19 +879,33 @@
                     '⇥',
                     lessonNum < content.lessons.length - 1 ? subduedButtonColor : disabledButtonColor,
                     padding * 5 + buttonWidth * 3 + buttonWidth * largeButton,
-                    h - padding - buttonSize,
+                    h - padding - buttonSize - keyHeight,
                     buttonWidth,
                     buttonSize,
                     'right');
-                drawButton(
-                    'playPause',
-                    ui.playing ? 'II' : '▸',
-                    foregroundColor,
-                    padding * 3 + buttonWidth * 2,
-                    h - padding - buttonSize * largeButton,
-                    buttonWidth * largeButton,
-                    buttonSize * largeButton,
-                    'center');
+                if (ui.keying && keyedCharacter.length > 0) {
+                    drawButton(
+                        'playPause',
+                        keyedCharacter,
+                        ui.keyingComplete ? (keyedCharacterError ? phraseTextColor : foregroundColor) : keyedCharacterColor,
+                        padding * 2 + buttonWidth * 2,
+                        h - padding - buttonSize * largeButton - keyHeight,
+                        buttonWidth * largeButton + padding * 2,
+                        buttonSize * largeButton,
+                        'center',
+                        true,
+                        'bold');
+                } else {
+                    drawButton(
+                        'playPause',
+                        ui.playing ? 'II' : '▸',
+                        foregroundColor,
+                        padding * 3 + buttonWidth * 2,
+                        h - padding - buttonSize * largeButton - keyHeight,
+                        buttonWidth * largeButton,
+                        buttonSize * largeButton,
+                        'center');
+                }
                 ui.buttons = buttons;
 
                 const progressHeight = Math.max(2, padding / 4);
@@ -887,14 +933,14 @@
                     lessonTextColor,
                     padding * 2 + buttonSize,
                     padding + progressHeight,
-                    w - padding * 5 - buttonSize * 3,
+                    w - padding * 4 - buttonSize * 3,
                     buttonSize,
                     'left');
                 drawButton(
                     'phraseNum',
                     phraseCount - phraseNum,
                     phraseNumTextColor,
-                    w - padding * 2 - buttonSize * 2,
+                    w - padding - buttonSize * 2,
                     padding + progressHeight,
                     buttonSize,
                     buttonSize,
@@ -902,10 +948,11 @@
                 var phraseX = padding;
                 var phraseY = buttonSize + padding * 2 + progressHeight;
                 var phraseWidth = w - padding * 2;
-                var phraseHeight = h - padding * 4 - progressHeight - buttonSize - buttonSize * largeButton;
+                var phraseHeight = h - padding * 4 - progressHeight - buttonSize - buttonSize * largeButton - keyHeight;
                 var phraseIndex = randomPhrase(phraseNum, content.lessons[lessonNum].phrases.length);
                 var phrase = convertPhrase(content.lessons[lessonNum].phrases[phraseIndex]);
-                if (ui.playing && ui.progress && phrase.length > ui.count) {
+                if (ui.keying) phrase = phrase.replace(/\ /g, '⎵');
+                if ((ui.keying || ui.playing) && ui.progress && phrase.length > ui.count) {
                     if (phrase[ui.count - 1] == '<' || phrase[ui.count - 2] == '<') {
                         while (phrase[ui.count++] != '>');
                     }
@@ -940,13 +987,44 @@
                     top: phraseY - padding,
                     right: phraseWidth + padding,
                     bottom: phraseHeight + padding })
+                if (screenkey) {
+                    function drawPaddle(name, left, right, active) {
+                        var top = h - keyHeight + padding;
+                        fillRoundedRect(
+                            left,
+                            top,
+                            right,
+                            h - padding,
+                            padding,
+                            audioStarted ? (active ? disabledButtonColor : dialogBackgroundColor) : disabledPaddleColor);
+                        var halfPadding = padding / w;
+                        buttons.push({
+                            name: name,
+                            left: left - halfPadding,
+                            top: top - halfPadding,
+                            right: right + halfPadding,
+                            bottom: h })
+                    }
+                    var held = _keyer.getHeld();
+                    if (getKeyerMode() == 'S') {
+                        drawPaddle('leftKey', padding, w - padding, held.dit || held.dah);
+                    } else {
+                        var leftHeld = _polarity == 'ditdah' ? held.dit : held.dah;
+                        var rightHeld = _polarity == 'ditdah' ? held.dah : held.dit;
+                        drawPaddle('leftKey', padding, w / 2 - padding / 2, leftHeld);
+                        drawPaddle('rightKey', w / 2 + padding / 2, w - padding, rightHeld);
+                    }
+                }
                 if (ui.show == 'settings') {
                     ctx.fillStyle = dimColor;
                     ctx.fillRect(0, 0, w, h);
+                    var settingRows = 10;
                     var left = padding * (w > h ? 4 : 1);
                     var right = w - padding * (w > h ? 4 : 1);
                     var top = padding * (h > w ? 4 : 1);
-                    var bottom = top + buttonSize * 6 + padding * 7;
+                    var approximateBottom = Math.min(h - top + padding, top + buttonSize * settingRows + padding * (settingRows + 1));
+                    var rowHeight = (approximateBottom - top - padding * 2) / settingRows;
+                    var bottom = top + padding + rowHeight * settingRows;
                     ui.dialog = {
                         left: left,
                         right: right,
@@ -954,7 +1032,7 @@
                         bottom: bottom
                     };
                     fillRoundedRect(left, top, right, bottom, padding, dialogBackgroundColor);
-                    controlLeft = right - padding - buttonSize * 3;
+                    controlLeft = right - padding - buttonSize * 4;
                     const switchThinFactor = 1.1;
                     function drawSwitch(name, label, switchText, on, top) {
                         drawFittedText(
@@ -962,21 +1040,21 @@
                             subduedButtonColor,
                             left + padding,
                             top + padding,
-                            right - padding - buttonSize * 3,
+                            controlLeft - left - padding * 2,
                             buttonSize,
                             'normal',
                             false,
                             'left');
                         fillRoundedRect(
-                            controlLeft + padding * switchThinFactor,
+                            controlLeft + padding * 2 * switchThinFactor,
                             top + padding * switchThinFactor,
-                            right - padding * switchThinFactor - padding,
+                            right - padding * 2 * switchThinFactor - padding,
                             top + padding / switchThinFactor + buttonSize,
                             buttonSize / switchThinFactor / 2,
                             subduedButtonColor);
                         ctx.beginPath();
                         ctx.arc(
-                            (on ? right - padding * 2 - buttonSize : controlLeft + padding) + buttonSize / 2,
+                            (on ? right - padding * 3 - buttonSize : controlLeft + padding * 2) + buttonSize / 2,
                             top + padding + buttonSize / 2,
                             buttonSize / 2,
                             0,
@@ -991,7 +1069,7 @@
                         drawFittedText(
                             switchText,
                             subduedButtonColor,
-                            (on ? right - padding * 2 - buttonSize : controlLeft + padding) + margin,
+                            (on ? right - padding * 3 - buttonSize : controlLeft + padding * 2) + margin,
                             top + padding + margin,
                             buttonSize - margin * 2,
                             buttonSize - margin * 2,
@@ -1003,17 +1081,17 @@
                             left: controlLeft,
                             top: top,
                             right: right,
-                            bottom: top + buttonSize + padding / 2 })
+                            bottom: top + rowHeight })
                     }
                     var dark = getDarkMode();
                     drawSwitch('mode', 'Light/Dark:', dark ? '☽' : '☼', dark, top);
-                    function drawUpDownControl(label, name, val, min, max, row) {
+                    function drawGenericUpDownControl(label, name, val, showMin, showMax, row) {
                         drawFittedText(
                             label,
                             subduedButtonColor,
                             left + padding,
                             row,
-                            right - padding - buttonSize * 3,
+                            controlLeft - left - padding * 2,
                             buttonSize,
                             'normal',
                             false,
@@ -1021,7 +1099,7 @@
                         const arrowScale = 0.5;
                         drawFittedText(
                             '❰',
-                            val <= min ? disabledButtonColor : subduedButtonColor,
+                            showMin ? subduedButtonColor : disabledButtonColor,
                             controlLeft,
                             row + (buttonSize * arrowScale / 2),
                             buttonSize * arrowScale,
@@ -1029,13 +1107,13 @@
                             'normal',
                             true,
                             'center');
-                        if (val > min) {
+                        if (showMin) {
                             buttons.push({
                                 name: name + 'Down',
                                 left: controlLeft,
                                 top: row,
                                 right: controlLeft + buttonSize,
-                                bottom: row + buttonSize
+                                bottom: row + rowHeight
                             });
                         }
                         drawButton(
@@ -1043,36 +1121,54 @@
                             val,
                             subduedButtonColor,
                             controlLeft + buttonSize,
-                            row,
-                            buttonSize,
-                            buttonSize,
+                            row + 3,
+                            buttonSize * 2,
+                            buttonSize - 6,
                             'center')
                         drawFittedText(
                             '❱',
-                            val >= max ? disabledButtonColor : subduedButtonColor,
-                            controlLeft + buttonSize * 2 + buttonSize * arrowScale,
+                            showMax ? subduedButtonColor : disabledButtonColor,
+                            controlLeft + buttonSize * 3 + buttonSize * arrowScale,
                             row + (buttonSize * arrowScale / 2),
                             buttonSize * arrowScale,
                             buttonSize * arrowScale,
                             'normal',
                             true,
                             'center');
-                        if (val < max) {
+                        if (showMax) {
                             buttons.push({
                                 name: name + 'Up',
                                 left: controlLeft + buttonSize * 2,
                                 top: row,
                                 right: controlLeft + buttonSize * 4,
-                                bottom: row + buttonSize });
+                                bottom: row + rowHeight });
                         }
                     }
-                    drawUpDownControl('Speed', 'speed', getSpeed(), 5, 50, top + padding * 2 + buttonSize);
-                    drawUpDownControl('Farnsworth', 'farnsworth', getFarnsworth(), 1, 50, top + padding * 3 + buttonSize * 2);
-                    drawUpDownControl('Wordsworth', 'wordsworth', getWordsworth(), 1, 50, top + padding * 4 + buttonSize * 3);
-                    drawUpDownControl('Pitch', 'pitch', getPitch(), 100, 900, top + padding * 5 + buttonSize * 4);
+                    function drawUpDownControl(label, name, val, min, max, row) {
+                        drawGenericUpDownControl(label, name, val, val >= min, val <= max, row)
+                    }
+                    drawUpDownControl('Speed:', 'speed', getSpeed(), 5, 50, top + padding + rowHeight);
+                    drawUpDownControl('Farnsworth:', 'farnsworth', getFarnsworth(), 1, 50, top + padding + rowHeight * 2);
+                    drawUpDownControl('Wordsworth:', 'wordsworth', getWordsworth(), 1, 50, top + padding + rowHeight * 3);
+                    drawUpDownControl('Pitch:', 'pitch', getPitch(), 100, 900, top + padding + rowHeight * 4);
                     var scramble = getScramble();
-                    var y = top + padding * 5 + buttonSize * 5;
-                    drawSwitch('scramble', 'Scramble:', scramble ? 'on' : 'off', scramble, y);
+                    drawSwitch('scramble', 'Shuffle:', scramble ? 'on' : 'off', scramble, top + rowHeight * 5);
+                    var keyerMode = getKeyerMode();
+                    var keyerName = keyerMode == 'A' ? 'Iambic A' : keyerMode == 'B' ? 'Iambic B' : keyerMode == 'U' ? 'Ultimatic' : 'Straight';
+                    drawGenericUpDownControl('Keyer:', 'keyer', keyerName, true, true, top + padding + rowHeight * 6);
+                    var screenkey = getOnScreenKey();
+                    drawSwitch('screenkey', 'On-screen:', screenkey ? 'on' : 'off', screenkey, top + rowHeight * 7);
+                    var polarity = getPolarity() == 'ditdah' ? 'Left Dit' : 'Right Dit';
+                    drawGenericUpDownControl('Polarity:', 'polarity', polarity, true, true, top + padding + rowHeight * 8);
+                    drawButton(
+                        'help',
+                        '☞ Tips & Tricks',
+                        lessonTextColor,
+                        left + padding,
+                        top + rowHeight * 9 + padding * 2,
+                        right - left - padding * 2,
+                        rowHeight / 2,
+                        'right');
                     ui.buttons = buttons;
                 }
                 function drawMenu(len, fnGetId, fnGetName, color) {
@@ -1121,6 +1217,26 @@
                         //drawMenu(phrases.length, p => p, p => (p + 1) + ' ' + phrases[p]);
                         break;
                 }
+                if (manuallyEnableAudio) {
+                    ctx.fillStyle = dimColor;
+                    ctx.fillRect(0, 0, w, h);
+                    var height = buttonSize * 3;
+                    var left = padding * 2;
+                    var right = w - padding * 2;
+                    var top = (h - height) / 2
+                    var bottom = top + height;
+                    fillRoundedRect(left, top, right, bottom, padding, dialogBackgroundColor);
+                    drawFittedText(
+                        '☞ Enable Audio',
+                        mainButtonColor,
+                        left + padding,
+                        top + padding,
+                        right - left - padding * 2,
+                        bottom - top - padding * 2,
+                        'bold',
+                        true,
+                        'center')
+                }
             }
 
             function prevLesson() {
@@ -1136,11 +1252,13 @@
             }
 
             function prevPhrase() {
+                ui.count = 0;
                 var phrase = getPhraseNum();
                 if (phrase > 0) setPhraseNum(phrase - 1);
             }
 
             function nextPhrase() {
+                ui.count = 0;
                 var phrase = getPhraseNum();
                 if (phrase < getContent().lessons[getLessonNum()].phrases.length - 1) {
                     setPhraseNum(phrase + 1);
@@ -1193,6 +1311,12 @@
             }
 
             function touch(x, y) {
+                if (audioWasJustManuallyEnabled) {
+                    audioWasJustManuallyEnabled = false;
+                    noSleep.enable();
+                    playDing();
+                    return;
+                }
                 if (ui.show == 'settings') {
                     if (dismissDialog(x, y)) return;
                     for (var b = 0; b < ui.buttons.length; b++) {
@@ -1265,6 +1389,64 @@
                                     setScramble(!getScramble());
                                     redraw();
                                     return;
+                                case 'keyer':
+                                    return;
+                                case 'keyerUp':
+                                    switch (getKeyerMode()) {
+                                        case 'A':
+                                            setKeyerMode('B');
+                                            break;
+                                        case 'B':
+                                            setKeyerMode('U');
+                                            break;
+                                        case 'U':
+                                            setKeyerMode('S');
+                                            break;
+                                        case 'S':
+                                            setKeyerMode('A');
+                                            break;
+                                    }
+                                    redraw();
+                                    return;
+                                case 'keyerDown':
+                                    switch (getKeyerMode()) {
+                                        case 'A':
+                                            setKeyerMode('S');
+                                            break;
+                                        case 'B':
+                                            setKeyerMode('A');
+                                            break;
+                                        case 'U':
+                                            setKeyerMode('B');
+                                            break;
+                                        case 'S':
+                                            setKeyerMode('U');
+                                            break;
+                                    }
+                                    redraw();
+                                    return;
+                                case 'polarity':
+                                    return;
+                                case 'polarityUp':
+                                case 'polarityDown':
+                                    switch (getPolarity()) {
+                                        case 'ditdah':
+                                            setPolarity('dahdit');
+                                            break;
+                                        case 'dahdit':
+                                            setPolarity('ditdah');
+                                            break;
+                                    }
+                                    redraw();
+                                    return;
+                                case 'screenkey':
+                                    cancelRepeat();
+                                    setOnScreenKey(!getOnScreenKey());
+                                    redraw();
+                                    return;
+                                case 'help':
+                                    window.open('./docs');
+                                    return;
                             }
                         }
                     }
@@ -1285,7 +1467,8 @@
                                 case 'settings':
                                     cancelRepeat();
                                     stopPhrase();
-                                    ui.playing = false;
+                                    ui.keying = ui.playing = false;
+                                    ui.count = 0;
                                     noSleep.disable();
                                     ui.show = 'settings';
                                     redraw();
@@ -1293,7 +1476,7 @@
                                 case 'content':
                                     cancelRepeat();
                                     stopPhrase();
-                                    ui.playing = ui.hide = false;
+                                    ui.keying = ui.playing = ui.hide = false;
                                     saveHiddenState();
                                     noSleep.disable();
                                     ui.show = 'content';
@@ -1302,7 +1485,7 @@
                                 case 'lesson':
                                     cancelRepeat();
                                     stopPhrase();
-                                    ui.playing = ui.hide = false;
+                                    ui.keying = ui.playing = ui.hide = false;
                                     saveHiddenState();
                                     noSleep.disable();
                                     ui.show = 'lesson';
@@ -1311,7 +1494,7 @@
                                 case 'phraseNum':
                                     cancelRepeat();
                                     stopPhrase();
-                                    ui.playing = ui.hide = false;
+                                    ui.keying = ui.playing = ui.hide = false;
                                     saveHiddenState();
                                     noSleep.disable();
                                     ui.show = 'phrase';
@@ -1328,6 +1511,7 @@
                                         } else {
                                             stopPhrase();
                                             ui.playing = true;
+                                            ui.keying = false;
                                             noSleep.enable();
                                             ui.progress = true;
                                             ui.count = 0;
@@ -1337,23 +1521,26 @@
                                     redraw();
                                     return;
                                 case 'playPause':
-                                    cancelRepeat();
-                                    ui.hide = !(!ui.hide || ui.progress); // show if already unhidden or in progress
-                                    saveHiddenState();
-                                    ui.progress = false;
-                                    ui.count = 0;
-                                    stopPhrase();
-                                    ui.playing = !ui.playing;
-                                    if (ui.playing) noSleep.enable(); else noSleep.disable();
-                                    if (ui.playing) {
-                                        playPhrase(getCurrentPhrase(), true);
+                                    if (!ui.keying) {
+                                        cancelRepeat();
+                                        ui.hide = !(!ui.hide || ui.progress); // show if already unhidden or in progress
+                                        saveHiddenState();
+                                        ui.progress = false;
+                                        ui.count = 0;
+                                        stopPhrase();
+                                        ui.keying = ui.playing = !ui.playing;
+                                        if (ui.playing) noSleep.enable(); else noSleep.disable();
+                                        if (ui.playing) {
+                                            playPhrase(getCurrentPhrase(), true);
+                                        }
                                     }
+                                    ui.keying = false;
                                     redraw();
                                     return;
                                 case 'prevLesson':
                                     cancelRepeat();
                                     stopPhrase();
-                                    ui.playing = ui.hide = false;
+                                    ui.keying = ui.playing = ui.hide = false;
                                     saveHiddenState();
                                     noSleep.disable();
                                     prevLesson();
@@ -1362,7 +1549,7 @@
                                 case 'nextLesson':
                                     cancelRepeat();
                                     stopPhrase();
-                                    ui.playing = ui.hide = false;
+                                    ui.keying = ui.playing = ui.hide = false;
                                     saveHiddenState();
                                     noSleep.disable();
                                     nextLesson();
@@ -1370,7 +1557,7 @@
                                     return;
                                 case 'prevPhrase':
                                     stopPhrase();
-                                    ui.playing = ui.hide = false;
+                                    ui.keying = ui.playing = ui.hide = false;
                                     saveHiddenState();
                                     noSleep.disable();
                                     prevPhrase();
@@ -1378,7 +1565,7 @@
                                     return;
                                 case 'nextPhrase':
                                     stopPhrase();
-                                    ui.playing = ui.hide = false;
+                                    ui.keying = ui.playing = ui.hide = false;
                                     saveHiddenState();
                                     noSleep.disable();
                                     nextPhrase();
@@ -1393,6 +1580,51 @@
             var repeatTimer = null;
             function cancelRepeat() {
                 if (repeatTimer != null) clearTimeout(repeatTimer);
+            }
+
+            function repeatTouch(x, y) {
+                cancelRepeat(); // in case touchend was lost somehow
+                repeatTimer = setTimeout(function() {
+                    repeatTimer = setInterval(function() { touch(x, y); redraw(); }, 150);
+                }, 350);
+                touch(x, y);
+            }
+
+            function simulateTouchButton(name, repeat) {
+                for (var b = 0; b < ui.buttons.length; b++) {
+                    var button = ui.buttons[b];
+                    if (button.name == name) {
+                        var x = button.left + (button.right - button.left) / 2;
+                        var y = button.top + (button.bottom - button.top) / 2;
+                        if (repeat) repeatTouch(x, y); else touch(x, y);
+                        return;
+                    }
+                }
+            }
+
+            function hitTestOnScreenKeys(x, y, down) {
+                if (ui.show == null) {
+                    for (var b = 0; b < ui.buttons.length; b++) {
+                        var button = ui.buttons[b];
+                        if (x >= button.left && x <= button.right && y >= button.top && y <= button.bottom) {
+                            switch (button.name) {
+                                case 'leftKey':
+                                    if (!ui.playing) {
+                                        _debouncerLeft.key(down);
+                                        redraw();
+                                    }
+                                    return true;
+                                case 'rightKey':
+                                    if (!ui.playing) {
+                                        _debouncerRight.key(down);
+                                        redraw();
+                                    }
+                                    return true;
+                            }
+                        }
+                    }
+                }
+                return false;
             }
 
             var noSleep;
@@ -1417,23 +1649,20 @@
                     }
                 }
                 if (location.search == '?clear-settings') localStorage.clear();
-                var ratio = 1; // devicePixelRatio;
+                var ratio = devicePixelRatio;
                 canvas = document.getElementById('canvas');
                 var firstPress = true;
                 var noTouch = true; // until first event
-                function repeatTouch(x, y) {
-                    cancelRepeat(); // in case touchend was lost somehow
-                    repeatTimer = setTimeout(function() {
-                        repeatTimer = setInterval(function() { touch(x, y); }, 150);
-                    }, 350);
-                    touch(x, y);
-                }
                 canvas.ontouchstart = function(e) {
                     noTouch = false;
                     if (!firstPress) {
                         e.preventDefault();
-                        var p = e.touches[0];
-                        repeatTouch(p.pageX * ratio, p.pageY * ratio);
+                        for (var i = 0; i < e.touches.length; i++) {
+                            var p = e.touches[i];
+                            var x = p.pageX * ratio;
+                            var y = p.pageY * ratio;
+                            if (!hitTestOnScreenKeys(x, y, true)) repeatTouch(x, y);
+                        }
                     }
                 };
                 canvas.onmousedown = function(e) {
@@ -1444,18 +1673,39 @@
                     var y = e.y * ratio;
                     if (firstPress) {
                         firstPress = false;
+                        e.preventDefault();
                         say('');
                         audio();
+                        //if (!hitTestOnScreenKeys(x, y, true)) repeatTouch(x, y); // TODO: audio doesn't work first time
                         repeatTouch(x, y);
                         return;
                     }
                     if (noTouch)
                     {
-                        repeatTouch(x, y);
+                        if (!hitTestOnScreenKeys(x, y, true)) repeatTouch(x, y);
                     }
                 }
-                canvas.ontouchend = function(e) { cancelRepeat(); };
-                canvas.onmouseup = function(e) { cancelRepeat(); }
+                canvas.ontouchend = function(e) {
+                    if (!firstRelease) {
+                        e.preventDefault();
+                        for (var i = 0; i < e.changedTouches.length; i++) {
+                            var p = e.changedTouches[i];
+                            var x = p.pageX * ratio;
+                            var y = p.pageY * ratio;
+                            if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
+                        }
+                    }
+                };
+                var firstRelease = true;
+                canvas.onmouseup = function(e) {
+                    if (firstRelease || noTouch) {
+                        firstRelease = false;
+                        e.preventDefault();
+                        var x = e.x * ratio;
+                        var y = e.y * ratio;
+                        if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
+                    }
+                }
                 resizeRedrawCanvas();
                 setDarkMode(getDarkMode());
                 setSpeed(getSpeed());
@@ -1466,7 +1716,8 @@
                         cancelRepeat();
                         stopPhrase();
                         stopAudio();
-                        ui.playing = false;
+                        ui.keying = ui.playing = false;
+                        ui.count = 0;
                         noSleep.disable();
                         redraw();
                     }
@@ -1474,6 +1725,77 @@
                 window.onblur = function(e) {
                     cancelRepeat();
                 }
+
+                document.body.addEventListener('keydown', (e) => {
+                    if (!e.repeat) {
+                        switch (e.code) {
+                            case 'BracketLeft':
+                                if (!ui.playing) {
+                                    _debouncerLeft.key(true);
+                                    redraw();
+                                }
+                                break;
+                            case 'ControlLeft':
+                                if (!audioStarted) {
+                                    manuallyEnableAudio = true;
+                                    redraw();
+                                    break;
+                                }
+                                if (!ui.playing) _debouncerLeft.key(true);
+                                break;
+                            case 'BracketRight':
+                                if (!ui.playing) {
+                                    _debouncerRight.key(true);
+                                    redraw();
+                                }
+                                break;
+                            case 'ControlRight':
+                                if (!audioStarted) {
+                                    manuallyEnableAudio = true;
+                                    redraw();
+                                    break;
+                                }
+                                if (!ui.playing) _debouncerRight.key(true);
+                                break;
+                            case 'ArrowLeft':
+                                simulateTouchButton(e.shiftKey ? 'prevLesson' : 'prevPhrase', true);
+                                break;
+                            case 'ArrowRight':
+                                simulateTouchButton(e.shiftKey ? 'nextLesson' : 'nextPhrase', true);
+                                break;
+                            case 'Enter':
+                                simulateTouchButton('playPause', false);
+                                break;
+                        }
+                    }
+                });
+
+                document.body.addEventListener('keyup', (e) => {
+                    if (manuallyEnableAudio) return;
+                    if (!e.repeat) {
+                        switch (e.code) {
+                            case 'BracketLeft':
+                            case 'ControlLeft':
+                                if (!ui.playing) {
+                                    _debouncerLeft.key(false);
+                                    redraw();
+                                }
+                                break;
+                            case 'BracketRight':
+                            case 'ControlRight':
+                                if (!ui.playing) {
+                                    _debouncerRight.key(false);
+                                    redraw();
+                                }
+                                break;
+                            case 'ArrowLeft':
+                            case 'ArrowRight':
+                            case 'Space':
+                                cancelRepeat();
+                                break;
+                        }
+                    }
+                });
             }
 
             function resizeRedrawCanvas() {
@@ -1495,8 +1817,6 @@
     <!--
         TODO:
         - Phrase picker?
-        - Keyboard control for desktop
-        - FavIcon
 
         Local Storage:
         - 'rx_content'
@@ -1512,6 +1832,11 @@
         - 'rx_wordsworth_default'
         - 'rx_pitch'
         - 'rx_pitch_default'
+        - 'rx_hide_phrase'
+        - 'tx_mode' ('A', 'B', 'U')
+        - 'tx_screenkey'
+        - 'tx_polarity' ('ditdah', 'dahdit')
+        - 'tx_buffer' (int size)
         - 'scramble'
         - 'shuffle_<ID>' (within lesson)
     -->
