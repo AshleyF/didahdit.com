@@ -754,14 +754,15 @@
                 const dimColor = '#000b';
 
                 var darkMode = getDarkMode();
-                var backgroundColor = darkMode ? '#111' : '#eee'; // black/white
-                var foregroundColor = darkMode ? '#eee' : '#111'; // white/black
+                var backgroundColor = darkMode ? '#000' : '#fff'; // black/white
+                var foregroundColor = darkMode ? '#fff' : '#000'; // white/black
                 var mainButtonColor = foregroundColor;
                 var subduedButtonColor = darkMode ? '#bbb' : '#444'; // gray
                 var disabledButtonColor = darkMode ? '#444' : '#bbb'; // gray
                 var dialogBackgroundColor = darkMode ? '#222' : '#ddd';
                 var dialogAttributionColor = darkMode ? '#444' : '#bbb';
                 var keyedCharacterColor = darkMode ? '#fc0' : '#da0'; // yellow
+                var disabledPaddleColor = darkMode ? '#111' : '#eee';
 
                 var ctx = canvas.getContext('2d');
                 ctx.scale(1, 1);
@@ -995,7 +996,7 @@
                             right,
                             h - padding,
                             padding,
-                            active ? disabledButtonColor : dialogBackgroundColor);
+                            audioStarted ? (active ? disabledButtonColor : dialogBackgroundColor) : disabledPaddleColor);
                         var halfPadding = padding / w;
                         buttons.push({
                             name: name,
@@ -1444,7 +1445,7 @@
                                     redraw();
                                     return;
                                 case 'help':
-                                    window.open('./help', '_blank');
+                                    window.open('./help');
                                     return;
                             }
                         }
@@ -1676,7 +1677,8 @@
                         say('');
                         audio();
                         //if (!hitTestOnScreenKeys(x, y, true)) repeatTouch(x, y); // TODO: audio doesn't work first time
-                        repeatTouch(x, y);
+                        //repeatTouch(x, y);
+                        playCode('.-.');
                         return;
                     }
                     if (noTouch)
