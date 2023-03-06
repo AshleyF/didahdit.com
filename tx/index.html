@@ -168,13 +168,12 @@
                     toneOscillator.start(0);
                     dingOscillator.start(0);
                     dongOscillator.start(0);
-                    audioStarted = audioCtx.state == 'running';
+                    audioStarted = true;
                     if (manuallyEnableAudio) {
                         manuallyEnableAudio = false; // TOOD: check audioCtx.state == 'running' or != 'suspended'
                         audioWasJustManuallyEnabled = true;
                         redraw();
                     }
-                    say('');
                 }
                 return audioCtx.currentTime;
             }
@@ -763,7 +762,7 @@
                 var dialogAttributionColor = darkMode ? '#444' : '#bbb';
                 var keyedCharacterColor = darkMode ? '#fc0' : '#da0'; // yellow
                 //var disabledPaddleColor = darkMode ? '#111' : '#eee';
-                var disabledPaddleColor = darkMode ? '#0f0' : '#0f0';
+                var disabledPaddleColor = darkMode ? '#00f' : '#00f';
 
                 var ctx = canvas.getContext('2d');
                 ctx.scale(1, 1);
