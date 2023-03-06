@@ -102,7 +102,6 @@
                         break;
                     case 'silent':
                         makeTone(false);
-                        silence(ditlen);
                         break;
                     case 'dit':
                     case 'dah':
@@ -1676,7 +1675,8 @@
                         e.preventDefault();
                         say('');
                         audio();
-                        if (!hitTestOnScreenKeys(x, y, true)) repeatTouch(x, y);
+                        //if (!hitTestOnScreenKeys(x, y, true)) repeatTouch(x, y); // TODO: audio doesn't work first time
+                        repeatTouch(x, y);
                         return;
                     }
                     if (noTouch)
@@ -1697,7 +1697,7 @@
                 };
                 var firstRelease = true;
                 canvas.onmouseup = function(e) {
-                    if (firstRelease) {
+                    if (firstRelease || noTouch) {
                         firstRelease = false;
                         e.preventDefault();
                         var x = e.x * ratio;
