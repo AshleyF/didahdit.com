@@ -1151,12 +1151,12 @@
                     drawUpDownControl('Wordsworth:', 'wordsworth', getWordsworth(), 1, 50, top + padding + rowHeight * 3);
                     drawUpDownControl('Pitch:', 'pitch', getPitch(), 100, 900, top + padding + rowHeight * 4);
                     var scramble = getScramble();
-                    drawSwitch('scramble', 'Scramble:', scramble ? 'on' : 'off', scramble, top + rowHeight * 5);
+                    drawSwitch('scramble', 'Shuffle:', scramble ? 'on' : 'off', scramble, top + rowHeight * 5);
                     var keyerMode = getKeyerMode();
                     var keyerName = keyerMode == 'A' ? 'Iambic A' : keyerMode == 'B' ? 'Iambic B' : keyerMode == 'U' ? 'Ultimatic' : 'Straight';
                     drawGenericUpDownControl('Keyer:', 'keyer', keyerName, true, true, top + padding + rowHeight * 6);
                     var screenkey = getOnScreenKey();
-                    drawSwitch('screenkey', 'On-screen Key:', screenkey ? 'on' : 'off', screenkey, top + rowHeight * 7);
+                    drawSwitch('screenkey', 'On-screen:', screenkey ? 'on' : 'off', screenkey, top + rowHeight * 7);
                     var polarity = getPolarity() == 'ditdah' ? 'Left Dit' : 'Right Dit';
                     drawGenericUpDownControl('Polarity:', 'polarity', polarity, true, true, top + padding + rowHeight * 8);
                     drawButton(

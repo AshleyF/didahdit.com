@@ -4,6 +4,7 @@
         <style>
         body {
             font-family: sans-serif;
+            text-align: center;
             }
         img.screen {
             border: 1px solid black;
@@ -11,41 +12,89 @@
         img.icon {
             vertical-align: text-bottom;
         }
+        p {
+            text-align: left;
+        }
+        ul {
+            text-align: left;
+        }
+        a {
+            color: black;
+        }
         </style>
         <meta name="viewport" content="width=device-width" />
         <link rel="shortcut icon" href="../../icons/didahdit.svg"> 
         <link rel="apple-touch-icon" href="../../icons/didahdit.svg">
-           </head>
+    </head>
     <body>
         <h1><img class="icon" src="../../icons/didahdit.svg" width="32" height="32" /> Tips & Tricks</h1>
-        <p>Use the app to practice copying and sending CW/Morse Code!</p>
+        <p>Practice copying and sending CW/Morse Code with the <a href="https://didahdit.com">DiDahDit App</a>! Explore the features below.</p>
         <img class="screen" src="main-play.gif" width="240" height="320" />
+        <p>The app is tailored to mobile, but works in any browser. Even on a watch!</p>
+        <img class="screen" src="watch.jpg" width="320" height="320" />
         <hr />
-        <h2><img class="icon" src="../../icons/rx.svg" width="32" height="32" /> Copy Training</h2>
-        <p>Press the phrase (<span style="color: #f43">red</span>) to hear the characters sounded.</p>
+        <h2 id="copy"><img class="icon" src="../../icons/rx.svg" width="32" height="32" /> Copy Training</h2>
+        <p>Press the (<span style="color: #f43">red</span>) phrase to hear (and see) the characters sounded.</p>
         <img class="screen" src="main.png" width="240" height="320" />
-        <p>Press play (▸) to sound each phrase; automatically advancing through the lesson. Phrases are hidden until sounded, then spoken and shown.</p>
+        <p>Press play (▸) to sound each phrase; automatically advancing through the lesson. Phrases are hidden until sounded, then spoken and shown. Try to copy each phrase in your head (&ldquo;head copy&rdquo;) before it&rsquo;s spoken.</p>
+        <p>Normally phrases remain hidden when you pause so that you can continue the lesson later without having revealed the next phrase. However, you may tap the question mark to show the phrase.</p>
         <img class="screen" src="main-hidden.png" width="240" height="320" />
-        <p><b>ⓘ Tip:</b> Press the phrase <i>while playing</i> to toggle hiding.</p>
+        <p><b>ⓘ Tip:</b> Press the question mark <i>while playing</i> to toggle hiding. This will highlight each character as it is sonded. While the goal is to copy in your head, sometimes it&rsquo;s helpful to initially build an association between the sounds and letters by seeing them while hearing them.</p>
         <hr />
-        <h2>Navigation</h2>
+        <h2 id="nav">Navigation</h2>
         <p>Navigate the phrases within each lesson by pressing left (⟲) and right (⟳) icons or with arrow keys on a keyboard. Navigate entire lessons by pressing left (⇤) and right (⇥) icons or with shift-arrow keys on a keyboard.</p>
         <img class="screen" src="main.png" width="240" height="320" style="width:240; height: 42; object-fit: cover; object-position: 100% -278px;" />
         <p>The current lesson (<span style="color: #07d">blue</span>) and a phrase countdown (<span style="color: #2c4">green</span>) are shown along with a thin progress bar along the top.</p>
+        <p><b>ⓘ Tip:</b> Note that the (<span style="color: #2c4">green</span>) phrase number begins at the number of phrases within the lesson and counts <i>down</i> to 1.</p>
         <img class="screen" src="main.png" width="240" height="320" style="width:240; height: 42; object-fit: cover; object-position: 100% 0;" />
         <p>Select from a menu of lessons by pressing the (blue) title.</p>
         <img class="screen" src="menu-lesson.png" width="240" height="320" />
         <p>Select from avalable sets of content by pressing the menu (☰) icon.</p>
         <img class="screen" src="menu-content.png" width="240" height="320" />
+        <h2 id="send"><img class="icon" src="../../icons/tx.svg" width="32" height="32" /> Sending Training</h2>
+        <p>Rather than listening to the phrases in the lessons, you may practice sending them. A </p>
+        <img class="screen" src="key-external.png" width="240" height="320" />
+        <p>As you key letters, they&rsquo;re shown (<span style="color: #da0">yellow</span>) below the phrase. When the correct character has been keyed, the phrase will incrementally complete. If a mistake is made, a &ldquo;dong&rdquo; sound will play. This allows you to practice keying without looking at the screen (&ldquo;head sending&rdquo;).</p>
+        <p>An external paddle or straight key may be used with the wonderful <a href="https://hamradio.solutions/vband/">USB Key Interface from Ham Radio Solutions</a> (select the Store tab).</p>
+        <p>On-screen single or dual paddles may be shown at the bottom of the screen to allow practicing without a keyboard or USB interface.</p>
+        <img class="screen" src="keyer-single.png" width="120" height="160" />
+        <img class="screen" src="key-dual.png" width="120" height="160" />
+        <p><b>ⓘ Tip:</b> Use the left/right square bracket or control keys on the keyboard as paddles (with or without on-screen).</p>
+        <p>The keyer mode and speed may be chosen <a href="#settings">in settings</a>.</p>
+        <p>The simplest is the <i>Straight</i> key, which merely sounds a tone while being pressed. The speed should be set to roughly match your sending speed for best decoding results.</p>
+        <p><b>ⓘ Tip:</b> Two dits length is the cutoff for decoding <i>Straight</i> key input. That is, a dits sent slower than half-speed will decode as dahs, while dahs sent faster than 1.5× speed will decode as dits. Adjust the <b>Speed</b> setting as needed.</b></p>
+        <p>The <i>Iambic</i> modes will send dit or dahs when a single paddle is pressed and will repeat when held. Pressing both paddles (&ldquo;squeezing&rdquo;) will produce automatically alternating dits and dahs. In <i>Iambic A</i> mode, elements will stop when a squeeze is released. In <i>Iambic B</i> mode, one more alternating element will be sent after releasing a squeeze.</p>
+        <p><i>Ultimatic</i> mode will do the same thing when a single paddle is pressed or held. However, when squeezing only the paddle pressed last will repeat. This simple scheme results in all but one letter of the alphabet being accomplished with a single squeeze! In my opinion, <i>Ultimatic</i> is the best mode (see <a href="https://youtu.be/Hn4j2nfdKNE">this video</a>).</p>
+        <p>It is common to have dits on the thumb paddle. If you&rsaquo;re left-handed, you may want to reverse the default <a href="#key"><b>Polarity</b> in settings</a>.</p>
         <h2>Settings</h2>
         <p>Press the ellipsis (⁝) icon to change settings.</p>
         <img class="screen" src="settings.png" width="240" height="320" />
+        <h3 id="light-darh">Light/Dark</h3>
         <p>The <b>Light/Dark</b> (☼/☽)</b> switch changes the color scheme throughout.</p>
-        <img class="screen" src="settings-light.png" width="240" height="320" />
-        <img class="screen" src="main-light.png" width="240" height="320" />
-        <p>The <b>Speed</b> setting determines the rate in words per minute (WPM) at which code is send and received. More precisely, it sets the unit "dit length." Dahs then are 3 dits long and space between elements is 1 dit. Normally, space between letters is 3 dits and between words is 7 dit (however, see the <b>Farnsworth</b> and <b>Wordsworth</b> settings below).</p>
-        <p>The canonical "word" is "PARIS" which is 50 dits long - including element, letter and trailing word spacing.</p>
+        <img class="screen" src="settings-light.png" width="120" height="160" />
+        <img class="screen" src="main-light.png" width="120" height="160" />
+        <h3 id="speed">Speed</h3>
+        <p>The overal <b>Speed</b> setting determines the rate in words-per-minute (WPM) at which code is send and received. More precisely, it sets the unit "dit length." Dahs then are 3 dits long and space between elements is 1 dit. Normally, space between letters is 3 dits and between words is 7 dit (however, see the <b>Farnsworth</b> and <b>Wordsworth</b> settings below).</p>
+        <p>Of course, words have varying length and so to individual charasters in Morse Code. So, the canonical word &ldquo;PARIS&rdquo; is used to compute words-per-minute; 50 dits long - including element, letter and trailing word spacing.</p>
         <img class="screen" src="paris.svg" width="100%" />
-        <h2><img class="icon" src="../../icons/tx.svg" width="32" height="32" /> Sending Training</h2>
+        <p>The <b>Farnsworth</b> setting is used to slow down the sending speed without increasing the space between elements (dit/dahs). See the <a href="#learning">Learning Correctly</a> section below to see why you&rsquo;d want to do this.</p>
+        <p>The <b>Wordsworth</b> setting also slows down the sending speed, but instead increases the space between <i>words</i>. Again, see the <a href="#learning">Learning Correctly</a> section below to see why you&rsquo;d want to do this.</p>
+        <p>All of the speed-related settings are in words-per-minute. It doesn't make sense to set <b>Farnsworth</b> faster that the overall <b>Speed</b> or to set <b>Wordsworth</b> faster than <b>Farnsworth</b> so this is not allowed in the interface.</p>
+        <p><b>ⓘ Tip:</b> If the <b>Speed</b>, <b>Farnsworth</b> and/or <b>Wordsworth</b> settings match, then adhusting one in the settings dialog will automatically adjust the matching ones <i>below</i> it.</p>
+        <h3 id="pitch">Pitch</h3>
+        <p>The <b>Pitch</b> setting (in Hz) controls the frequency of the sounded Morse Code tones.</p>
+        <h3 id="shuffle">Shuffle</h3>
+        <p>The <b>Shuffle</b> toggle indicates whether to advance through the phrases within each lesson in a shuffled order. This is useful for content that has no inherent progression (e.g. call signs).</p>
+        <p><b>ⓘ Tip:</b> Phrases are in a random but <i>consistent</i> order, much like a shuffled deck of cards. Flipping back and forth through a lesson will present the content in the same shuffled order. However, once you <i>leave</i> a lesson and return to it, the phrases are reshuffled. Note also that working from beginning to end of a lesson will still present each phrase exactly once.</p>
+        <h3 id="key">Keyer</h3>
+        <p>The <b>Keyer</b> setting chooses the keying method used. See the <a href="#send">Sending</a> section above for a description of the keyer modes.</p>
+        <p>The <b>On-screen</b> setting shows/hides on-screen paddles or straight key.</p>
+        <p>The <b>Polarity</b> setting determines whether dit are on the left or right when using dual level paddles.</p>
+        <h2 id="learn">Learning Correctly</h2>
+        <p>You may have notices that nowhere in the app do you see dits and dahs written. Morse Code is an <i>audible</i> language. You should learn to recognize the <i>sounds</i> of the characters.</p>
+        <p>You should not count the dits and dahs. The complete sound of each character should be recognized as a whole. If necessary, turn the <b>Speed</b> up until counting becomes impossible (e.g. 25+ WPM). If you can't copy at this speed then turn the effective speed down with the <b>Farnsworth</b> setting.</p>
+        <p>Eventually, you will begin to recognize entire <i>words</i> as a whole; especially common ones such as &ldquo;CQ&rdquo;, &ldquo;TU&rdquo; and &ldquo;RST&rdquo;. You may find that <b>Farnsworth</b> spacing makes recognition of words difficult. At this point, try turning up the <b>Farnsworth</b> speed to match the overall <b>Speed</b> and instead adjust down the Wordsworth setting.</p>
+        <p>For further information on using dual lever paddles, see <a href="https://youtu.be/Hn4j2nfdKNE">this video on squeeze keying</a>.</p>
+        <h5>Have fun! <a href="https://www.qrz.com/db/k7zcw">K7ZCW</a> 73 dit dit</h5>
     </body>
 </html>
