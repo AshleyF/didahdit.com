@@ -303,8 +303,9 @@
 
             function say(utterance) {
                 if ('speechSynthesis' in window) {
-                    speechSynthesis.volume = 0.9;
-                    speechSynthesis.speak(new SpeechSynthesisUtterance(utterance));
+                    var utter = new SpeechSynthesisUtterance(utterance)
+                    utter.volume = 0.9;
+                    speechSynthesis.speak(utter);
                 }
             }
 
@@ -497,7 +498,6 @@
                                                             continuationTimeout1 = setTimeout(waitForSpeech, 50);
                                                             return;
                                                         }
-                                                        speechSynthesis.volume = 0;
                                                         if (ui.playing) {
                                                             if (nextPhrase()) {
                                                                 ui.count = 0;
