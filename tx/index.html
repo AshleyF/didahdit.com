@@ -762,7 +762,8 @@
                 var dialogBackgroundColor = darkMode ? '#222' : '#ddd';
                 var dialogAttributionColor = darkMode ? '#444' : '#bbb';
                 var keyedCharacterColor = darkMode ? '#fc0' : '#da0'; // yellow
-                var disabledPaddleColor = darkMode ? '#111' : '#eee';
+                //var disabledPaddleColor = darkMode ? '#111' : '#eee';
+                var disabledPaddleColor = darkMode ? '#f00' : '#f00';
 
                 var ctx = canvas.getContext('2d');
                 ctx.scale(1, 1);
@@ -1678,7 +1679,6 @@
                         audio();
                         //if (!hitTestOnScreenKeys(x, y, true)) repeatTouch(x, y); // TODO: audio doesn't work first time
                         //repeatTouch(x, y);
-                        playCode('.-.');
                         return;
                     }
                     if (noTouch)
@@ -1704,7 +1704,8 @@
                         e.preventDefault();
                         var x = e.x * ratio;
                         var y = e.y * ratio;
-                        if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
+                        playCode('.-.');
+                        //if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
                     }
                 }
                 resizeRedrawCanvas();
