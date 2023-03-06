@@ -761,8 +761,7 @@
                 var dialogBackgroundColor = darkMode ? '#222' : '#ddd';
                 var dialogAttributionColor = darkMode ? '#444' : '#bbb';
                 var keyedCharacterColor = darkMode ? '#fc0' : '#da0'; // yellow
-                //var disabledPaddleColor = darkMode ? '#111' : '#eee';
-                var disabledPaddleColor = darkMode ? '#0f0' : '#0f0';
+                var disabledPaddleColor = darkMode ? '#111' : '#eee';
 
                 var ctx = canvas.getContext('2d');
                 ctx.scale(1, 1);
@@ -1674,7 +1673,7 @@
                     if (firstPress) {
                         firstPress = false;
                         e.preventDefault();
-                        //say('');
+                        say('');
                         audio();
                         //if (!hitTestOnScreenKeys(x, y, true)) repeatTouch(x, y); // TODO: audio doesn't work first time
                         repeatTouch(x, y);
