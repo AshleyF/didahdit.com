@@ -168,7 +168,7 @@
                     toneOscillator.start(0);
                     dingOscillator.start(0);
                     dongOscillator.start(0);
-                    audioStarted = true;
+                    audioStarted = audioCtx.state == 'running';
                     if (manuallyEnableAudio) {
                         manuallyEnableAudio = false; // TOOD: check audioCtx.state == 'running' or != 'suspended'
                         audioWasJustManuallyEnabled = true;
@@ -763,7 +763,7 @@
                 var dialogAttributionColor = darkMode ? '#444' : '#bbb';
                 var keyedCharacterColor = darkMode ? '#fc0' : '#da0'; // yellow
                 //var disabledPaddleColor = darkMode ? '#111' : '#eee';
-                var disabledPaddleColor = darkMode ? '#f00' : '#f00';
+                var disabledPaddleColor = darkMode ? '#0f0' : '#0f0';
 
                 var ctx = canvas.getContext('2d');
                 ctx.scale(1, 1);
@@ -1678,7 +1678,7 @@
                         say('');
                         audio();
                         //if (!hitTestOnScreenKeys(x, y, true)) repeatTouch(x, y); // TODO: audio doesn't work first time
-                        //repeatTouch(x, y);
+                        repeatTouch(x, y);
                         return;
                     }
                     if (noTouch)
@@ -1704,8 +1704,7 @@
                         e.preventDefault();
                         var x = e.x * ratio;
                         var y = e.y * ratio;
-                        playCode('.-.');
-                        //if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
+                        if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
                     }
                 }
                 resizeRedrawCanvas();
