@@ -35,7 +35,6 @@
                                         say('lesson complete');
                                         nextLesson();
                                     }
-                                    simulateTouchButton('nextPhrase', false);
                                     ui.keying = true;
                                     redraw();
                                     done = false;
@@ -304,7 +303,7 @@
             function say(utterance) {
                 if ('speechSynthesis' in window) {
                     var utter = new SpeechSynthesisUtterance(utterance)
-                    utter.volume = 0.9;
+                    utter.volume = 0.8;
                     speechSynthesis.speak(utter);
                 }
             }
@@ -762,7 +761,7 @@
                 var disabledButtonColor = darkMode ? '#444' : '#bbb'; // gray
                 var dialogBackgroundColor = darkMode ? '#222' : '#ddd';
                 var dialogAttributionColor = darkMode ? '#444' : '#bbb';
-                var keyedCharacterColor = darkMode ? '#fc0' : '#da0'; // yellow
+                var keyedCharacterColor = darkMode ? '#fc0' : '#eb1'; // yellow
                 var disabledPaddleColor = darkMode ? '#111' : '#eee';
 
                 var ctx = canvas.getContext('2d');
