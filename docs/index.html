@@ -5,24 +5,18 @@
         body {
             background-color: white;
             font-family: sans-serif;
-            text-align: left;
-            }
+            text-align: left; }
         img.screen {
             margin-left: 1em;
-            border: 1px solid black;
-        }
+            border: 1px solid black; }
         img.icon {
-            vertical-align: text-bottom;
-        }
+            vertical-align: text-bottom; }
         p {
-            text-align: left;
-        }
+            text-align: left; }
         ul {
-            text-align: left;
-        }
+            text-align: left; }
         a {
-            color: black;
-        }
+            color: black; }
         </style>
         <meta name="viewport" content="width=device-width" />
         <link rel="shortcut icon" href="../icons/didahdit.svg"> 
@@ -69,6 +63,7 @@
         <p><b>ⓘ Tip:</b> Two dits-length is the cutoff for decoding <i>Straight</i> key input. That is, a dit sent slower than half-speed (longer than two dits) will be decoded as a dah, while a dah sent faster than 1.5× speed (under two dits long) will be decoded as a dit. Adjust the <b>Speed</b> setting as needed.</b></p>
         <p>The <i>Iambic</i> modes will send dits or dahs when a single paddle is pressed and will repeat when held. Pressing both paddles (&ldquo;squeezing&rdquo;) will produce automatically alternating dits and dahs. In <i>Iambic A</i> mode, elements will stop when a squeeze is released. In <i>Iambic B</i> mode, one more alternating element will be sent after releasing a squeeze.</p>
         <p><i>Ultimatic</i> mode will behave the same when a single paddle is pressed or held. However, when squeezing both paddles, only the paddle pressed <i>last</i> will repeat. This simple scheme results in all but one letter of the alphabet being accomplished with a single squeeze! In my opinion, <i>Ultimatic</i> is the best mode (see <a href="https://youtu.be/Hn4j2nfdKNE">this video</a>).</p>
+        <p><b>ⓘ Tip:</b> Prosigns are surrounded with angle brackets (e.g. &lt;bk&gt;) and should be keyed without letter spacing.</p>
         <p>It is common to have dits on the thumb paddle. If you&apos;re left-handed, you may want to reverse the default <a href="#key"><b>Polarity</b> in settings</a>.</p>
         <h2>Settings</h2>
         <p>Press the ellipsis (⁝) icon to change settings.</p>
@@ -94,6 +89,11 @@
         <p>The <b>Keyer</b> setting chooses the keying method used. See the <a href="#send">Sending</a> section above for a description of the keyer modes.</p>
         <p>The <b>On-screen</b> setting shows/hides on-screen paddles or straight key.</p>
         <p>The <b>Polarity</b> setting determines whether dits are on the left or right when using dual paddles.</p>
+        <h2 id="custom">Custom Content</h2>
+        <p>Custom content can be added via the URL. A hash (<span style="color: #f43">#</span>) followed by pipe-separated (<span style="color: #07d">|</span>) phrases will cause a new <i>Custom</i> set of content to be created.</p>
+        <p><a style="margin-left: 1em" href="https://didahdit.com/#foo|bar BAZ"><b>https://didahdit.com/<span style="color: #f43">#</span>foo<span style="color: #07d">|</span>bar BAZ</b></a></p>
+        <img class="screen" src="custom-foo.png" width="240" height="320" />
+        <p>Words that are capitalized will be read phonetically. Prosigns should be surrounded with angle brackets (e.g., &lt;bk&gt;).</bk></p>
         <h2 id="learn">Learning Correctly</h2>
         <p>You may have noticed that nowhere in the app do you see dits and dahs written. Morse Code is an <i>audible</i> language. You should learn to recognize the <i>sounds</i> of the characters without thinking about any written form you may have seen elsewhere.</p>
         <p>You should not count the dits and dahs. The complete sound of each character should be recognized as a whole. If necessary, turn the <b>Speed</b> up until counting becomes impossible (e.g., 25+ WPM). If you can't copy at this speed, then turn the effective speed down with the <b>Farnsworth</b> setting.</p>
