@@ -18,7 +18,10 @@
                 var done = false;
                 function advanceCount(char) {
                     if (!done) {
-                        var phrase = convertPhrase(getContent().lessons[getLessonNum()].phrases[getPhraseNum()]);
+                        var content = getContent();
+                        var lessonNum = getLessonNum();
+                        var phraseIndex = randomPhrase(getPhraseNum(), content.lessons[lessonNum].phrases.length);
+                        var phrase = convertPhrase(content.lessons[lessonNum].phrases[phraseIndex]);
                         var i = phrase.toUpperCase().indexOf(char, ui.count);
                         if (i == ui.count) {
                             ui.count++;
