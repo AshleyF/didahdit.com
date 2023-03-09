@@ -306,7 +306,6 @@
             function say(utterance) {
                 if ('speechSynthesis' in window) {
                     var utter = new SpeechSynthesisUtterance(utterance)
-                    utter.volume = 0.8;
                     speechSynthesis.speak(utter);
                 }
             }
