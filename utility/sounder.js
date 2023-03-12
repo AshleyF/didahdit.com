@@ -9,7 +9,7 @@ class Sounder {
     }
 
     start() {
-        if (!this.audioStarted || this.audioCtx.state != 'running') {
+        if (!this.audioStarted) { //  || this.audioCtx.state != 'running') {
             this.audioCtx = new (window.AudioContext || window.audioContext || window.webkitAudioContext)();
             this.gainVolume = this.audioCtx.createGain();
             this.gainVolume.gain.value = 1;
@@ -85,10 +85,10 @@ class Sounder {
     }
 
     #bell(bellGain) {
-        //this.start();
-        //var bellTime = this.time;
-        //bellGain.gain.linearRampToValueAtTime(0.2, bellTime + 0.005);
-        //bellGain.gain.exponentialRampToValueAtTime(0.000001, bellTime + 2.4);
+        this.start();
+        var bellTime = this.time;
+        bellGain.gain.linearRampToValueAtTime(0.2, bellTime + 0.005);
+        bellGain.gain.exponentialRampToValueAtTime(0.000001, bellTime + 2.4);
     }
 
     ding() { this.#bell(this.dingGain); }
