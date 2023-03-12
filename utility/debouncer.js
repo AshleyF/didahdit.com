@@ -1,38 +1,33 @@
-function Debouncer(keyCallback) {
-    var _keyCallback = keyCallback;
-    var _debounceTimeoutMs = 10;
-    var _lastKeyTime = 0;
-    var _lastPressed = false;
-    var _currentlyPressed = false;
-    var _timeout = null;
+class Debouncer {
+    constructor(keyCallback) {
+        this.keyCallback = keyCallback;
+        this.debounceTimeoutMs = 10;
+        this.lastPressed = false;
+        this.currentlyPressed = false;
+        this.timer = null;
+    }
 
-    function setTimeout(ms) { _debounceTimeoutMs = ms; }
-    function getTimeout() { return _debounceTimeoutMs; }
+    set timeout(ms) { this.debounceTimeoutMs = ms; }
+    get timeout() { return this.debounceTimeoutMs; }
 
-    function key(pressed) {
-        if (_currentlyPressed != pressed) { // ignore if state hasn't changed
-            _currentlyPressed = pressed;
+    key(pressed) {
+        if (this.currentlyPressed != pressed) { // ignore if state hasn't changed
+            this.currentlyPressed = pressed;
             var now = Date.now();
-            if (now - _lastKeyTime > _debounceTimeoutMs) {
-                _lastPressed = pressed;
-                _lastKeyTime = now;
-                _keyCallback(pressed);
+            if (now - this.lastKeyTime > this.debounceTimeoutMs) {
+                this.lastPressed = pressed;
+                this.lastKeyTime = now;
+                this.keyCallback(pressed);
             }
-            if (_timeout == null) {
-                _timeout = window.setTimeout(function() {
-                    if (_currentlyPressed != _lastPressed) {
-                        _lastKeyTime = Date.now();
-                        _keyCallback(_currentlyPressed);
+            if (this.timer == null) {
+                this.timer = window.setTimeout(() => {
+                    if (this.currentlyPressed != this.lastPressed) {
+                        this.lastKeyTime = Date.now();
+                        this.keyCallback(this.currentlyPressed);
                     }
-                    _timeout = null;
-                }, _debounceTimeoutMs - (now - _lastKeyTime));
+                    this.timer = null;
+                }, this.debounceTimeoutMs - (now - this.lastKeyTime));
             }
         }
     }
-
-    return {
-        key,
-        setTimeout,
-        getTimeout,
-    };
 }

@@ -6,15 +6,17 @@
         <link rel="shortcut icon" href="./icons/didahdit.svg"> 
         <link rel="apple-touch-icon" href="./icons/didahdit.svg">
         <script src="./script/NoSleep.min.js"></script>
+        <script src="./utility/timing.js"></script>
         <script src="./utility/keyer.js"></script>
         <script src="./utility/debouncer.js"></script>
-        <script src="./utility/decoder.js"></script>
+        <script src="./utility/coder.js"></script>
+        <script src="./utility/sounder.js"></script>
         <script src="./content/library.js"></script>
         <script>
             var _polarity = 'ditdah';
             var keyedCharacter = '';
             var keyedCharacterError = false;
-            var decoder = Decoder(value => {
+            var decoder = new Decoder(value => {
                 var done = false;
                 function advanceCount(char) {
                     if (!done) {
@@ -30,7 +32,7 @@
                             }
                             if (ui.count == phrase.length) {
                                 done = true;
-                                playDing();
+                                _sounder.ding();
                                 setTimeout(function () {
                                     if (nextPhrase()) {
                                         redraw();
@@ -41,18 +43,18 @@
                                     ui.keying = true;
                                     redraw();
                                     done = false;
-                                }, dinglen / 2 * 1000);
+                                }, 1.4 * 1000); // half ding length
                             }
                         } else if (char != ' ') {
                             keyedCharacterError = true;
-                            playDong();
+                            _sounder.dong();
                         }
                     }
                 }
                 ui.keying = ui.progress = true;
                 ui.keyingComplete = false;
                 switch (value.kind) {
-                    case 'character':
+                    case 'char':
                         if (value.complete) {
                             advanceCount(value.value);
                             if (value.value == ' ') ui.keyingComplete = true;
@@ -78,44 +80,44 @@
                 }
                 redraw();
             });
-            var _keyer = Keyer(element => {
+            var _keyer = new Keyer(element => {
                 switch (element) {
                     case 'dit':
-                        playTone(ditlen);
-                        silence(ditlen);
+                        _sounder.play(ditlen);
+                        _sounder.silence(ditlen);
                         break;
                     case 'dah':
-                        playTone(ditlen * 3);
-                        silence(ditlen);
+                        _sounder.play(ditlen * 3);
+                        _sounder.silence(ditlen);
                         break;
-                    case 'letter':
-                        //silence(fditlen * 3);
+                    case 'char':
+                        //_sounder.silence(fditlen * 3);
                         decoder.element(element);
                         break;
                     case 'word':
-                        //silence(wditlen * 7);
+                        //_sounder.silence(wditlen * 7);
                         decoder.element(element);
                         break;
                 }
             }, tone => {
                 switch (tone) {
                     case 'tone':
-                        makeTone(true);
+                        _sounder.tone(true);
                         break;
                     case 'silent':
-                        makeTone(false);
+                        _sounder.tone(false);
                         break;
                     case 'dit':
                     case 'dah':
-                    case 'letter':
+                    case 'char':
                     case 'word':
                         decoder.element(tone);
                         break;
                 }
             });
-            _keyer.setMode(getKeyerMode());
-            var _debouncerLeft = Debouncer(pressed => _keyer.key(_polarity == 'ditdah' ? 'dit' : 'dah', pressed));
-            var _debouncerRight = Debouncer(pressed => _keyer.key(_polarity == 'ditdah' ? 'dah' : 'dit', pressed));
+            _keyer.mode = getKeyerMode();
+            var _debouncerLeft = new Debouncer(pressed => _keyer.key(_polarity == 'ditdah' ? 'dit' : 'dah', pressed));
+            var _debouncerRight = new Debouncer(pressed => _keyer.key(_polarity == 'ditdah' ? 'dah' : 'dit', pressed));
 
             var canvas;
 
@@ -138,72 +140,23 @@
                 //alert(message);
             }
 
-            var audioCtx;
-            var toneGain;
-            var toneOscillator;
-            var dingGain;
-            var dingOscillator;
-            var audioStarted = false;
+            var _sounder = new Sounder();
             var manuallyEnableAudio = false;
             var audioWasJustManuallyEnabled = false;
-            function audio() {
-                if (!audioStarted || audioCtx.state != 'running') {
-                    audioCtx = new (window.AudioContext || window.audioContext || window.webkitAudioContext)();
-                    toneOscillator = audioCtx.createOscillator();
-                    dingOscillator = audioCtx.createOscillator();
-                    dongOscillator = audioCtx.createOscillator();
-                    toneOscillator.frequency.value = getPitch();
-                    dingOscillator.frequency.value = 1500;
-                    dongOscillator.frequency.value = 1000;
-                    toneGain = audioCtx.createGain();
-                    dingGain = audioCtx.createGain();
-                    dongGain = audioCtx.createGain();
-                    toneGain.gain.value = 0;
-                    dingGain.gain.value = 0;
-                    dongGain.gain.value = 0;
-                    toneOscillator.connect(toneGain);
-                    dingOscillator.connect(dingGain);
-                    dongOscillator.connect(dongGain);
-                    toneGain.connect(audioCtx.destination);
-                    dingGain.connect(audioCtx.destination);
-                    dongGain.connect(audioCtx.destination);
-                    toneOscillator.start(0);
-                    dingOscillator.start(0);
-                    dongOscillator.start(0);
-                    audioStarted = true;
+            function startAudio() {
+                if (!_sounder.isStarted) {
+                    _sounder.start();
+                    _sounder.pitch = getPitch();
                     if (manuallyEnableAudio) {
                         manuallyEnableAudio = false; // TOOD: check audioCtx.state == 'running' or != 'suspended'
                         audioWasJustManuallyEnabled = true;
                         redraw();
                     }
                 }
-                return audioCtx.currentTime;
             }
 
-            var t = 0;
             function stopAudio() {
-                if (audioStarted) {
-                    audioCtx.close();
-                    t = 0;
-                    audioStarted = false;
-                }
-            }
-
-            const ramp = 0.005;
-            function makeTone(on) {
-                var c = audio();
-                t = c > t ? c : t;
-                toneGain.gain.setTargetAtTime(on ? 1 : 0, t, ramp);
-            }
-
-            function playTone(len) {
-                makeTone(true);
-                t += len;
-                toneGain.gain.setTargetAtTime(0, t, ramp);
-            }
-
-            function silence(len) {
-                t += len;
+                _sounder.stop();
             }
 
             function convertPhrase(phrase) {
@@ -310,22 +263,6 @@
                 }
             }
 
-            var dinglen = 2.5;
-            function playBell(bellGain) {
-                var c = audio();
-                var dingt = c > t ? c : t;
-                bellGain.gain.linearRampToValueAtTime(0.2, dingt + 0.005);
-                bellGain.gain.exponentialRampToValueAtTime(0.000001, dingt + dinglen);
-            }
-
-            function playDing() {
-                playBell(dingGain);
-            }
-
-            function playDong() {
-                playBell(dongGain);
-            }
-
             var morse = "  ETIANMSURWDKGOHVFÜL PJBXCYZQ  54 3   2& +    16=/   ( 7   8 90     $      ?_    \"  .    @   '  -        ;! )     ,    :";
             var playContinuation = function() {};
             var continuationTimeout0 = null;
@@ -413,30 +350,30 @@
                         var continueCode = code.substring(j);
                         continuationTimeout0 = setTimeout(
                             function() { playCode(continueCode); },
-                            (t - startTime) * 1000);
+                            (_sounder.time - startTime) * 1000);
                     }
                 }
-                var startTime = audio();
+                var startTime = _sounder.time;
                 for (var i = 0; i < code.length; i++) {
                     switch (code[i]) {
                         case '.':
-                            playTone(ditlen);
-                            silence(ditlen);
+                            _sounder.play(ditlen);
+                            _sounder.silence(ditlen);
                             break;
                         case '-':
-                            playTone(ditlen * 3);
-                            silence(ditlen);
+                            _sounder.play(ditlen * 3);
+                            _sounder.silence(ditlen);
                             break;
                         case ' ':
                             ui.count++;
                             redraw();
-                            silence(fditlen * 3);
+                            _sounder.silence(fditlen * 3);
                             continuation(i + 1);
                             return;
                         case '/':
                             ui.count += 2;
                             redraw();
-                            silence(wditlen * 7);
+                            _sounder.silence(wditlen * 7);
                             continuation(i + 1);
                             return;
                     }
@@ -483,7 +420,7 @@
                     continuationTimeout1 = setTimeout(
                         function () {
                             if (ui.playing) {
-                                if (!ui.progress) playDing();
+                                if (!ui.progress) _sounder.ding();
                                 continuationTimeout1 = setTimeout(
                                     function () {
                                         if (ui.playing) {
@@ -532,6 +469,7 @@
                         function () {
                             if (ui.playing) {
                                 ui.keying = ui.playing = false;
+                                ui.count = 0;
                                 noSleep.disable();
                                 redraw();
                             }
@@ -630,7 +568,7 @@
             }
 
             function setSpeed(wpm) {
-                _keyer.setSpeed(wpm);
+                _keyer.setSpeed(wpm, wpm, wpm); // TODO: set keyer farnsworth/wordsworth?
                 var speed = getSpeed();
                 var farnsworth = getFarnsworth();
                 if (wpm < farnsworth || speed == farnsworth)
@@ -697,7 +635,7 @@
             function setPitch(hz) {
                 localStorage.setItem('rx_pitch', hz);
                 localStorage.setItem('rx_pitch_default', hz);
-                if (audioStarted) toneOscillator.frequency.value = hz;
+                if (_sounder.isStarted) _sounder.pitch = hz;
             }
 
             function getPitch() {
@@ -713,7 +651,7 @@
             }
 
             function setKeyerMode(mode) {
-                _keyer.setMode(mode);
+                _keyer.mode = mode;
                 localStorage.setItem('tx_keyer', mode);
             }
 
@@ -998,7 +936,7 @@
                             right,
                             h - padding,
                             padding,
-                            audioStarted ? (active ? disabledButtonColor : dialogBackgroundColor) : disabledPaddleColor);
+                            _sounder.isStarted ? (active ? disabledButtonColor : dialogBackgroundColor) : disabledPaddleColor);
                         var halfPadding = padding / w;
                         buttons.push({
                             name: name,
@@ -1007,7 +945,7 @@
                             right: right + halfPadding,
                             bottom: h })
                     }
-                    var held = _keyer.getHeld();
+                    var held = _keyer.held;
                     if (getKeyerMode() == 'S') {
                         drawPaddle('leftKey', padding, w - padding, held.dit || held.dah);
                     } else {
@@ -1147,9 +1085,9 @@
                         }
                     }
                     function drawUpDownControl(label, name, val, min, max, row) {
-                        drawGenericUpDownControl(label, name, val, val >= min, val <= max, row)
+                        drawGenericUpDownControl(label, name, val, val > min, val < max, row)
                     }
-                    drawUpDownControl('Speed:', 'speed', getSpeed(), 5, 50, top + padding + rowHeight);
+                    drawUpDownControl('Speed:', 'speed', getSpeed(), 5, 60, top + padding + rowHeight);
                     drawUpDownControl('Farnsworth:', 'farnsworth', getFarnsworth(), 1, 50, top + padding + rowHeight * 2);
                     drawUpDownControl('Wordsworth:', 'wordsworth', getWordsworth(), 1, 50, top + padding + rowHeight * 3);
                     drawUpDownControl('Pitch:', 'pitch', getPitch(), 100, 900, top + padding + rowHeight * 4);
@@ -1294,13 +1232,13 @@
             function playV(n) {
                 stopPhrase();
                 continuationTimeout0 = setTimeout(function() {
-                    playTone(ditlen); // dit
+                    _sounder.play(ditlen); // dit
                     continuationTimeout0 = setTimeout(function() {
-                        playTone(ditlen); // dit
+                        _sounder.play(ditlen); // dit
                         continuationTimeout0 = setTimeout(function() {
-                            playTone(ditlen); // dit
+                            _sounder.play(ditlen); // dit
                             continuationTimeout0 = setTimeout(function() {
-                                playTone(ditlen * 3); // dah
+                                _sounder.play(ditlen * 3); // dah
                                 if (n > 1) {
                                     continuationTimeout0 = setTimeout(function() {
                                         playV(n - 1);
@@ -1316,7 +1254,7 @@
                 if (audioWasJustManuallyEnabled) {
                     audioWasJustManuallyEnabled = false;
                     noSleep.enable();
-                    playDing();
+                    _sounder.ding();
                     return;
                 }
                 if (ui.show == 'settings') {
@@ -1677,7 +1615,7 @@
                         firstPress = false;
                         e.preventDefault();
                         say('');
-                        audio();
+                        startAudio();
                         //if (!hitTestOnScreenKeys(x, y, true)) repeatTouch(x, y); // TODO: audio doesn't work first time
                         repeatTouch(x, y);
                         return;
@@ -1733,12 +1671,13 @@
                         switch (e.code) {
                             case 'BracketLeft':
                                 if (!ui.playing) {
+                                    startAudio();
                                     _debouncerLeft.key(true);
                                     redraw();
                                 }
                                 break;
                             case 'ControlLeft':
-                                if (!audioStarted) {
+                                if (!_sounder.isStarted) {
                                     manuallyEnableAudio = true;
                                     redraw();
                                     break;
@@ -1747,12 +1686,13 @@
                                 break;
                             case 'BracketRight':
                                 if (!ui.playing) {
+                                    startAudio();
                                     _debouncerRight.key(true);
                                     redraw();
                                 }
                                 break;
                             case 'ControlRight':
-                                if (!audioStarted) {
+                                if (!_sounder.isStarted) {
                                     manuallyEnableAudio = true;
                                     redraw();
                                     break;
@@ -1841,5 +1781,6 @@
         - 'tx_buffer' (int size)
         - 'scramble'
         - 'shuffle_<ID>' (within lesson)
+        - 'rx_pileup' (in experimental)
     -->
 </html>
