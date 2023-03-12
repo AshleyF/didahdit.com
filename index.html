@@ -1671,7 +1671,6 @@
                         switch (e.code) {
                             case 'BracketLeft':
                                 if (!ui.playing) {
-                                    startAudio();
                                     _debouncerLeft.key(true);
                                     redraw();
                                 }
@@ -1686,7 +1685,6 @@
                                 break;
                             case 'BracketRight':
                                 if (!ui.playing) {
-                                    startAudio();
                                     _debouncerRight.key(true);
                                     redraw();
                                 }

@@ -23,17 +23,17 @@ class Sounder {
             this.toneOscillator.start(0);
             this.dingGain = this.audioCtx.createGain();
             this.dingGain.gain.value = 0;
+            this.dingGain.connect(this.audioCtx.destination);
             this.dingOscillator = this.audioCtx.createOscillator();
             this.dingOscillator.frequency.value = 1500;
             this.dingOscillator.connect(this.dingGain);
-            this.dingGain.connect(this.audioCtx.destination);
+            this.dingOscillator.start(0);
             this.dongGain = this.audioCtx.createGain();
             this.dongGain.gain.value = 0;
+            this.dongGain.connect(this.audioCtx.destination);
             this.dongOscillator = this.audioCtx.createOscillator();
             this.dongOscillator.frequency.value = 1000;
             this.dongOscillator.connect(this.dongGain);
-            this.dongGain.connect(this.audioCtx.destination);
-            this.dingOscillator.start(0);
             this.dongOscillator.start(0);
             this.audioStarted = true;
         }
@@ -85,10 +85,10 @@ class Sounder {
     }
 
     #bell(bellGain) {
-        this.start();
-        var bellTime = this.time;
-        bellGain.gain.linearRampToValueAtTime(0.2, bellTime + 0.005);
-        bellGain.gain.exponentialRampToValueAtTime(0.000001, bellTime + 2.4);
+        //this.start();
+        //var bellTime = this.time;
+        //bellGain.gain.linearRampToValueAtTime(0.2, bellTime + 0.005);
+        //bellGain.gain.exponentialRampToValueAtTime(0.000001, bellTime + 2.4);
     }
 
     ding() { this.#bell(this.dingGain); }
