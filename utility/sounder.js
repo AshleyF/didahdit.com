@@ -35,6 +35,7 @@ class Sounder {
             this.dongOscillator.frequency.value = 1000;
             this.dongOscillator.connect(this.dongGain);
             this.dongOscillator.start(0);
+            this.t = this.audioCtx.currentTime;
             this.audioStarted = true;
         }
     }
