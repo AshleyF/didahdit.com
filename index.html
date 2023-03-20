@@ -16,6 +16,8 @@
             var _polarity = 'ditdah';
             var keyedCharacter = '';
             var keyedCharacterError = false;
+            var ditDitDitCount = 0;
+            var errorTimeout = null;
             var decoder = new Decoder(value => {
                 var done = false;
                 function advanceCount(char) {
@@ -26,6 +28,7 @@
                         var phrase = convertPhrase(content.lessons[lessonNum].phrases[phraseIndex]);
                         var i = phrase.toUpperCase().indexOf(char, ui.count);
                         if (i == ui.count) {
+                            ditDitDitCount = 0;
                             ui.count++;
                             if (phrase[ui.count - 1] == '<' || phrase[ui.count - 2] == '<') {
                                 while (phrase[ui.count++] != '>');
@@ -47,7 +50,28 @@
                             }
                         } else if (char != ' ') {
                             keyedCharacterError = true;
-                            _sounder.dong();
+                            if (errorTimeout != null) {
+                                clearTimeout(errorTimeout)
+                                errorTimeout = null;
+                            }
+                            if (char == 'E') { // may be dit-dit-dit-dit-dit
+                                errorTimeout = setTimeout(() =>
+                                {
+                                    if (ditDitDitCount >= 3) { // correction?
+                                        if (ui.count != 0) {
+                                            do { ui.count--; } while (ui.count > 0 && phrase[ui.count - 1] != ' ');
+                                            redraw();
+                                            _sounder.ding();
+                                        }
+                                    }
+                                    ditDitDitCount = 0;
+                                    _sounder.dong(); // correction intentionally ding *and* dong
+                                }, ditlen * 10 * 1000);
+                                ditDitDitCount++;
+                            } else {
+                                ditDitDitCount = 0;
+                                _sounder.dong();
+                            }
                         }
                     }
                 }
