@@ -1275,6 +1275,10 @@
             }
 
             function touch(x, y) {
+                if (manuallyEnableAudio) {
+                    _sounder.ding();
+                    return;
+                }
                 if (audioWasJustManuallyEnabled) {
                     audioWasJustManuallyEnabled = false;
                     noSleep.enable();
@@ -1555,6 +1559,7 @@
             }
 
             function simulateTouchButton(name, repeat) {
+                if (manuallyEnableAudio) return;
                 for (var b = 0; b < ui.buttons.length; b++) {
                     var button = ui.buttons[b];
                     if (button.name == name) {
@@ -1691,6 +1696,7 @@
                 }
 
                 document.body.addEventListener('keydown', (e) => {
+                    if (manuallyEnableAudio) return;
                     if (!e.repeat) {
                         switch (e.code) {
                             case 'BracketLeft':
