@@ -60,6 +60,7 @@
                                     if (ditDitDitCount >= 3) { // correction?
                                         if (ui.count != 0) {
                                             do { ui.count--; } while (ui.count > 0 && phrase[ui.count - 1] != ' ');
+                                            keyedCharacter = '';
                                             redraw();
                                             _sounder.ding();
                                         }
@@ -463,6 +464,7 @@
                                                         if (ui.playing) {
                                                             if (nextPhrase()) {
                                                                 ui.count = 0;
+                                                                keyedCharacter = '';
                                                                 var play = function() { playPhrase(getCurrentPhrase(), speakAndAdvance, false) };
                                                                 if (ui.progress) {
                                                                     continuationTimeout1 = setTimeout(play, fditlen * 3 * 1000);
@@ -494,6 +496,7 @@
                             if (ui.playing) {
                                 ui.keying = ui.playing = false;
                                 ui.count = 0;
+                                keyedCharacter = '';
                                 noSleep.disable();
                                 redraw();
                             }
@@ -1217,12 +1220,14 @@
 
             function prevPhrase() {
                 ui.count = 0;
+                keyedCharacter = '';
                 var phrase = getPhraseNum();
                 if (phrase > 0) setPhraseNum(phrase - 1);
             }
 
             function nextPhrase() {
                 ui.count = 0;
+                keyedCharacter = '';
                 var phrase = getPhraseNum();
                 if (phrase < getContent().lessons[getLessonNum()].phrases.length - 1) {
                     setPhraseNum(phrase + 1);
@@ -1437,6 +1442,7 @@
                                     stopPhrase();
                                     ui.keying = ui.playing = false;
                                     ui.count = 0;
+                                    keyedCharacter = '';
                                     noSleep.disable();
                                     ui.show = 'settings';
                                     redraw();
@@ -1483,6 +1489,7 @@
                                             noSleep.enable();
                                             ui.progress = true;
                                             ui.count = 0;
+                                            keyedCharacter = '';
                                             playPhrase(getCurrentPhrase(), false);
                                         }
                                     }
@@ -1495,6 +1502,7 @@
                                         saveHiddenState();
                                         ui.progress = false;
                                         ui.count = 0;
+                                        keyedCharacter = '';
                                         stopPhrase();
                                         ui.keying = ui.playing = !ui.playing;
                                         if (ui.playing) noSleep.enable(); else noSleep.disable();
@@ -1687,6 +1695,7 @@
                         stopAudio();
                         ui.keying = ui.playing = false;
                         ui.count = 0;
+                        keyedCharacter = '';
                         noSleep.disable();
                         redraw();
                     }

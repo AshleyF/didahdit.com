@@ -1,6 +1,6 @@
 class Sounder {
     constructor() {
-        this.ramp = 0.005;
+        this.ramp = 0.01;
         this.audioStarted = false;
         this.t = 0;
         this.wpm; // setSpeed() to init
@@ -9,7 +9,7 @@ class Sounder {
     }
 
     start() {
-        if (!this.audioStarted) { //  || this.audioCtx.state != 'running') {
+        if (!this.audioStarted || this.audioCtx.state != 'running') {
             this.audioCtx = new (window.AudioContext || window.audioContext || window.webkitAudioContext)();
             this.gainVolume = this.audioCtx.createGain();
             this.gainVolume.gain.value = 1;
