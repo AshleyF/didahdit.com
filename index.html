@@ -1702,6 +1702,7 @@
                 };
                 window.onblur = function(e) {
                     cancelRepeat();
+                    stopAudio();
                 }
 
                 document.body.addEventListener('keydown', (e) => {

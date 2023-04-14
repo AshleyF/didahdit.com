@@ -9,7 +9,7 @@ class Sounder {
     }
 
     start() {
-        if (!this.audioStarted || this.audioCtx.state != 'running') {
+        if (!this.audioStarted) { // || this.audioCtx.state != 'running') {
             this.audioCtx = new (window.AudioContext || window.audioContext || window.webkitAudioContext)();
             this.gainVolume = this.audioCtx.createGain();
             this.gainVolume.gain.value = 1;
