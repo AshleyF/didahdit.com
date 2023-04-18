@@ -146,8 +146,9 @@ var library = [
         lessons: [
         { id: 'BIGRAMS',
             name: 'Bigrams',
-            phrases: ['th', 'he', 'in', 'er', 'an', 're', 'es', 'on', 'st', 'nt', 'en', 'at', 'ed', 'nd', 'to', 'or', 'ea', 'ti', 'ar', 'te', 'ng', 'al', 'it', 'as', 'is', 'ha', 'et', 'se', 'ou', 'of', 'le', 'sa', 've', 'ro', 'ra', 'ri', 'hi', 'ne', 'me', 'de', 'co', 'ta', 'ec', 'si', 'll', 'so', 'na', 'li', 'la', 'el', 'ma', 'di', 'ic', 'rt', 'ns', 'rs', 'io', 'om', 'ch', 'ot', 'ca', 'ce', 'ho', 'be', 'tt', 'fo', 'ts', 'ss', 'no', 'ee', 'em', 'ac', 'il', 'da', 'ni', 'ur', 'wa', 'sh', 'ei', 'am', 'tr', 'dt', 'us', 'lo', 'pe', 'un', 'nc', 'wi', 'ut', 'ad', 'ew', 'ow', 'ge', 'ep', 'ai', 'ly', 'ol', 'ft', 'os', 'eo'] },
-        { id: 'TRIGRAMS',
+            phrases: ['th', 'he', 'in', 'er', 'an', 're', 'on', 'at', 'en', 'nd', 'ti', 'es', 'or', 'te', 'of', 'ed', 'is', 'it', 'al', 'ar', 'st', 'to', 'nt', 'ng', 'se', 'ha', 'as', 'ou', 'io', 'le', 've', 'co', 'me', 'de', 'hi', 'ri', 'ro', 'ic', 'ne', 'ea', 'ra', 'ce', 'li', 'ch', 'll', 'be', 'ma', 'si', 'om', 'ur'] },
+
+    { id: 'TRIGRAMS',
             name: 'Trigrams',
             phrases: ['the', 'and', 'ing', 'ent', 'ion', 'her', 'for', 'tha', 'nth', 'int', 'ere', 'tio', 'ter', 'est', 'ers', 'ati', 'hat', 'ate', 'all', 'eth', 'hes', 'ver', 'his', 'oft', 'ith', 'fth', 'sth', 'oth', 'res', 'ont', 'dth', 'are', 'rea', 'ear', 'was', 'sin', 'sto', 'tth', 'sta', 'thi', 'tin', 'ted', 'ons', 'edt', 'wit', 'san', 'din', 'ort', 'con', 'rth', 'eve', 'eco', 'era', 'ist', 'ngt', 'ast', 'ill', 'com', 'ore', 'ive', 'nce', 'one', 'edi', 'pro', 'ess', 'out', 'ein', 'att', 'men', 'hec', 'esa', 'hen', 'ina', 'eri', 'ert', 'ame', 'iti', 'ome', 'son', 'art', 'man', 'ean', 'ona', 'eof', 'tor', 'hea', 'ran', 'rin', 'ine', 'eda', 'nto', 'ave', 'nin', 'ove', 'oun', 'ain', 'ant', 'str', 'eto', 'hem'] },
         { id: 'QUADGRAMS',
