@@ -50,9 +50,8 @@ class Sounder {
 
     stop() {
         if (this.audioStarted) {
-            this.audioCtx.close();
-            this.t = 0;
             this.audioStarted = false;
+            this.audioCtx.close();
         }
     }
 
