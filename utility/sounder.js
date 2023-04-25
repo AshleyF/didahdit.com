@@ -6,9 +6,15 @@ class Sounder {
         this.wpm; // setSpeed() to init
         this.elementTiming = null; // setSpeed() to init
         this.setSpeed(25); // default
+        this.lastStartTime = 0;
     }
 
     start() {
+        var now = Date.now();
+        if (this.audioStarted && now - this.lastStartTime > 10000) {
+            this.stop(); // restart audio after timeout to avoid "stalls"
+        }
+        this.lastStartTime = now;
         if (!this.audioStarted) { // || this.audioCtx.state != 'running') {
             this.audioCtx = new (window.AudioContext || window.audioContext || window.webkitAudioContext)();
             this.gainVolume = this.audioCtx.createGain();

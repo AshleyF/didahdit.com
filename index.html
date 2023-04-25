@@ -1207,12 +1207,14 @@
             }
 
             function prevLesson() {
+                ui.count = 0;
                 var lesson = getLessonNum();
                 if (lesson > 0) setLessonNum(lesson - 1);
                 setPhraseNum(0);
             }
 
             function nextLesson() {
+                ui.count = 0;
                 var lesson = getLessonNum();
                 if (lesson < getContent().lessons.length - 1) setLessonNum(lesson + 1);
                 setPhraseNum(0);
