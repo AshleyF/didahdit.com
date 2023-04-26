@@ -10,11 +10,10 @@ class Sounder {
     }
 
     start() {
-        var now = Date.now();
-        if (this.audioStarted && now - this.lastStartTime > 10000) {
+        if (this.audioStarted && (Date.now() - this.lastStartTime) > 10000) {
             this.stop(); // restart audio after timeout to avoid "stalls"
         }
-        this.lastStartTime = now;
+        this.lastStartTime = Date.now();
         if (!this.audioStarted) { // || this.audioCtx.state != 'running') {
             this.audioCtx = new (window.AudioContext || window.audioContext || window.webkitAudioContext)();
             this.gainVolume = this.audioCtx.createGain();
@@ -50,8 +49,10 @@ class Sounder {
 
     stop() {
         if (this.audioStarted) {
-            this.audioStarted = false;
+            this.t = 0;
+            this.lastStartTime = 0;
             this.audioCtx.close();
+            this.audioStarted = false;
         }
     }
 
