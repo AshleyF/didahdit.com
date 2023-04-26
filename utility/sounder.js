@@ -51,7 +51,7 @@ class Sounder {
         if (this.audioStarted) {
             this.t = 0;
             this.lastStartTime = 0;
-            this.audioCtx.close();
+            //this.audioCtx.close();
             this.audioStarted = false;
         }
     }
