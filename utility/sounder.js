@@ -6,14 +6,14 @@ class Sounder {
         this.wpm; // setSpeed() to init
         this.elementTiming = null; // setSpeed() to init
         this.setSpeed(25); // default
-        this.lastStartTime = 0;
+        //this.lastStartTime = 0;
     }
 
     start() {
-        if (this.audioStarted && (Date.now() - this.lastStartTime) > 10000) {
-            this.stop(); // restart audio after timeout to avoid "stalls"
-        }
-        this.lastStartTime = Date.now();
+        //if (this.audioStarted && (Date.now() - this.lastStartTime) > 10000) {
+        //    this.stop(); // restart audio after timeout to avoid "stalls"
+        //}
+        //this.lastStartTime = Date.now();
         if (!this.audioStarted) { // || this.audioCtx.state != 'running') {
             this.audioCtx = new (window.AudioContext || window.audioContext || window.webkitAudioContext)();
             this.gainVolume = this.audioCtx.createGain();
@@ -48,12 +48,12 @@ class Sounder {
     get isStarted() { return this.audioStarted; }
 
     stop() {
-        if (this.audioStarted) {
-            this.t = 0;
-            this.lastStartTime = 0;
-            //this.audioCtx.close();
-            this.audioStarted = false;
-        }
+        //if (this.audioStarted) {
+        //    this.t = 0;
+        //    this.lastStartTime = 0;
+        //    this.audioCtx.close();
+        //    this.audioStarted = false;
+        //}
     }
 
     tone(on) {
