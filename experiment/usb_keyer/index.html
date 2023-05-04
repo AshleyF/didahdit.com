@@ -123,7 +123,10 @@
             const defaultPileup = 0;
 
             var _sounder = new Sounder();
-            var _encoder = new Encoder(_sounder.send);
+            var _encoder = new Encoder(function (e) {
+                _sounder.send(e);
+                elementCallback(e);
+            });
 
             var mode;
             var memory;
@@ -444,6 +447,7 @@
             var currentSpeed = defaultSpeed;
             function setSpeed(wpm, farnsworth, wordsworth, sendToRadio, updateMenu) {
                 keyer.setSpeed(wpm, farnsworth, wordsworth);
+                _sounder.setSpeed(wpm, farnsworth, wordsworth);
                 speed = wpm;
                 ditlen = 1.2 / speed;
                 sendByte(getSpeedByte(wpm));
@@ -1424,8 +1428,8 @@
                 setPileup(parseInt(e.target.value));
             }
 
-            function test() {
-                _encoder.phrase('cq cq pota de k7zcw k7zcw k');
+            function memorySend(message) {
+                _encoder.phrase(message);
             }
         </script>
     </head>
@@ -1559,6 +1563,12 @@
                                 </td>
                             </tr>
                             <tr>
+                                <td>
+                                    <a href="javascript:memorySend('cq cq pota de k7zcw k7zcw k')">CQ</a>
+                                    <a href="javascript:memorySend(prompt())">Manual</a>
+                                </td>
+                            </tr>
+                            <tr>
                                 <td colspan="2">
                                     <h3 style="margin-top: 3em">Practice sending (choose a lesson below and key it):</h3>
                                     <hr />
@@ -1578,8 +1588,6 @@
                                     <a href="javascript:practiceSending('THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9 THE QUICK BROWN FOX JUMPED OVER THE LAZY DOGS BACK 7 0 3 6 4 5 1 2 8 9 BENS BEST BENT WIRE/5 BENS BEST BENT WIRE/5 BENS BEST BENT WIRE/5 ///// ,,,,, ..... ????? &lt;SK&gt;&lt;SK&gt;&lt;SK&gt;&lt;SK&gt;&lt;SK&gt; &lt;AR&gt;&lt;AR&gt;&lt;AR&gt;&lt;AR&gt;&lt;AR&gt; &lt;BT&gt;&lt;BT&gt;&lt;BT&gt;&lt;BT&gt;&lt;BT&gt;')">Drill</a>
                                     <br />
                                     <a href="javascript:practiceSending('BE TO OF IN IT ON HE AS DO AT BY WE OR AN MY SO UP IF GO')">Two-letter words</a>
-                                    <br />
-                                    <a href="javascript:test()">Test</a>
                                 </td>
                             </tr>
                         </table>
