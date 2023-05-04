@@ -14,7 +14,7 @@ class Sounder {
         //    this.stop(); // restart audio after timeout to avoid "stalls"
         //}
         //this.lastStartTime = Date.now();
-        if (!this.audioStarted) { // || this.audioCtx.state != 'running') {
+        if (!this.audioStarted || this.audioCtx.state != 'running') {
             this.audioCtx = new (window.AudioContext || window.audioContext || window.webkitAudioContext)();
             this.gainVolume = this.audioCtx.createGain();
             this.gainVolume.gain.value = 1;
@@ -129,5 +129,7 @@ class Sounder {
         return this.t;
     }
 
-    setSpeed(wpm, farnsworth, wordsworth) { this.elementTiming = Timing(wpm, farnsworth, wordsworth); }
+    setSpeed(wpm, farnsworth, wordsworth) {
+        this.elementTiming = Timing(wpm, farnsworth, wordsworth);
+    }
 }
