@@ -68,30 +68,28 @@ class Sounder {
         this.tone(true);
         this.t += len;
         this.gainMain.gain.setTargetAtTime(0, this.t, this.ramp);
-    }
-
-    send(element) {
-        switch (element) {
-            case 'dit':
-                this.play(this.elementTiming.dit);
-                this.silence(this.elementTiming.element);
-                break;
-            case 'dah':
-                this.play(this.elementTiming.dah);
-                this.silence(this.elementTiming.element);
-                break;
-            case 'char':
-                this.silence(this.elementTiming.char - this.elementTiming.element);
-                break;
-            case 'word':
-                this.silence(this.elementTiming.word - this.elementTiming.element);
-                break;
-        }
+        return len;
     }
 
     silence(len) {
         this.start();
         this.t += len;
+        return len;
+    }
+
+    send(element) {
+        switch (element) {
+            case 'dit':
+                return this.play(this.elementTiming.dit) +
+                       this.silence(this.elementTiming.element);
+            case 'dah':
+                return this.play(this.elementTiming.dah) +
+                       this.silence(this.elementTiming.element);
+            case 'char':
+                return this.silence(this.elementTiming.char - this.elementTiming.element);
+            case 'word':
+                return this.silence(this.elementTiming.word - this.elementTiming.element);
+        }
     }
 
     #bell(bellGain) {

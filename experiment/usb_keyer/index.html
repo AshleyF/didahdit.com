@@ -123,9 +123,45 @@
             const defaultPileup = 0;
 
             var _sounder = new Sounder();
+            var _pendingSoundLen = 0;
             var _encoder = new Encoder(function (e) {
-                _sounder.send(e);
+                _pendingSoundLen += _sounder.send(e);
             });
+
+            var _pendingMemoryMessage = '';
+            var _pendingMemoryTimer = null;
+            function memorySendPending() {
+                if (_pendingMemoryMessage.length > 0) {
+                    var c = _pendingMemoryMessage[0];
+                    _pendingMemoryMessage = _pendingMemoryMessage.substring(1);
+                    _encoder.phrase(c);
+                    console.log('Send: ' + c);
+                    _pendingMemoryTimer = window.setTimeout(function() {
+                        messageOperators(c);
+                        memorySendPending();
+                    }, _pendingSoundLen * 1000);
+                    _pendingSoundLen = 0;
+                } else {
+                    _pendingMemoryTimer = null;
+                }
+            }
+
+            function memorySend(message) {
+                console.log('Memory: ' + message);
+                if (_pendingMemoryMessage.length != 0) _pendingMemoryMessage += ' ';
+                _pendingMemoryMessage += message;
+                if (_pendingMemoryTimer == null) {
+                    memorySendPending();
+                }
+            }
+
+            function stopMemorySend() {
+                _pendingMemoryMessage = '';
+                if (_pendingMemoryTimer != null) {
+                    clearTimeout(_pendingMemoryTimer);
+                    _pendingMemoryTimer = null;
+                }
+            }
 
             var mode;
             var memory;
@@ -535,7 +571,6 @@
                     operators[i].copy(character);
                 }
                 updateOperators();
-                window.setTimeout(updateOperators, 2500); // check for finished after pause
             }
 
             var currentPitch = defaultPitch;
@@ -1135,6 +1170,7 @@
                 }
                 if (now - wordBreak > ditlen * 14.0) {
                     clearNextKeyState = true;
+                    window.setTimeout(updateOperators, 2000); // check for finished after pause
                 }
 
                 window.setTimeout(drawKeyAndToneState, 5);
@@ -1482,10 +1518,6 @@
             function pileupChange(e) {
                 setPileup(parseInt(e.target.value));
             }
-
-            function memorySend(message) {
-                _encoder.phrase(message);
-            }
         </script>
     </head>
     <body onload="init()">
@@ -1617,8 +1649,11 @@
                             </tr>
                             <tr>
                                 <td>
-                                    <a href="javascript:memorySend('cq cq pota de k7zcw k7zcw k')">CQ</a>
+                                    <a href="javascript:memorySend('cq cq pota de k7zcw k')">CQ</a>
                                     <a href="javascript:memorySend(prompt())">Manual</a>
+                                    <a href="javascript:memorySend('ur 5nn 5nn wa &lt;bk&gt;')">RST</a>
+                                    <a href="javascript:memorySend('tu 73 ee')">TKS</a>
+                                    <a href="javascript:stopMemorySend()">Stop</a>
                                 </td>
                             </tr>
                             <tr>
