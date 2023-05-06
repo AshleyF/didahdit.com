@@ -23,7 +23,6 @@ class Operator {
     }
 
     setSpeed(wpm, farnsworth, wordsworth) {
-        console.log('WPM: ' + wpm + ' FARN: ' + farnsworth + ' WORDS: ' + wordsworth);
         this.sounder.setSpeed(speed - Math.round(5 * Math.random()), farnsworth, wordsworth);
     }
 

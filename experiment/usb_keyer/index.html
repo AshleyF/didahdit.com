@@ -497,7 +497,9 @@
             var currentPileup = defaultPileup;
             var operators = [];
             function updateOperators() {
+                var len = operators.length;
                 operators = operators.filter(op => !op.isDone);
+                var justFinished = (len != operators.length);
                 while (operators.length > currentPileup) { // remove extra operators
                     operators.pop();
                 }
@@ -513,7 +515,11 @@
                         var call = randomCall(format)
                         var unique = operators.every(op => op.callSign != call); // no two operators with the same call
                     } while (!unique); 
-                    operators.push(new Operator(call, qth, speed, farnsworth, wordsworth));
+                    var op = new Operator(call, qth, speed, farnsworth, wordsworth);
+                    if (justFinished) {
+                        op.copy(' CQ '); // trigger jumping in
+                    }
+                    operators.push(op);
                 }
             }
 
@@ -529,6 +535,7 @@
                     operators[i].copy(character);
                 }
                 updateOperators();
+                window.setTimeout(updateOperators, 2500); // check for finished after pause
             }
 
             var currentPitch = defaultPitch;

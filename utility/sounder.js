@@ -44,7 +44,7 @@ class Sounder {
             this.audioStarted = true;
         }
         if (this.audioCtx.state != 'running') {
-            alert("Audio: " + this.audioCtx.state);
+            this.audioCtx.resume();
         }
     }
 
