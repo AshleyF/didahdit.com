@@ -534,8 +534,15 @@
             var operators = [];
             function updateOperators() {
                 var len = operators.length;
+                var justFinished = false;
+                for (var i = 0; i < operators.length; i++) {
+                    var op = operators[i];
+                    if (op.isDone) {
+                        justFinished = true;
+                        document.getElementById('log').innerHTML += '<li>' + op.call + '&nbsp;' + op.qth + '</li>';
+                    }
+                }
                 operators = operators.filter(op => !op.isDone);
-                var justFinished = (len != operators.length);
                 while (operators.length > currentPileup) { // remove extra operators
                     operators.pop();
                 }
@@ -1647,12 +1654,20 @@
                                         <li>With Pileup on, send CQ</li>
                                         <ul>
                                             <li>Operators will reply with callsigns</li>
-                                            <li>Send partial calls followed by ? to narrow</li>
+                                            <li>Send partial calls followed by ? to narrow (or just ? or AGN to repeat)</li>
                                             <li>Complete call followed by ? will reply with RR [call]</li>
                                             <li>Send [call] and signal report, they will reply in kind and include U.S. state</li>
                                             <li>Finsh with a thank you and a dit-dit and they will too and new ops will jump in</li>
                                         </ul>
                                     </ul>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <h3 style="margin-top: 3em">Log:</h3>
+                                    <ol id="log">
+                                        <li>A7B&nbsp;WI</li>
+                                    </ol>
                                 </td>
                             </tr>
                             <tr>

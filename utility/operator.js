@@ -89,20 +89,20 @@ class Operator {
 
         if (this.message.indexOf(' ' + this.call + ' ') >= 0) {
             this.me = true;
-            var signal = this.pick(['5NN', '54N', '53N']);
+            var signal = this.pick(['5NN', '58N', '57N', '56N', '55N', '54N', '53N']);
             var ur = this.pick(['UR ', '']);
             this.send('<BK> TU ' + ur + signal + ' ' + signal + ' ' + this.qth + ' ' + this.qth + ' <BK>');
             return;
         }
 
         if (this.me) {
-            var salutation = this.pick(['73', 'GL', '73 ES GL', ''])
+            var salutation = this.pick(['73', 'GL', 'GL 73', 'GL ES 73', ''])
             this.send(salutation + ' EE');
             this.done = true;
             return;
         }
 
-        if (this.message.indexOf(' EE ') >= 0) {
+        if (this.message.indexOf(' EE ') >= 0 || this.message.indexOf(' 73EE ') >= 0 ) {
             setTimeout(() => { this.send(this.call); /* + K or P2P */ }, 3000 + 2000 * Math.random());
         }
 
