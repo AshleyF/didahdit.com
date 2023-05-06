@@ -1,11 +1,12 @@
 class Operator {
-    constructor(call) {
+    constructor(call, qth, speed, farnsworth, wordsworth) {
         this.call = call;
+        this.qth = qth;
         console.log(call);
         this.sounder = new Sounder();
-        this.sounder.setSpeed(20 - Math.round(5 * Math.random()), 20 - Math.round(5 * Math.random()), 20);
         this.sounder.pitch = 600 + 100 - Math.round(200 * Math.random());
         this.sounder.volume = 1 - Math.random() / 2;
+        this.setSpeed(speed, farnsworth, wordsworth);
         this.encoder = new Encoder(x => this.sounder.send(x));
         this.message = ' ';
         this.timeout = null;
@@ -19,6 +20,11 @@ class Operator {
 
     get isDone() {
         return this.done;
+    }
+
+    setSpeed(wpm, farnsworth, wordsworth) {
+        console.log('WPM: ' + wpm + ' FARN: ' + farnsworth + ' WORDS: ' + wordsworth);
+        this.sounder.setSpeed(speed - Math.round(5 * Math.random()), farnsworth, wordsworth);
     }
 
     trace(message) {
@@ -85,9 +91,8 @@ class Operator {
         if (this.message.indexOf(' ' + this.call + ' ') >= 0) {
             this.me = true;
             var signal = this.pick(['5NN', '54N', '53N']);
-            var state = this.pick(['AL', 'AK', 'AB', 'AR', 'AS', 'AZ', 'BC', 'CA', 'LAX', 'EB', 'ORG', 'SV', 'SDG', 'SF', 'SJV', 'SB', 'SCV', 'DC', 'CO', 'CT', 'DE', 'FL', 'NFL', 'SFL', 'WCF', 'GA', 'GU', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MB', 'MH', 'MA', 'WMA', 'MDC', 'EMA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NB', 'MAR', 'NE', 'NV', 'NY', 'NNY', 'WNY', 'NLI', 'NJ', 'SNJ', 'ENY', 'NH', 'NM', 'NL', 'NC', 'NS', 'NU', 'ND', 'NT', 'GTA', 'OH', 'OK', 'ON', 'ONE', 'ONN', 'ONS', 'OR', 'PA', 'WPA', 'PAC', 'EPA', 'PW', 'PR', 'PE', 'QC', 'RI', 'SK', 'SC', 'SD', 'TN', 'TX', 'NTX', 'STX', 'WTX', 'VI', 'UT', 'VT', 'VA', 'WA', 'WWA', 'EWA', 'WV', 'WI', 'WY', 'YT']);
             var ur = this.pick(['UR ', '']);
-            this.send('<BK> TU ' + ur + signal + ' ' + signal + ' ' + state + ' ' + state + ' <BK>');
+            this.send('<BK> TU ' + ur + signal + ' ' + signal + ' ' + this.qth + ' ' + this.qth + ' <BK>');
             return;
         }
 
@@ -99,7 +104,7 @@ class Operator {
         }
 
         if (this.message.indexOf(' EE ') >= 0) {
-            setTimeout(() => { this.send(this.call); /* + K or P2P */ }, 2500 + 2000 * Math.random());
+            setTimeout(() => { this.send(this.call); /* + K or P2P */ }, 3000 + 2000 * Math.random());
         }
 
         this.message = ' ';

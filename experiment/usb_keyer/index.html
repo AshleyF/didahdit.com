@@ -125,7 +125,6 @@
             var _sounder = new Sounder();
             var _encoder = new Encoder(function (e) {
                 _sounder.send(e);
-                elementCallback(e);
             });
 
             var mode;
@@ -134,12 +133,15 @@
             var enforce;
             var speed;
             var ditlen;
+            var fditlen;
+            var wditlen;
 
             function updateBreaks(len) {
                 var end = (new Date()).getTime() / 1000 + len;
                 letterBreak = end + (ditlen * 3);
-                wordBreak = end + (ditlen * 7);
-                farnsworthWordBreak = wordBreak + (ditlen * farnsworth);
+                wordBreak = end + (wditlen * 7);
+                //farnsworthWordBreak = wordBreak + (ditlen * farnsworth);
+                farnsworthWordBreak = wordBreak;
             }
 
             function dit(tone) {
@@ -206,10 +208,10 @@
                 document.getElementById('buffer').addEventListener('change', bufferLenChange);
                 var speed = document.getElementById('speed');
                 speed.addEventListener('change', speedChange);
-                //var farnsworth = document.getElementById('farnsworth');
-                //farnsworth.addEventListener('change', farnsworthChange);
-                //var wordsworth = document.getElementById('wordsworth');
-                //wordsworth.addEventListener('change', wordsworthChange);
+                var farnsworth = document.getElementById('farnsworth');
+                farnsworth.addEventListener('change', farnsworthChange);
+                var wordsworth = document.getElementById('wordsworth');
+                wordsworth.addEventListener('change', wordsworthChange);
                 function createOpt(v) {
                     var opt = document.createElement('option');
                     opt.value = opt.innerHTML = s;
@@ -218,8 +220,8 @@
                 }
                 for (var s = 48; s >= 6; s--) {
                     speed.appendChild(createOpt(s));
-                    //farnsworth.appendChild(createOpt(s));
-                    //wordsworth.appendChild(createOpt(s));
+                    farnsworth.appendChild(createOpt(s));
+                    wordsworth.appendChild(createOpt(s));
                 }
                 var pitch = document.getElementById('pitch');
                 pitch.addEventListener('change', pitchChange);
@@ -450,18 +452,46 @@
                 _sounder.setSpeed(wpm, farnsworth, wordsworth);
                 speed = wpm;
                 ditlen = 1.2 / speed;
+                fditlen = (60 / Math.min(farnsworth, wpm) - 31 * ditlen) / 19;
+                wditlen = (60 / Math.min(wordsworth, Math.min(farnsworth, wpm)) - 31 * ditlen) / 19;
                 sendByte(getSpeedByte(wpm));
                 // if (currentSpeed == wpm) return;
                 currentSpeed = wpm;
                 if (updateMenu) {
                     document.getElementById('speed').value = wpm; 
-                    //document.getElementById('farnsworth').value = farnsworth; 
-                    //document.getElementById('wordsworth').value = wordsworth; 
+                    document.getElementById('farnsworth').value = farnsworth; 
+                    document.getElementById('wordsworth').value = wordsworth; 
                 }
                 if (sendToRadio) setRadioCWSpeed(wpm);
                 localStorage.setItem('tx_speed', wpm);
                 localStorage.setItem('tx_farnsworth', farnsworth);
                 localStorage.setItem('tx_wordsworth', wordsworth);
+                for (var i in operators) {
+                    operators[i].setSpeed(wpm, farnsworth, wordsworth);
+                }
+            }
+
+            function pick(list) {
+                return list[Math.round((list.length - 1) * Math.random())];
+            }
+
+            function randomCall(format) {
+                var call = '';
+                for (var i = 0; i < format.length; i++) {
+                    var c = format[i]
+                    switch (c) {
+                        case '*':
+                            call += pick(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']);
+                            break;
+                        case '#':
+                            call += pick(['1', '2', '3', '4', '5', '6', '7', '8', '9']);
+                            break;
+                        default:
+                            call += c;
+                            break;
+                    }
+                }
+                return call;
             }
 
             var currentPileup = defaultPileup;
@@ -472,13 +502,18 @@
                     operators.pop();
                 }
                 //var calls = ['K6EL', 'NG6R', 'WB6POT', 'K6YK', 'NT6E', 'K6QCB', 'NA6MG', 'WA6KYR', 'AE9F', 'NK6A', 'KH2TJ', 'N6WT', 'W6JMP', 'AB6SO', 'W6STR', 'WA9STI', 'N6AN', 'N6JZT', 'K6KM', 'WC6J', 'KE6MT', 'W6DT', 'W6JP', 'W6WW', 'WA6RIC', 'W6TED', 'W6IYS', 'N1CLC', 'K7TP', 'KX6A', 'AI6XG', 'NA6O', 'N0OI', 'KU6J', 'N5XL', 'K6KMH', 'KX6I', 'W9SSN', 'WA6ARA', 'KI6PMD', 'NF1R', 'N6MKW', 'K6HZR', 'K6CPR', 'AA0BV', 'KI6DS', 'KE6RS', 'K6STR', 'AA6XA', 'KN6EZE', 'N6GO', 'W6LOR', 'NF6R', 'K6ARK', 'NS1TA', 'W1EJ', 'W6IPA', 'N6JFD', 'K6DGW', 'KN6DMO', 'KD7WPJ', 'ND6P', 'K6MAA', 'KB9ENS', 'AJ6KZ', 'NU6T', 'K3GX', 'K6CWC', 'W6BRY', 'KE6GLA', 'K6NIA', 'K6SDW', 'K6FW', 'N6ARA', 'KN6RDC', 'W6DER', 'KW6JIM', 'AI6ZV', 'NJ6Q', 'N0PCL', 'KM3A', 'AG6N', 'KG6LI', 'KB6CIO', 'N6MMA', 'WU6X', 'KA6AIL', 'K6XM', 'WM6T', 'K6TW', 'N6NKT', 'KI6SYD', 'KN6OMN', 'KG6OKI', 'K6ABM', 'N6IV', 'KN6LFB', 'KN3O', 'K6ARV', 'N6MST', 'K6CMG', 'K6TUY', 'K6PVZ', 'N6VGW', 'KI6NN', 'KN6FNY', 'KJ6MBW', 'AJ6CL', 'K6ERI', 'N6CK', 'N6ZA', 'W6BJB', 'KM6TNT', 'KN6IPE', 'KS6PKY', 'W6VXP', 'K6JS', 'KD7DTS', 'NA6Z', 'KK6ZLY', 'N6IZ', 'N6KM', 'N6LHL', 'W5RJD', 'KK6M', 'N6TEM', 'WI6X', 'K6TOR', 'W6LEN', 'W6HW', 'WO6JO', 'KN6GOG', 'KQ6UP', 'W6BFT', 'KK6TV', 'KI6A', 'K6JEB', 'AA6TH', 'W6VH', 'K6DDJ', 'K0SSK', 'KN6IUF', 'K6MDG', 'K6PB', 'W6LEN', 'AD6DM', 'KN6GOH', 'N7DA', 'NS3C', 'KA3DRR', 'KM6BMQ', 'W6NX', 'KB6QEW', 'AI6IE', 'AD6VT', 'KK6QMS', 'K6FRC', 'NV2J', 'N6FP', 'WA6L', 'N1WAX', 'KG6T', 'WB6I', 'W5EAL', 'WA3IGU', 'KN6BAZ', 'AA6MK', 'WM6Y', 'KN6NUN', 'N2ZIP', 'K6WIL', 'K6RIN', 'AI6V', 'NE6G', 'WB6EDK', 'WD6T', 'N6HAN', 'KI6M', 'N6TNO', 'KK6LHT', 'N9DK', 'KK6YRG', 'KC8J', 'KM6WCO', 'AG6NS', 'N5VWN', 'N7QD', 'WA6OEF', 'N6GD', 'N6XI', 'N6WBL', 'K6MBD', 'W7UT', 'AF6GA', 'K6KWI', 'KN6PHZ', 'K3TIM', 'N6SLV', 'W6EMM', 'N9OHW', 'W6TC', 'K6SF', 'W6RQR', 'KN6CMK', 'W6RMI', 'KG6HQD', 'N6PG', 'K6TNT', 'KG6BXW', 'KM6JUR', 'K6LJU', 'N6DVS', 'KI6WJP', 'AA6OC', 'W6RWS', 'K6VG', 'K6GG', 'KE6WJY', 'WB6VIC', 'KK6MJG', 'K6VN', 'W6PNG', 'AJ6FN', 'KJ6LDJ', 'KB1LQD', 'AJ6IY', 'W6KL', 'N3BEN', 'AJ6QL', 'N3XUL', 'KM6HBH', 'AJ6ET', 'W6CMY', 'WC0O', 'KI6SGV', 'AF6TF', 'NT6N'];
-                var calls = ['K6EL', 'NG6R', 'K6YK', 'NT6E', 'AE9F', 'NK6A', 'N6WT', 'N6AN', 'K6KM', 'WC6J', 'W6DT', 'W6JP', 'W6WW', 'K7TP', 'KX6A', 'NA6O', 'N0OI', 'KU6J', 'N5XL', 'KX6I', 'NF1R', 'N6GO', 'NF6R', 'W1EJ', 'ND6P', 'NU6T', 'K3GX', 'K6FW', 'NJ6Q', 'KM3A', 'AG6N', 'WU6X', 'K6XM', 'WM6T', 'K6TW', 'N6IV', 'KN3O', 'N6CK', 'N6ZA', 'K6JS', 'NA6Z', 'N6IZ', 'N6KM', 'KK6M', 'WI6X', 'W6HW', 'KI6A', 'W6VH', 'K6PB', 'N7DA', 'NS3C', 'W6NX', 'NV2J', 'N6FP', 'WA6L', 'KG6T', 'WB6I', 'WM6Y', 'AI6V', 'NE6G', 'WD6T', 'KI6M', 'N9DK', 'KC8J', 'N7QD', 'N6GD', 'N6XI', 'W7UT', 'W6TC', 'K6SF', 'N6PG', 'K6VG', 'K6GG', 'K6VN', 'W6KL', 'WC0O', 'NT6N'];
+                //var calls = ['K6EL', 'NG6R', 'K6YK', 'NT6E', 'AE9F', 'NK6A', 'N6WT', 'N6AN', 'K6KM', 'WC6J', 'W6DT', 'W6JP', 'W6WW', 'K7TP', 'KX6A', 'NA6O', 'N0OI', 'KU6J', 'N5XL', 'KX6I', 'NF1R', 'N6GO', 'NF6R', 'W1EJ', 'ND6P', 'NU6T', 'K3GX', 'K6FW', 'NJ6Q', 'KM3A', 'AG6N', 'WU6X', 'K6XM', 'WM6T', 'K6TW', 'N6IV', 'KN3O', 'N6CK', 'N6ZA', 'K6JS', 'NA6Z', 'N6IZ', 'N6KM', 'KK6M', 'WI6X', 'W6HW', 'KI6A', 'W6VH', 'K6PB', 'N7DA', 'NS3C', 'W6NX', 'NV2J', 'N6FP', 'WA6L', 'KG6T', 'WB6I', 'WM6Y', 'AI6V', 'NE6G', 'WD6T', 'KI6M', 'N9DK', 'KC8J', 'N7QD', 'N6GD', 'N6XI', 'W7UT', 'W6TC', 'K6SF', 'N6PG', 'K6VG', 'K6GG', 'K6VN', 'W6KL', 'WC0O', 'NT6N'];
+                var qth = pick(['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY']);
+                var format = pick(['*#*']);
+                var farnsworth = parseInt(document.getElementById('farnsworth').value);
+                var wordsworth = parseInt(document.getElementById('wordsworth').value);
                 while (operators.length < currentPileup) { // add operators
                     do {
-                        var call = calls[Math.round((calls.length - 1) * Math.random())];
+                        //var call = calls[Math.round((calls.length - 1) * Math.random())];
+                        var call = randomCall(format)
                         var unique = operators.every(op => op.callSign != call); // no two operators with the same call
                     } while (!unique); 
-                    operators.push(new Operator(call));
+                    operators.push(new Operator(call, qth, speed, farnsworth, wordsworth));
                 }
             }
 
@@ -1405,8 +1440,16 @@
 
             function speedChange(e) {
                 var wpm = parseInt(e.target.value);
-                var farnsworth = wpm; //parseInt(document.getElementById('farnsworth').value);
-                var wordsworth = wpm; //parseInt(document.getElementById('wordsworth').value);
+                var farnsworth = parseInt(document.getElementById('farnsworth').value);
+                var wordsworth = parseInt(document.getElementById('wordsworth').value);
+                if (wpm < farnsworth || speed == farnsworth)
+                {
+                    farnsworth = wpm; // farnsworth should track (when equal) and never be faster
+                }
+                if (wpm < wordsworth || speed == wordsworth)
+                {
+                    wordsworth = wpm; // wordssworth should track (when equal) and never be faster
+                }
                 setSpeed(wpm, Math.min(wpm, farnsworth), Math.min(wpm, Math.min(farnsworth, wordsworth)), true, true);
             }
 
@@ -1414,13 +1457,18 @@
                 var farnsworth = parseInt(e.target.value);
                 var wpm = parseInt(document.getElementById('speed').value);
                 var wordsworth = parseInt(document.getElementById('wordsworth').value);
+                var lastFarnsworth = parseInt(localStorage.getItem('tx_farnsworth')) || defaultSpeed;
+                if (farnsworth < wordsworth || lastFarnsworth == wordsworth)
+                {
+                    wordsworth = wpm; // wordssworth should track (when equal) and never be faster
+                }
                 setSpeed(wpm, Math.min(wpm, farnsworth), Math.min(wpm, Math.min(farnsworth, wordsworth)), true, true);
             }
 
             function wordsworthChange(e) {
                 var wordsworth = parseInt(e.target.value);
                 var wpm = parseInt(document.getElementById('speed').value);
-                var farnsworth = wpm; //parseInt(document.getElementById('farnsworth').value);
+                var farnsworth = parseInt(document.getElementById('farnsworth').value);
                 setSpeed(wpm, Math.min(wpm, farnsworth), Math.min(wpm, Math.min(farnsworth, wordsworth)), true, true);
             }
 
@@ -1471,7 +1519,6 @@
                                     <select id="speed"></select>wpm</h1>
                                 </td>
                             </tr>
-                            <!--
                             <tr>
                                 <td>Farnsworth:</td>
                                 <td width="100%">
@@ -1484,7 +1531,6 @@
                                     <select id="wordsworth"></select>wpm</h1>
                                 </td>
                             </tr>
-                            -->
                             <tr>
                                 <td>Pitch:</td>
                                 <td width="100%">
