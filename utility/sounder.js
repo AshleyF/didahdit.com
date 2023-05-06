@@ -43,6 +43,9 @@ class Sounder {
             this.t = this.audioCtx.currentTime;
             this.audioStarted = true;
         }
+        if (this.audioCtx.state != 'running') {
+            alert("Audio: " + this.audioCtx.state);
+        }
     }
 
     get isStarted() { return this.audioStarted; }
