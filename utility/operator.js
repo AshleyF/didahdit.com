@@ -41,11 +41,12 @@ class Operator {
     }
 
     pause() {
-        this.trace('HEARD: ' + this.message);
+        this.trace('HEARD: "' + this.message + '"');
+        var padded = ' ' + this.message + ' ';
 
         // again?
-        var again = / AGN\? /g.exec(this.message);
-        var question = / \? /g.exec(this.message);
+        var again = / AGN\? /g.exec(padded);
+        var question = / \? /g.exec(padded);
         if (again || question) {
             this.trace('again');
             this.send(this.call);
@@ -53,7 +54,7 @@ class Operator {
         }
 
         // partial?
-        var partial = /([^\ ]+)\?/g.exec(this.message);
+        var partial = /([^\ ]+)\?/g.exec(padded);
         if (partial) {
             this.trace('partial: ' + partial);
             var call = partial[1];
@@ -70,15 +71,15 @@ class Operator {
         }
 
         // done?
-        //var endingK = / K /g.exec(this.message);
-        //var endingBK = / \<BK\> /g.exec(this.message);
+        //var endingK = / K /g.exec(padded);
+        //var endingBK = / \<BK\> /g.exec(padded);
         ///var done = endingK || endingBK;
         ///if (done) {
         //    this.trace('done');
 
             // calling CQ
             //var calling = /CQ DE ([^\ ]+).* K ?$/g.exec(_message);
-            var calling = / CQ /g.exec(this.message);
+            var calling = / CQ /g.exec(padded);
             if (calling) {
                 this.trace('calling');
                 this.message = ' ';
@@ -87,7 +88,7 @@ class Operator {
             }
         //}
 
-        if (this.message.indexOf(' ' + this.call + ' ') >= 0) {
+        if (padded.indexOf(' ' + this.call + ' ') >= 0) {
             this.me = true;
             var signal = this.pick(['5NN', '58N', '57N', '56N', '55N', '54N', '53N']);
             var ur = this.pick(['UR ', '']);
@@ -102,7 +103,7 @@ class Operator {
             return;
         }
 
-        if (this.message.indexOf(' EE ') >= 0 || this.message.indexOf(' 73EE ') >= 0 ) {
+        if (padded.indexOf(' EE ') >= 0 || padded.indexOf(' 73EE ') >= 0 ) {
             setTimeout(() => { this.send(this.call); /* + K or P2P */ }, 3000 + 2000 * Math.random());
         }
 
