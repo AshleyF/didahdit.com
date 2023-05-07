@@ -16,6 +16,7 @@ class Encoder {
             }
             if (c == '>') {
                 this.prosign = false;
+                this.callback('char');
                 return;
             }
             var code = [];

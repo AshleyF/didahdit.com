@@ -21,6 +21,8 @@
             td { background-color: black; }
             select { font-size: larger; background-color: black; color: white; }
             ::-webkit-scrollbar { width: 0px; }
+            #keyboard td { border: 1px solid red; }
+            #keyboard button { width: 2em; height: 2em; text-align: center; }
         </style>
         <script src="../../utility/timing.js"></script>
         <script src="../../utility/keyer.js"></script>
@@ -130,13 +132,23 @@
 
             var _pendingMemoryMessage = '';
             var _pendingMemoryTimer = null;
+            function updatePendingMessage() {
+                document.getElementById('keyboardSending').innerHTML = _pendingMemoryMessage.replace(/\</g, '[').replace(/\>/g, ']').replace(/\[/g, "<span style='text-decoration:overline'>").replace(/\]/g, "</span>");
+                document.getElementById('clear').style.display = _pendingMemoryMessage.length > 0 ? '' : 'none';
+            }
+
             function memorySendPending() {
                 if (_pendingMemoryMessage.length > 0) {
-                    var c = _pendingMemoryMessage[0];
-                    _pendingMemoryMessage = _pendingMemoryMessage.substring(1);
-                    _encoder.phrase(c);
-                    console.log('Send: ' + c);
+                    var prosign = false;
+                    do {
+                        var c = _pendingMemoryMessage[0];
+                        if (c == '<') prosign = true;
+                        else if (c == '>') prosign = false;
+                        _pendingMemoryMessage = _pendingMemoryMessage.length > 1 ? _pendingMemoryMessage.substring(1) : '';
+                        _encoder.phrase(c);
+                    } while (prosign);
                     _pendingMemoryTimer = window.setTimeout(function() {
+                        updatePendingMessage();
                         messageOperators(c);
                         memorySendPending();
                     }, _pendingSoundLen * 1000);
@@ -147,17 +159,30 @@
             }
 
             function memorySend(message) {
-                console.log('Memory: ' + message);
-                if (_pendingMemoryMessage.length != 0) _pendingMemoryMessage += ' ';
+                if (_pendingMemoryMessage.length == 0 && message[0] == ' ') {
+                    message = message.substring(1); // no leading space if nothing before
+                    messageOperators(' '); // ensure operators get space
+                }
                 _pendingMemoryMessage += message;
+                updatePendingMessage();
                 if (_pendingMemoryTimer == null) {
                     memorySendPending();
                 }
             }
 
-            function stopMemorySend() {
+            function clearMemorySend() {
                 _pendingMemoryMessage = '';
+                updatePendingMessage();
                 if (_pendingMemoryTimer != null) {
+                    clearTimeout(_pendingMemoryTimer);
+                    _pendingMemoryTimer = null;
+                }
+            }
+
+            function backspaceMemorySend() {
+                _pendingMemoryMessage = _pendingMemoryMessage.length > 1 ? _pendingMemoryMessage.substring(1) : '';
+                updatePendingMessage();
+                if (_pendingMemoryMessage.length == 0 && _pendingMemoryTimer != null) {
                     clearTimeout(_pendingMemoryTimer);
                     _pendingMemoryTimer = null;
                 }
@@ -1665,18 +1690,193 @@
                             <tr>
                                 <td>
                                     <h3 style="margin-top: 3em">Log:</h3>
-                                    <ol id="log">
-                                        <li>A7B&nbsp;WI</li>
-                                    </ol>
+                                    <ol id="log"></ol>
                                 </td>
                             </tr>
                             <tr>
                                 <td>
-                                    <a href="javascript:memorySend('cq cq pota de k7zcw k')">CQ</a>
-                                    <a href="javascript:memorySend(prompt())">Manual</a>
-                                    <a href="javascript:memorySend('ur 5nn 5nn wa &lt;bk&gt;')">RST</a>
-                                    <a href="javascript:memorySend('tu 73 ee')">TKS</a>
-                                    <a href="javascript:stopMemorySend()">Stop</a>
+                                    <table>
+                                        <tr>
+                                            <td>CQ: </td>
+                                            <td>
+                                                <input style="width: 16em" id="cq" type="text" value="CQ CQ POTA DE K7ZCW K" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>RST: </td>
+                                            <td>
+                                                <input style="width: 16em" id="rst" type="text" value="UR 5NN 5NN WA &lt;BK&gt;" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>THX: </td>
+                                            <td>
+                                                <input style="width: 16em" id="thx" type="text" value="TU 73 EE" />
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <table id="keyboard" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td colspan="2">
+                                                <button style="width: 4em" onclick="memorySend(' ' + document.getElementById('cq').value + ' ')">CQ</button>
+                                            </td>
+                                            <td colspan="2">
+                                                <button style="width: 4em" onclick="memorySend(' ' + document.getElementById('rst').value + ' ')">RST</button>
+                                            </td>
+                                            <td colspan="2">
+                                                <button style="width: 4em" onclick="memorySend(' ' + document.getElementById('thx').value + ' ')">THX</button>
+                                            </td>
+                                            <td colspan="2">
+                                                <button style="width: 4em" onclick="memorySend(' <BT> ')"><span style="text-decoration:overline">BT</span></button>
+                                            </td>
+                                            <td colspan="2">
+                                                <button style="width: 4em" onclick="memorySend(' <BK> ')"><span style="text-decoration:overline">BK</span></button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <button onclick="memorySend('1')">1</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('2')">2</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('3')">3</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('4')">4</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('5')">5</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('6')">6</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('7')">7</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('8')">8</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('9')">9</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('0')">0</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <button onclick="memorySend('Q')">Q</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('W')">W</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('E')">E</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('R')">R</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('T')">T</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('Y')">Y</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('U')">U</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('I')">I</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('O')">O</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('P')">P</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <button onclick="memorySend('A')">A</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('S')">S</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('D')">D</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('F')">F</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('G')">G</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('H')">H</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('J')">J</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('K')">K</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('L')">L</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('/')">/</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <button onclick="memorySend('Z')">Z</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('X')">X</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('C')">C</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('V')">V</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('B')">B</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('N')">N</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('M')">M</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend(',')">,</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('.')">.</button>
+                                            </td>
+                                            <td>
+                                                <button onclick="memorySend('?')">?</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="10" style="text-align: center">
+                                                <button style="width: 20em" onclick="memorySend(' ')">Space</button>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <h3 id="keyboardSending" style="margin-top: 3em"></h3>
+                                    <button id="clear" style="display: none" onclick="javascript:clearMemorySend()">Clear</a>
                                 </td>
                             </tr>
                             <tr>
