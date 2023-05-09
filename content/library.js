@@ -147,13 +147,26 @@ var library = [
         { id: 'BIGRAMS',
             name: 'Bigrams',
             phrases: ['th', 'he', 'in', 'er', 'an', 're', 'on', 'at', 'en', 'nd', 'ti', 'es', 'or', 'te', 'of', 'ed', 'is', 'it', 'al', 'ar', 'st', 'to', 'nt', 'ng', 'se', 'ha', 'as', 'ou', 'io', 'le', 've', 'co', 'me', 'de', 'hi', 'ri', 'ro', 'ic', 'ne', 'ea', 'ra', 'ce', 'li', 'ch', 'll', 'be', 'ma', 'si', 'om', 'ur'] },
-
-    { id: 'TRIGRAMS',
+        { id: 'TRIGRAMS',
             name: 'Trigrams',
             phrases: ['the', 'and', 'ing', 'ent', 'ion', 'her', 'for', 'tha', 'nth', 'int', 'ere', 'tio', 'ter', 'est', 'ers', 'ati', 'hat', 'ate', 'all', 'eth', 'hes', 'ver', 'his', 'oft', 'ith', 'fth', 'sth', 'oth', 'res', 'ont', 'dth', 'are', 'rea', 'ear', 'was', 'sin', 'sto', 'tth', 'sta', 'thi', 'tin', 'ted', 'ons', 'edt', 'wit', 'san', 'din', 'ort', 'con', 'rth', 'eve', 'eco', 'era', 'ist', 'ngt', 'ast', 'ill', 'com', 'ore', 'ive', 'nce', 'one', 'edi', 'pro', 'ess', 'out', 'ein', 'att', 'men', 'hec', 'esa', 'hen', 'ina', 'eri', 'ert', 'ame', 'iti', 'ome', 'son', 'art', 'man', 'ean', 'ona', 'eof', 'tor', 'hea', 'ran', 'rin', 'ine', 'eda', 'nto', 'ave', 'nin', 'ove', 'oun', 'ain', 'ant', 'str', 'eto', 'hem'] },
         { id: 'QUADGRAMS',
             name: 'Quadgrams',
             phrases: ['tion', 'nthe', 'ther', 'that', 'ofth', 'fthe', 'thes', 'with', 'inth', 'atio', 'othe', 'tthe', 'dthe', 'ingt', 'ethe', 'sand', 'sthe', 'here', 'thec', 'ment', 'them', 'rthe', 'thep', 'from', 'this', 'ting', 'thei', 'ngth', 'ions', 'andt', 'onth', 'toth', 'edto', 'thef', 'they', 'have', 'edth', 'inga', 'ndth', 'thet', 'ould', 'orth', 'ever', 'then', 'ight', 'eand', 'atth', 'theb', 'over', 'ding', 'iona', 'gthe', 'fort', 'thea', 'ring', 'ally', 'ands', 'efor', 'ings', 'edin', 'anda', 'thin', 'ough', 'were', 'erth', 'year', 'will', 'thel', 'said', 'heir', 'nter', 'ents', 'econ', 'ning', 'comp', 'tand', 'sion', 'time', 'ound', 'form', 'nand', 'land', 'thew', 'king', 'port', 'ythe', 'hthe', 'heco', 'ated', 'andi', 'thed', 'inte', 'hing', 'ngto', 'some', 'thee', 'also', 'enti', 'onal', 'ctio'] },
+        ]
+    },
+    { id: 'SENDING',
+        name: 'Sending',
+        lessons: [
+        { id: 'WARMUP',
+            name: 'Warm Up',
+            phrases: ['eeeee', 'ttttt', 'iiiii', 'mmmmm', 'sssss', 'ooooo', 'hhhhh', '00000', '55555', 'aaaaa', 'nnnnn', 'uuuuu', 'ddddd', 'vvvvv', 'bbbbb', '44444', '66666', 'abcdef', 'ghijk', 'lmnop', 'qrstu', 'vwxyz', '12345', '67890', '/,.?', '<SK><AR><BT><BK>', 'the quick brown', 'fox jumped over', 'the lazy dogs back', '70364 51289'] },
+        { id: 'EXERCISE',
+            name: 'Exercise',
+            phrases: ['aaaaa', 'bbbbb', 'ccccc', 'ddddd', 'eeeee', 'fffff', 'ggggg', 'hhhhh', 'iiiii', 'jjjjj', 'kkkkk', 'lllll', 'mmmmm', 'nnnnn', 'ooooo', 'ppppp', 'qqqqq', 'rrrrr', 'sssss', 'ttttt', 'uuuuu', 'vvvvv', 'wwwww', 'xxxxx', 'yyyyy', 'zzzzz', '11111', '22222', '33333', '44444', '55555', '66666', '77777', '88888', '99999', '00000'] },
+        { id: 'DRILL',
+            name: 'Drill',
+            phrases: ['the quick brown', 'fox jumped over', 'the lazy dogs back', '70364 51289', 'the quick brown', 'fox jumped over', 'the lazy dogs back', '70364 51289', 'bens best bent wire/5', 'bens best bent wire/5', 'bens best bent wire/5', '/////', ',,,,,', '.....', '?????', '<SK><SK><SK><SK><SK>', '<AR><AR><AR><AR><AR>', '<BT><BT><BT><BT><BT>', '<BK><BK><BK><BK><BK>'] },
         ]
     }
 ];

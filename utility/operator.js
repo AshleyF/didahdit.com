@@ -41,8 +41,8 @@ class Operator {
     }
 
     pause() {
-        this.trace('HEARD: "' + this.message + '"');
         var padded = ' ' + this.message + ' ';
+        this.trace('HEARD: "' + padded + '"');
 
         // again?
         var again = / AGN\? /g.exec(padded);
