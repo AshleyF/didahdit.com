@@ -540,6 +540,7 @@
                     localStorage.setItem(key, id);
                     localStorage.removeItem('rx_shuffle_' + content.id); // force rescramble
                 }
+                generateLesson();
             }
 
             function setLesson(id) {
@@ -1206,6 +1207,19 @@
                 }
             }
 
+            function generateLesson() {
+                var lesson = getContent().lessons[getLessonNum()];
+                switch (lesson.generate) {
+                    case 'calls':
+                        lesson.phrases = [];
+                        for (var i = 0; i < 100; i++) {
+                            var pattern = pick(lesson.patterns);
+                            lesson.phrases.push(randomCall(pattern));
+                        }
+                        break;
+                }
+            }
+
             function prevLesson() {
                 ui.count = 0;
                 var lesson = getLessonNum();
@@ -1685,6 +1699,8 @@
                         if (!hitTestOnScreenKeys(x, y, false)) cancelRepeat();
                     }
                 }
+
+                generateLesson();
                 resizeRedrawCanvas();
                 setDarkMode(getDarkMode());
                 setSpeed(getSpeed());
@@ -1790,6 +1806,29 @@
                 for (var i = 0; i < 500; i += 50) {
                     setTimeout(resizeRedrawCanvas, i); // repeatedly because of browser timing bug! (https://bugs.webkit.org/show_bug.cgi?id=185886)
                 }
+            }
+
+            function pick(list) {
+                return list[Math.round((list.length - 1) * Math.random())];
+            }
+
+            function randomCall(format) {
+                var call = '';
+                for (var i = 0; i < format.length; i++) {
+                    var c = format[i]
+                    switch (c) {
+                        case '*':
+                            call += pick(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']);
+                            break;
+                        case '#':
+                            call += pick(['1', '2', '3', '4', '5', '6', '7', '8', '9']);
+                            break;
+                        default:
+                            call += c;
+                            break;
+                    }
+                }
+                return call;
             }
         </script>
     </head>
