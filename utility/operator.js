@@ -1,7 +1,8 @@
 class Operator {
-    constructor(call, qth, speed, farnsworth, wordsworth) {
+    constructor(call, qth, name, speed, farnsworth, wordsworth) {
         this.call = call;
         this.qth = qth;
+        this.name = name;
         console.log(call);
         this.sounder = new Sounder();
         this.sounder.pitch = 600 + 100 - Math.round(200 * Math.random());
@@ -12,6 +13,7 @@ class Operator {
         this.timeout = null;
         this.me = false;
         this.done = false;
+        this.exchange = 'POTA';
     }
 
     get callSign() {
@@ -45,7 +47,7 @@ class Operator {
         this.trace('HEARD: "' + padded + '"');
 
         // again?
-        var again = / AGN\? /g.exec(padded);
+        var again = / AGN\?? /g.exec(padded);
         var question = / \? /g.exec(padded);
         if (again || question) {
             this.trace('again');
@@ -81,6 +83,13 @@ class Operator {
             //var calling = /CQ DE ([^\ ]+).* K ?$/g.exec(_message);
             var calling = / CQ /g.exec(padded);
             if (calling) {
+                if (/ POTA /g.exec(padded)) {
+                    this.exchange = 'POTA';
+                    this.trace('exchange: POTA');
+                } else if (/ SST /g.exec(padded)) {
+                    this.exchange = 'SST';
+                    this.trace('exchange: SST');
+                }
                 this.trace('calling');
                 this.message = ' ';
                 setTimeout(() => { this.send(this.call); /* + K or P2P */ }, 2000 * Math.random());
@@ -90,17 +99,29 @@ class Operator {
 
         if (padded.indexOf(' ' + this.call + ' ') >= 0) {
             this.me = true;
-            var signal = this.pick(['5NN', '58N', '57N', '56N', '55N', '54N', '53N']);
-            var ur = this.pick(['UR ', '']);
-            this.send('<BK> TU ' + ur + signal + ' ' + signal + ' ' + this.qth + ' ' + this.qth + ' <BK>');
-            return;
+            switch (this.exchange) {
+                case 'POTA':
+                    var signal = this.pick(['5NN', '58N', '57N', '56N', '55N', '54N', '53N']);
+                    var ur = this.pick(['UR ', '']);
+                    this.send('<BK> TU ' + ur + signal + ' ' + signal + ' ' + this.qth + ' ' + this.qth + ' <BK>');
+                    return;
+                case 'SST':
+                    var salutation = this.pick(['GM', 'GA', 'GE']); // TODO: based on time of day
+                    this.send(salutation + ' ASH ' + this.name); // TODO: extract sender's name
+                    return;
+            }
         }
 
         if (this.me) {
-            var salutation = this.pick(['73', 'GL', 'GL 73', 'GL ES 73', ''])
-            this.send(salutation + ' EE');
             this.done = true;
-            return;
+            switch (this.exchange) {
+                case 'POTA':
+                    var salutation = this.pick(['73', 'GL', 'GL 73', 'GL ES 73', '']);
+                    this.send(salutation + ' EE');
+                    return;
+                case 'SST': // nothing
+                    return;
+            }
         }
 
         if (padded.indexOf(' EE ') >= 0 || padded.indexOf(' 73EE ') >= 0 ) {
