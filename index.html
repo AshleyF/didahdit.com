@@ -1729,6 +1729,13 @@
                 document.body.addEventListener('keydown', (e) => {
                     if (manuallyEnableAudio) return;
                     switch (e.code) {
+                        case 'Space':
+                            if (_keyer.mode == 'S' && !ui.playing && !leftDown) {
+                                leftDown = true;
+                                _debouncerLeft.key(true);
+                                redraw();
+                            }
+                            break;
                         case 'BracketLeft':
                             if (!ui.playing && !leftDown) {
                                 leftDown = true;
@@ -1796,9 +1803,16 @@
                                 redraw();
                             }
                             break;
+                        case 'Space':
+                            if (_keyer.mode == 'S' && !ui.playing) {
+                                leftDown = false;
+                                _debouncerLeft.key(false);
+                                redraw();
+                            }
+                            cancelRepeat();
+                            break;
                         case 'ArrowLeft':
                         case 'ArrowRight':
-                        case 'Space':
                             cancelRepeat();
                             break;
                     }
