@@ -1195,7 +1195,7 @@
                     var bottom = top + height;
                     fillRoundedRect(left, top, right, bottom, padding, dialogBackgroundColor);
                     drawFittedText(
-                        '☞ Enable Audio',
+                        'Enable Audio',
                         mainButtonColor,
                         left + padding,
                         top + padding,
@@ -1723,75 +1723,84 @@
                     stopAudio();
                 }
 
+                var leftDown = false;
+                var rightDown = false;
+
                 document.body.addEventListener('keydown', (e) => {
                     if (manuallyEnableAudio) return;
-                    if (!e.repeat) {
-                        switch (e.code) {
-                            case 'BracketLeft':
-                                if (!ui.playing) {
-                                    _debouncerLeft.key(true);
-                                    redraw();
-                                }
+                    switch (e.code) {
+                        case 'BracketLeft':
+                            if (!ui.playing && !leftDown) {
+                                leftDown = true;
+                                _debouncerLeft.key(true);
+                                redraw();
+                            }
+                            break;
+                        case 'ControlLeft':
+                            if (!_sounder.isStarted) {
+                                manuallyEnableAudio = true;
+                                redraw();
                                 break;
-                            case 'ControlLeft':
-                                if (!_sounder.isStarted) {
-                                    manuallyEnableAudio = true;
-                                    redraw();
-                                    break;
-                                }
-                                if (!ui.playing) _debouncerLeft.key(true);
+                            }
+                            if (!ui.playing && !leftDown) {
+                                leftDown = true;
+                                _debouncerLeft.key(true);
+                            }
+                            break;
+                        case 'BracketRight':
+                            if (!ui.playing && !rightDown) {
+                                rightDown = true;
+                                _debouncerRight.key(true);
+                                redraw();
+                            }
+                            break;
+                        case 'ControlRight':
+                            if (!_sounder.isStarted) {
+                                manuallyEnableAudio = true;
+                                redraw();
                                 break;
-                            case 'BracketRight':
-                                if (!ui.playing) {
-                                    _debouncerRight.key(true);
-                                    redraw();
-                                }
-                                break;
-                            case 'ControlRight':
-                                if (!_sounder.isStarted) {
-                                    manuallyEnableAudio = true;
-                                    redraw();
-                                    break;
-                                }
-                                if (!ui.playing) _debouncerRight.key(true);
-                                break;
-                            case 'ArrowLeft':
-                                simulateTouchButton(e.shiftKey ? 'prevLesson' : 'prevPhrase', true);
-                                break;
-                            case 'ArrowRight':
-                                simulateTouchButton(e.shiftKey ? 'nextLesson' : 'nextPhrase', true);
-                                break;
-                            case 'Enter':
-                                simulateTouchButton('playPause', false);
-                                break;
-                        }
+                            }
+                            if (!ui.playing && !rightDown) {
+                                rightDown = true;
+                                _debouncerRight.key(true);
+                            }
+                            break;
+                        case 'ArrowLeft':
+                            simulateTouchButton(e.shiftKey ? 'prevLesson' : 'prevPhrase', true);
+                            break;
+                        case 'ArrowRight':
+                            simulateTouchButton(e.shiftKey ? 'nextLesson' : 'nextPhrase', true);
+                            break;
+                        case 'Enter':
+                            simulateTouchButton('playPause', false);
+                            break;
                     }
                 });
 
                 document.body.addEventListener('keyup', (e) => {
                     if (manuallyEnableAudio) return;
-                    if (!e.repeat) {
-                        switch (e.code) {
-                            case 'BracketLeft':
-                            case 'ControlLeft':
-                                if (!ui.playing) {
-                                    _debouncerLeft.key(false);
-                                    redraw();
-                                }
-                                break;
-                            case 'BracketRight':
-                            case 'ControlRight':
-                                if (!ui.playing) {
-                                    _debouncerRight.key(false);
-                                    redraw();
-                                }
-                                break;
-                            case 'ArrowLeft':
-                            case 'ArrowRight':
-                            case 'Space':
-                                cancelRepeat();
-                                break;
-                        }
+                    switch (e.code) {
+                        case 'BracketLeft':
+                        case 'ControlLeft':
+                            if (!ui.playing) {
+                                leftDown = false;
+                                _debouncerLeft.key(false);
+                                redraw();
+                            }
+                            break;
+                        case 'BracketRight':
+                        case 'ControlRight':
+                            if (!ui.playing) {
+                                rightDown = false;
+                                _debouncerRight.key(false);
+                                redraw();
+                            }
+                            break;
+                        case 'ArrowLeft':
+                        case 'ArrowRight':
+                        case 'Space':
+                            cancelRepeat();
+                            break;
                     }
                 });
             }
