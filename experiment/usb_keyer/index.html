@@ -332,6 +332,7 @@
                 document.body.addEventListener('keydown', (e) => {
                     if (!e.repeat) {
                         switch (e.code) {
+                            case 'CapsLock':
                             case 'BracketLeft':
                             case 'ControlLeft':
                                 keyUpdateLeft(true);
@@ -346,6 +347,7 @@
                 document.body.addEventListener('keyup', (e) => {
                     if (!e.repeat) {
                         switch (e.code) {
+                            case 'CapsLock':
                             case 'BracketLeft':
                             case 'ControlLeft':
                                 keyUpdateLeft(false);

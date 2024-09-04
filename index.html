@@ -1743,6 +1743,7 @@
                                 redraw();
                             }
                             break;
+                        case 'CapsLock':
                         case 'ControlLeft':
                             if (!_sounder.isStarted) {
                                 manuallyEnableAudio = true;
@@ -1788,6 +1789,7 @@
                     if (manuallyEnableAudio) return;
                     switch (e.code) {
                         case 'BracketLeft':
+                        case 'CapsLock':
                         case 'ControlLeft':
                             if (!ui.playing) {
                                 leftDown = false;
