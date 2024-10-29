@@ -1,6 +1,6 @@
 # Morse Code site - didahdit.com
 
-I building a little site for learning Morse Code, abbreviations and codes for ham radio CW QSOs.
+I'm building a [little site](http://didahdit.com) for learning Morse Code, abbreviations and codes for ham radio CW QSOs.
 Here are some ideas and nice sites and apps out there:
 
 ## Ideas
